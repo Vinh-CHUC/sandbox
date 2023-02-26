@@ -54,7 +54,7 @@ def model(data: pd.DataFrame):
         beta = pm.Normal("beta", mu=0, sigma=10)
         sigma = pm.HalfNormal("sigma", sigma=1)
 
-        mu = alpha + beta * data.x1
+        mu = alpha + beta * data.x2
         pm.Normal("Y_obs", mu=mu, sigma=sigma, observed=data.y)
 
         trace = pm.sample()
