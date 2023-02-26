@@ -3,6 +3,7 @@ channels:
   - conda-forge
 dependencies:
   - altair
+  - altait-viewer
   - conda-build
   - conda-lock
   - ipython
@@ -17,6 +18,7 @@ dependencies:
   - vega_datasets
   - pip:
     - black
+    - bokeh
     - flake8
     - graphviz
     - streamlit
