@@ -25,8 +25,8 @@ def add_const(*args):
 
 def gen_data(category: str) -> pd.DataFrame:
     SIZE = 500
-    X1 = np.random.randn(SIZE)
-    X2 = np.random.randn(SIZE)
+    X1 = np.linspace(0, 5, SIZE) + np.random.randn(SIZE)
+    X2 = np.linspace(40, 50, SIZE) + np.random.randn(SIZE)
 
     match category:
         # Very simple case, pure causation
@@ -54,7 +54,7 @@ def model(data: pd.DataFrame):
         beta = pm.Normal("beta", mu=0, sigma=10)
         sigma = pm.HalfNormal("sigma", sigma=1)
 
-        mu = alpha + beta * data.x2
+        mu = alpha + beta * data.x1
         pm.Normal("Y_obs", mu=mu, sigma=sigma, observed=data.y)
 
         trace = pm.sample()
