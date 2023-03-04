@@ -26,12 +26,23 @@ mod tests {
 
     #[test]
     fn lambda_captures() {
+        // Note Rust is smart and will guess the type of capture!!!!
+
         // Move by default as usual
         {
             let list = vec![1, 2, 3];
             let c1 = |v| println!("{:?}", v);
             c1(list);
             // Cant access list here
+            // println!("{:?}", list);
+        }
+        // Move to a mutable variable
+        {
+            let list = vec![1, 2, 3];
+            let c1 = |mut v: Vec<_>| v.push(5);
+            c1(list);
+            // Cant access list here
+            // println!("{:?}", list);
         }
         // By reference
         {
@@ -39,14 +50,20 @@ mod tests {
             let c1 = |v| println!("{:?}", v);
             // let c1 = |v: &_| println!("{:?}", v); The reference declaration is optional actually
             c1(&list);
+
+            // The presence of this statement is what causes Rust to use reference capture!!!
             println!("{:?}", list);
         }
         // By mutable reference
         {
             let mut list = vec![1, 2, 3];
+            // The type annotation is not required
             let c1 = |v: &mut Vec<_>| println!("{:?}", v.push(10));
+            // These works!!! The mutable reference is only very short lived within the lambda
+            // So it never actually "interleaves" with list
             c1(&mut list);
-            // println!("{:?}", list); // This doesn't compile
+            list.push(10);
+            c1(&mut list);
         }
     }
 
@@ -125,14 +142,20 @@ mod tests {
         }
         // Consuming the input
         {
+            // Note that one has to move in the inner lambda as well!!! Otherwise the first move
+            // its kind of useless..
+            // {
+            //      x = it.next();
+            //      some_lambda(x);
+            // }
             let v = vec_factory();
-            let r = v.into_iter().map(|x| x.len()).fold(0, |acc, el| { acc + el });
+            let r = v.into_iter().map(move |x| x.len()).fold(0, |acc, el| { acc + el });
             assert_eq!(r, 36);
         }
         // Consuming the input 2
         {
             let v = vec_factory();
-            let r: Vec<Vec<i32>> = v.into_iter().map(|x| {x.into_iter().map(|y| {-y}).collect()}).collect();
+            let r: Vec<Vec<i32>> = v.into_iter().map(move |x| {x.into_iter().map(|y| {-y}).collect()}).collect();
             assert!(r[0].is_empty());
             assert_eq!(r[1], vec![-1]);
             assert_eq!(r[2], vec![-1, -2]);
