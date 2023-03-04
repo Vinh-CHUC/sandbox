@@ -51,6 +51,7 @@ mod tests {
     use crate::pointers::VinhsBox;
     use crate::pointers::hello;
     use crate::pointers::CustomSmartPointer;
+    use crate::pointers::List::{Cons, Nil};
 
     #[test]
     fn basic_pointers() {
@@ -111,4 +112,10 @@ mod tests {
         print!("hi");
     }
 
+    #[test]
+    fn rc_pointers() {
+        let a = Cons(5, Box::new(Cons(10, Box::new(Nil))));
+        let b = Cons(3, Box::new(a));
+        let c = Cons(3, Box::new(a));
+    }
 }
