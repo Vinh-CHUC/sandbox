@@ -142,20 +142,19 @@ mod tests {
         }
         // Consuming the input
         {
-            // Note that one has to move in the inner lambda as well!!! Otherwise the first move
-            // its kind of useless..
             // {
             //      x = it.next();
             //      some_lambda(x);
             // }
+            // Note that the move in front of the closure is not necessary!!
             let v = vec_factory();
-            let r = v.into_iter().map(move |x| x.len()).fold(0, |acc, el| { acc + el });
+            let r = v.into_iter().map(|x| x.len()).fold(0, |acc, el| { acc + el });
             assert_eq!(r, 36);
         }
         // Consuming the input 2
         {
             let v = vec_factory();
-            let r: Vec<Vec<i32>> = v.into_iter().map(move |x| {x.into_iter().map(|y| {-y}).collect()}).collect();
+            let r: Vec<Vec<i32>> = v.into_iter().map(|x| {x.into_iter().map(|y| {-y}).collect()}).collect();
             assert!(r[0].is_empty());
             assert_eq!(r[1], vec![-1]);
             assert_eq!(r[2], vec![-1, -2]);
