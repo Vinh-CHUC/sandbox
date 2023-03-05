@@ -2,6 +2,9 @@ import Test.Hspec
 import Test.QuickCheck
 import Control.Exception (evaluate)
 
+doubleMe :: Num a => a -> a
+doubleMe x = x + x
+
 main :: IO ()
 main = hspec $ do
   describe "Prelude.head" $ do
@@ -13,3 +16,6 @@ main = hspec $ do
 
     it "throws an exception if used with an empty list" $ do
       evaluate (head []) `shouldThrow` anyException
+
+    it "does double things" $ do
+      doubleMe 2 `shouldBe` (4 :: Int)
