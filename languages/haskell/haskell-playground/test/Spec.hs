@@ -1,9 +1,7 @@
+import Hithere.Lib2
 import Test.Hspec
 import Test.QuickCheck
 import Control.Exception (evaluate)
-
-doubleMe :: Num a => a -> a
-doubleMe x = x + x
 
 main :: IO ()
 main = hspec $ do
