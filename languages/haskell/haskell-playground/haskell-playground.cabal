@@ -25,6 +25,7 @@ source-repository head
 
 library
   exposed-modules:
+      Hithere.Lib2
       Lib
   other-modules:
       Paths_haskell_playground

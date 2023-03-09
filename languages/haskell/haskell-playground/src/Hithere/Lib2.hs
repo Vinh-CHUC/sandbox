@@ -1,4 +1,4 @@
-module Lib
+module Hithere.Lib2
     ( 
         someFunc,
         doubleMe
