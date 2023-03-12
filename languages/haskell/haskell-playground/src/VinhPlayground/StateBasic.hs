@@ -12,6 +12,9 @@ data TurnstileState = Locked | Unlocked
 data TurnstileOutput = Thanks | Open | Tut
     deriving (Eq, Show)
 
+-- The state processors, a.k.a. s -> (a, s)
+-- Can also be seen as "input" or "events"
+-- input state = output state
 coin, push :: TurnstileState -> (TurnstileOutput, TurnstileState)
 
 coin _ = (Thanks, Unlocked)
@@ -21,6 +24,8 @@ push Unlocked = (Open, Locked)
 
 monday :: TurnstileState -> ([TurnstileOutput], TurnstileState)
 monday s0 =
+    -- Simple case
+    -- The outputs (a's) aren't used for further computations
     let (a1, s1) = coin s0
         (a2, s2) = push s1
         (a3, s3) = push s2
@@ -42,6 +47,7 @@ distractedPerson s0 =
 
 hastyPerson s0 =
     let (a1, s1) = push s0
+    -- Output is used for subsequent steps here
     in case a1 of 
         Open -> ([a1], s1)
         _ ->
