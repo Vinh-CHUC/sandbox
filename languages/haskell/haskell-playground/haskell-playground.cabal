@@ -25,8 +25,8 @@ source-repository head
 
 library
   exposed-modules:
-      Hithere.Lib2
       Lib
+      VinhPlayground.StateBasic
   other-modules:
       Paths_haskell_playground
   hs-source-dirs:
