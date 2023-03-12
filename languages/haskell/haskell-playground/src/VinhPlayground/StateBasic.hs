@@ -14,7 +14,17 @@ data TurnstileOutput = Thanks | Open | Tut
 
 -- The state processors, a.k.a. s -> (a, s)
 -- Can also be seen as "input" or "events"
--- input state = output state
+-- To meditate:
+--
+-- f :: (input -> state) -> (output, state)
+-- f(input, state) = (output, state)
+--
+-- Currying given a a given input
+-- input -> (state -> (output, state))
+--
+-- Grouping by "types of input" aka events
+-- each (state -> (output, state)) represents an event or input (or rather class of events?), "state processor"
+-- What if we needed richer data associate with an input?
 coin, push :: TurnstileState -> (TurnstileOutput, TurnstileState)
 
 coin _ = (Thanks, Unlocked)
