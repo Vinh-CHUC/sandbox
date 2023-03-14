@@ -1,4 +1,5 @@
 import VinhPlayground.StateBasic as S
+import VinhPlayground.ListMonad as M
 import Test.Hspec
 import Test.QuickCheck
 import Control.Exception (evaluate)
