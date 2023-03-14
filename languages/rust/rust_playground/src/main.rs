@@ -1,6 +1,7 @@
 mod iterators;
 mod pointers;
 mod oo;
+mod patterns;
 
 use pointers::CustomSmartPointer;
 
