@@ -5,6 +5,7 @@ module VinhPlayground.ListMonad
         removeMultiplesOf5,
         test,
         test2,
+        test2_1,
         test2_2,
         test2_3
     ) where
@@ -37,14 +38,16 @@ test2 x = do
     z <- explodeBasedOnModulo3 y
     removeMultiplesOf5 z
 
+test2_1 :: Integer -> [Integer]
+test2_1 x = explodeBasedOnModulo2 x
+
 test2_2 :: Integer -> [Integer]
 test2_2 x =
     explodeBasedOnModulo2 x >>=
-        explodeBasedOnModulo3 >>= 
-            removeMultiplesOf5
+        (\y -> explodeBasedOnModulo3 y)
 
 test2_3 :: Integer -> [Integer]
 test2_3 x = 
     explodeBasedOnModulo2 x >>=
-        explodeBasedOnModulo3 >>= 
-            removeMultiplesOf5
+        (\y -> explodeBasedOnModulo3 y >>=
+            (\z -> removeMultiplesOf5 z))
