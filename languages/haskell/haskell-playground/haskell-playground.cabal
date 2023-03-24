@@ -27,6 +27,7 @@ library
   exposed-modules:
       Lib
       VinhPlayground.ListMonad
+      VinhPlayground.ReaderMonad
       VinhPlayground.StateBasic
   other-modules:
       Paths_haskell_playground
