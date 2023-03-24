@@ -49,5 +49,6 @@ test2_2 x =
 test2_3 :: Integer -> [Integer]
 test2_3 x = 
     explodeBasedOnModulo2 x >>=
-        (\y -> explodeBasedOnModulo3 y >>=
+        -- Could add more brackets (\y -> ( but they are redundant
+        (\y ->explodeBasedOnModulo3 y >>=
             (\z -> removeMultiplesOf5 z))
