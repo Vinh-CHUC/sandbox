@@ -12,6 +12,9 @@ describesLengthOfTheEnvironment s env = s ++ show (length env)
 
 test :: (String -> [String])
 test =
+-- Bind does something like r >> f = \e -> f (r e) e
+-- r is usually a function that is partially applied
+-- That's it!!
     appendToEnv "I am some suffix" >>=
         (\x -> describesLengthOfTheEnvironment "The length of the environment is " >>=
             (\y -> return [x, y]))
