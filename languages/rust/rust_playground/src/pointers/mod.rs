@@ -133,8 +133,11 @@ mod tests {
     #[test]
     fn deref_coercion_example() {
         let string_box = VinhsBox::new(String::from("hi"));
-        // This works as T (VinhsBox here) is a Deref<Target=String>
+
+        // these work as T (VinhsBox here) is a Deref<Target=String>
+        let _len = string_box.len();
         hello(&string_box);
+
         // otherwise we'd have to write something like &(*string_box)[..]
         // The more abstract rules are
         // &T to &U if T: Deref<Target=U>
