@@ -2,6 +2,7 @@ mod iterators;
 mod pointers;
 mod oo;
 mod patterns;
+mod concurrency;
 
 use pointers::CustomSmartPointer;
 
