@@ -3,7 +3,7 @@ channels:
   - conda-forge
 dependencies:
   - altair
-  - altait-viewer
+  - altair-viewer
   - conda-build
   - conda-lock
   - ipython

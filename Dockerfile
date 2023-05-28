@@ -17,7 +17,6 @@ WORKDIR /home/vinh
 RUN git clone --recursive https://github.com/Vinh-CHUC/config-files.git
 WORKDIR /home/vinh/config-files
 RUN make setup-zsh && make setup-tmux && make setup-nvim
-RUN touch yoo
 RUN nvim --headless -c 'autocmd User PackerComplete quitall' -c 'PackerSync'
 RUN nvim --headless -c 'autocmd User PackerComplete quitall' -c 'PackerSync'
 RUN nvim --headless +"TSInstallSync org" +qa
@@ -25,3 +24,21 @@ RUN nvim --headless +"TSInstallSync rust" +qa
 RUN nvim --headless +"TSInstallSync python" +qa
 RUN nvim --headless +"TSInstallSync typescript" +qa
 RUN nvim --headless +"TSInstallSync haskell" +qa
+
+WORKDIR /home/vinh
+
+##################################
+## Various language tool chains ##
+##################################
+
+# Miniconda
+RUN curl -LO https://repo.anaconda.com/miniconda/Miniconda3-py310_23.3.1-0-Linux-x86_64.sh
+RUN bash ./Miniconda3-py310_23.3.1-0-Linux-x86_64.sh -b
+
+################
+## Sandbox!!! ##
+################
+
+RUN git clone https://github.com/Vinh-CHUC/sandbox.git
+WORKDIR /home/vinh/sandbox
+RUN /home/vinh/miniconda3/bin/conda env create -f bayesian_statistics/python/conda.yml
