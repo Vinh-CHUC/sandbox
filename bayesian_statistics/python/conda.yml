@@ -14,7 +14,7 @@ dependencies:
   - pip
   - pymc
   - pyright
-  - python=3.11
+  - python=3.10
   - vega_datasets
   - pip:
     - black

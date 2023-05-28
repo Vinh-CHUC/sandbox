@@ -35,6 +35,10 @@ WORKDIR /home/vinh
 RUN curl -LO https://repo.anaconda.com/miniconda/Miniconda3-py310_23.3.1-0-Linux-x86_64.sh
 RUN bash ./Miniconda3-py310_23.3.1-0-Linux-x86_64.sh -b
 
+# rustup
+
+# ghcup
+
 ################
 ## Sandbox!!! ##
 ################
