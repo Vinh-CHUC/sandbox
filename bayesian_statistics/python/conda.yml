@@ -1,24 +1,26 @@
 name: bayes
 channels:
   - conda-forge
+  - defaults
 dependencies:
-  - altair
-  - altair_viewer
   - conda-build
   - conda-lock
-  - ipython
-  - jupyterlab
-  - jupytext
-  - scikit-learn
-  - pandas
-  - pip
-  - pymc
-  - pyright
-  - python=3.10
-  - vega_datasets
+  - ipython>=8
+  - jupyterlab>=4
+  - jupytext>=1
+  - numpy==1.24.3
+  - pandas==2.0.2
+  - pip>=23
+  - scikit-learn>=1
+  - pymc>=5
+  - python==3.11.3
   - pip:
+    - altair
+    - altair_viewer
     - black
     - bokeh
     - flake8
     - graphviz
+    - pyright
     - streamlit
+    - vega_datasets
