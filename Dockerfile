@@ -19,7 +19,6 @@ WORKDIR /home/vinh/config-files
 RUN make setup-zsh && make setup-tmux && make setup-nvim
 RUN nvim --headless -c 'autocmd User PackerComplete quitall' -c 'PackerSync'
 RUN nvim --headless -c 'autocmd User PackerComplete quitall' -c 'PackerSync'
-RUN nvim --headless +"TSInstallSync org" +qa
 RUN nvim --headless +"TSInstallSync rust" +qa
 RUN nvim --headless +"TSInstallSync python" +qa
 RUN nvim --headless +"TSInstallSync typescript" +qa
@@ -47,3 +46,4 @@ RUN /home/vinh/miniconda3/bin/conda config --set channel_priority strict
 
 RUN git clone https://github.com/Vinh-CHUC/sandbox.git
 WORKDIR /home/vinh/sandbox
+RUN /home/vinh/miniconda3/bin/conda env create -f bayesian_statistics/python/conda.yml
