@@ -53,3 +53,13 @@ WORKDIR /home/vinh/sandbox/languages/rust
 RUN cd rust_playground && PATH=$PATH:/home/vinh/.cargo/bin cargo build
 
 # haskell stack
+USER root
+RUN apt-get install -y libtinfo-dev
+
+USER vinh
+WORKDIR /home/vinh/sandbox/languages/haskell/haskell-playground
+RUN curl -sSL https://get.haskellstack.org/ -o get_haskellstack
+RUN chmod a+x get_haskellstack
+RUN echo vinh | sudo -S ./get_haskellstack
+RUN rm get_haskellstack
+RUN stack build
