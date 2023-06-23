@@ -68,6 +68,7 @@ RUN git clone https://github.com/sunface/rust-by-practice.git
 RUN git clone https://github.com/rust-lang/rust-by-example
 RUN git clone https://github.com/rust-lang/async-book.git
 RUN curl -LO https://docs.python.org/3/archives/python-3.11.4-docs-html.tar.bz2
+RUN PATH=$PATH:/home/vinh/.cargo/bin rustup component add rust-docs
 
 ###########################
 # Development environment #
@@ -82,4 +83,20 @@ RUN nvim --headless +"TSInstallSync typescript" +qa
 RUN nvim --headless +"TSInstallSync haskell" +qa
 RUN nvim --headless +"TSInstallSync org" +qa
 
+
+#########################
+# Bevy game development #
+#########################
+USER root
+RUN apt-get install -y g++ pkg-config libx11-dev libasound2-dev libudev-dev lld
+
+#################
+# Google Chrome #
+#################
+RUN apt-get install -y wget
+RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
+    && echo "deb http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list
+RUN apt-get update && apt-get -y install google-chrome-stable
+
+USER vinh
 WORKDIR /home/vinh/sandbox
