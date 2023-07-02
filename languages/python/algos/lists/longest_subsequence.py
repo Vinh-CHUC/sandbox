@@ -1,7 +1,8 @@
 from typing import Tuple
 
 
-class SolutionSimple:
+# Simple
+class Solution:
     def lengthOfLongestSubstring(self, s: str) -> int:
         longest_length = 0
         for i in range(len(s)):
@@ -14,12 +15,14 @@ class SolutionSimple:
         return longest_length
 
 
-assert SolutionSimple().lengthOfLongestSubstring("abcabcbb") == 3
-assert SolutionSimple().lengthOfLongestSubstring("bbbbbb") == 1
-assert SolutionSimple().lengthOfLongestSubstring("pwwkew") == 3
+assert Solution().lengthOfLongestSubstring("abcabcbb") == 3
+assert Solution().lengthOfLongestSubstring("bbbbbb") == 1
+assert Solution().lengthOfLongestSubstring("pwwkew") == 3
+assert Solution().lengthOfLongestSubstring("aab") == 2
+assert Solution().lengthOfLongestSubstring("tmmzuxt") == 5
 
-
-class MySolution:
+# Mine
+class Solution:
     # Returns the longest substrings without duplicates starting from start_idx
     # As well as where to start next
     def _helper(self, s, start_idx) -> Tuple[int, int]:
@@ -51,29 +54,34 @@ class MySolution:
         return longest_length
 
 
-assert MySolution().lengthOfLongestSubstring("abcabcbb") == 3
-assert MySolution().lengthOfLongestSubstring("bbbbbb") == 1
-assert MySolution().lengthOfLongestSubstring("pwwkew") == 3
+assert Solution().lengthOfLongestSubstring("abcabcbb") == 3
+assert Solution().lengthOfLongestSubstring("bbbbbb") == 1
+assert Solution().lengthOfLongestSubstring("pwwkew") == 3
+assert Solution().lengthOfLongestSubstring("aab") == 2
+assert Solution().lengthOfLongestSubstring("tmmzuxt") == 5
 
 
-class BestSolution:
+# Best
+class Solution:
     def lengthOfLongestSubstring(self, s: str) -> int:
-        current_longest_start = 0
         longest = 0
+
+        current_longest_start = 0
         char_to_idx = {}
 
         for i in range(len(s)):
             current_char = s[i]
-            if current_char in char_to_idx:
-                current_longest_start = i + 1
-                char_to_idx = {}
+            if char_to_idx.get(current_char, -1) >= current_longest_start:
+                current_longest_start = char_to_idx[current_char] + 1
             else:
-                char_to_idx[current_char] = i
                 longest = max(i - current_longest_start + 1, longest)
+            char_to_idx[current_char] = i
 
         return longest
 
 
-assert BestSolution().lengthOfLongestSubstring("abcabcbb") == 3
-assert BestSolution().lengthOfLongestSubstring("bbbbbb") == 1
-assert BestSolution().lengthOfLongestSubstring("pwwkew") == 3
+assert Solution().lengthOfLongestSubstring("abcabcbb") == 3
+assert Solution().lengthOfLongestSubstring("bbbbbb") == 1
+assert Solution().lengthOfLongestSubstring("tmmzuxt") == 5
+assert Solution().lengthOfLongestSubstring("pwwkew") == 3
+assert Solution().lengthOfLongestSubstring("aab") == 2
