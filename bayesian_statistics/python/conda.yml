@@ -13,6 +13,7 @@ dependencies:
   - pip>=23
   - scikit-learn>=1
   - pymc>=5
+  - pyright>=1.1.316
   - python==3.11.3
   - pip:
     - altair
@@ -21,6 +22,5 @@ dependencies:
     - bokeh
     - flake8
     - graphviz
-    - pyright
     - streamlit
     - vega_datasets

@@ -31,6 +31,8 @@ RUN /home/vinh/miniconda3/bin/conda update -n base -c defaults conda
 RUN /home/vinh/miniconda3/bin/conda config --set channel_priority strict
 
 RUN /home/vinh/miniconda3/bin/conda env create -f bayesian_statistics/python/conda.yml
+RUN rm ./Miniconda3-py310_23.3.1-0-Linux-x86_64.sh
+
 WORKDIR /home/vinh/config-files
 RUN PATH=$PATH:/home/vinh/miniconda3/envs/bayes/bin make setup-ipython
 
