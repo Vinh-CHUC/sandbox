@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from itertools import chain
 from typing import Dict, List
 VALID = ["((()))", "(()())", "(())()", "()(())", "()()()"]
 INVALID = ["())", ")", "((((", "(((())))))"]
@@ -87,6 +88,49 @@ class SolutionBackTrackingIterative:
 
 
 Solution = SolutionBackTrackingIterative
+assert set(Solution().generateParenthesis(3)) == set(
+    ["((()))", "(()())", "(())()", "()(())", "()()()"]
+)
+
+#################
+
+
+class SolutionRecursive:
+    def generateParenthesis(self, n: int) -> List[str]:
+        if n == 1:
+            return ["()"]
+        else:
+            subsolution = self.generateParenthesis(n - 1)
+            solutions = [
+                ["()" + s, "(" + s + ")", s + "()"]
+                for s in subsolution
+            ]
+            return [x for subl in solutions for x in subl]
+
+
+Solution = SolutionRecursive
+assert set(Solution().generateParenthesis(3)) == set(
+    ["((()))", "(()())", "(())()", "()(())", "()()()"]
+)
+
+#################
+
+
+class SolutionIterative:
+    def generateParenthesis(self, n: int) -> List[str]:
+        solutions: List[str] = []
+        for size in range(1, n + 1):
+            if size == 1:
+                solutions.append("()")
+            else:
+                solutions = list(chain(*[
+                    ["()" + s, "(" + s + ")", s + "()"]
+                    for s in solutions
+                ]))
+        return solutions
+
+
+Solution = SolutionIterative
 assert set(Solution().generateParenthesis(3)) == set(
     ["((()))", "(()())", "(())()", "()(())", "()()()"]
 )
