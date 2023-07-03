@@ -31,16 +31,18 @@ class SolutionBackTrackingRecursive:
         Receives a curr that has a score >= 0
         """
         match (len(curr), score):
+            case (_, _) if score < 0:
+                return []
             case (_, 0) if len(curr) == 2 * self.n:
                 return [curr]
             case (_, _) if len(curr) == 2 * self.n:
                 return []
+            case (_, _) if score > (2 * self.n - len(curr)):
+                return []
             case (_, _):
                 return (
                     self.do_generateParenthesis(curr + "(", score + 1)
-                    + (
-                        self.do_generateParenthesis(curr + ")", score - 1) if score >= 1 else []
-                    )
+                    + self.do_generateParenthesis(curr + ")", score - 1)
                 )
 
     def generateParenthesis(self, n: int) -> List[str]:
