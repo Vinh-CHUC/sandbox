@@ -28,9 +28,7 @@ class ListNode:
 
 
 class SolutionIter:
-    def reverseList(
-        self, l1: Union[ListNode, None]
-    ) -> Union[ListNode, None]:
+    def reverseList(self, l1: Union[ListNode, None]) -> Union[ListNode, None]:
         """
         *   *
             a->b->c->d->e
@@ -44,8 +42,10 @@ class SolutionIter:
                       * *
         <-a<-b<-c<-d-<e
         """
-        def loop_iter(prev: Union[ListNode, None], curr: Union[List, None]) -> Union[ListNode,
-                                                                                     None]:
+
+        def loop_iter(
+            prev: Union[ListNode, None], curr: Union[ListNode, None]
+        ) -> Union[ListNode, None]:
             match (prev, curr):
                 case (_, None):
                     return prev
@@ -53,24 +53,22 @@ class SolutionIter:
                     return loop_iter(ListNode(val), next)
                 case (ListNode(), ListNode(val=val, next=next)):
                     return loop_iter(ListNode(val, next=prev), next)
+
         return loop_iter(None, l1)
 
 
 Solution = SolutionIter
 
-reversed = Solution().reverseList(
-    ListNode.from_iter(DATA)
-)
+reversed = Solution().reverseList(ListNode.from_iter(DATA))
 assert reversed is not None and reversed.values() == DATA[::-1]
 assert Solution().reverseList(None) is None
 
 
 #################
 
+
 class SolutionIter2:
-    def reverseList(
-        self, l1: Union[ListNode, None]
-    ) -> Union[ListNode, None]:
+    def reverseList(self, l1: Union[ListNode, None]) -> Union[ListNode, None]:
         """
         *   *
             a->b->c->d->e
@@ -96,9 +94,7 @@ class SolutionIter2:
 
 Solution = SolutionIter2
 
-reversed = Solution().reverseList(
-    ListNode.from_iter(DATA)
-)
+reversed = Solution().reverseList(ListNode.from_iter(DATA))
 assert reversed is not None and reversed.values() == DATA[::-1]
 assert Solution().reverseList(None) is None
 
@@ -106,9 +102,7 @@ assert Solution().reverseList(None) is None
 
 
 class SolutionRec:
-    def do_reverseList(
-        self, l1: ListNode
-    ) -> Tuple[ListNode, ListNode]:
+    def do_reverseList(self, l1: ListNode) -> Tuple[ListNode, ListNode]:
         match l1:
             case ListNode(val=_, next=None):
                 return (l1, l1)
@@ -118,9 +112,7 @@ class SolutionRec:
                 last.next.next = None
                 return first, l1
 
-    def reverseList(
-        self, l1: Union[ListNode, None]
-    ) -> Union[ListNode, None]:
+    def reverseList(self, l1: Union[ListNode, None]) -> Union[ListNode, None]:
         if l1 is None:
             return None
 
@@ -130,8 +122,6 @@ class SolutionRec:
 
 Solution = SolutionRec
 
-reversed = Solution().reverseList(
-    ListNode.from_iter(DATA)
-)
+reversed = Solution().reverseList(ListNode.from_iter(DATA))
 assert reversed is not None and reversed.values() == DATA[::-1]
 assert Solution().reverseList(None) is None
