@@ -70,11 +70,11 @@ class TreeNode:
         match self:
             case TreeNode(val=val, left=None, right=None):
                 return [val]
-            case TreeNode(val=val, left=None, right=right):
+            case TreeNode(val=val, left=None, right=TreeNode() as right):
                 return [val] + right.df_traversal()
-            case TreeNode(val=val, left=left, right=None):
+            case TreeNode(val=val, left=TreeNode() as left, right=None):
                 return [val] + left.df_traversal()
-            case TreeNode(val=val, left=left, right=right):
+            case TreeNode(val=val, left=TreeNode() as left, right=TreeNode() as right):
                 return [val] + left.df_traversal() + right.df_traversal()
 
     def df_traversal_iter(self) -> List[int]:

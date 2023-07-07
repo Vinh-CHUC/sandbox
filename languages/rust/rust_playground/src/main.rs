@@ -3,6 +3,7 @@ mod pointers;
 mod oo;
 mod patterns;
 mod concurrency;
+mod types;
 
 use pointers::CustomSmartPointer;
 
