@@ -12,3 +12,11 @@ rm-containers:
 	podman ps --filter status=exited -q | xargs podman rm
 prune:
 	podman system prune -a
+
+machine-big:
+	podman machine set --memory=8192
+	podman machine set --cpus=2
+
+machine-small:
+	podman machine set --memory=4096
+	podman machine set --cpus=1
