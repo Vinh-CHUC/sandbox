@@ -1,4 +1,5 @@
 from functools import lru_cache
+from typing import List, Optional
 
 
 class SolutionBruteForce:
@@ -19,8 +20,6 @@ Solution = SolutionBruteForce
 
 assert Solution().longestPalindrome("babad") == "bab"
 assert Solution().longestPalindrome("cbbd") == "bb"
-
-###
 
 
 # Think of the top-right of a [N;N] matrix where N = len(s)
@@ -47,6 +46,37 @@ class SolutionDP:
 
 
 Solution = SolutionDP
+
+assert Solution().longestPalindrome("babad") == "bab"
+assert Solution().longestPalindrome("cbbd") == "bb"
+
+
+# Think of the top-right of a [N;N] matrix where N = len(s)
+class SolutionDPNoLRUCache:
+    def longestPalindrome(self, s: str) -> str:
+        longest = "" if not s else s[0]
+
+        DP: List[List[Optional[bool]]] = []
+        for i in range(len(s)):
+            DP.append([None] * len(s))
+
+        for i in range(len(s)):
+            DP[i][i] = True
+
+        for diag_id in range(1, len(s)):
+            for i, j in zip(range(len(s) - diag_id), range(diag_id, len(s))):
+                if i + 1 == j:
+                    DP[i][j] = s[i] == s[j]
+                else:
+                    DP[i][j] = DP[i+1][j-1] and (s[i] == s[j])
+
+                if DP[i][j] and j - i + 1 > len(longest):
+                    longest = s[i:j+1]
+
+        return longest
+
+
+Solution = SolutionDPNoLRUCache
 
 assert Solution().longestPalindrome("babad") == "bab"
 assert Solution().longestPalindrome("cbbd") == "bb"
