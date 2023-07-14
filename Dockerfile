@@ -93,9 +93,19 @@ RUN nvim --headless +"TSInstallSync org" +qa
 #################
 # Google Chrome #
 #################
+USER root
 RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
     && echo "deb http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list
 RUN apt-get update && apt-get -y install google-chrome-stable
+
+USER vinh
+WORKDIR /home/vinh/sandbox
+
+COPY . .
+USER root
+RUN chown -R vinh:vinh .
+USER vinh
+RUN /home/vinh/miniconda3/bin/conda env create -f languages/python/iso_assignment/conda.yml
 
 USER vinh
 WORKDIR /home/vinh/sandbox
