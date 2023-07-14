@@ -1,7 +1,11 @@
 FROM ubuntu:lunar
 RUN apt-get update && apt-get install -y --no-install-recommends
-RUN apt-get install -y git gh build-essential curl gawk sudo tmux tree zsh && apt-get clean
+RUN apt-get install -y git gh build-essential curl gawk sudo tmux tree wget zsh && apt-get clean
+# Requirements for bevy game development
+RUN apt-get install -y g++ pkg-config libx11-dev libasound2-dev libudev-dev lld libwayland-dev libxkbcommon-dev
 RUN apt-get install -y bat fd-find ripgrep
+# Useful to debug whether graphical apps work from container
+RUN apt-get install -y x11-apps
 
 # Install neovim
 RUN curl -LO https://github.com/neovim/neovim/releases/latest/download/nvim.appimage
@@ -54,6 +58,7 @@ RUN PATH=$PATH:/home/vinh/.cargo/bin rustup component add rust-analyzer
 RUN PATH=$PATH:/home/vinh/.cargo/bin cargo install ttyper
 WORKDIR /home/vinh/sandbox/languages/rust
 RUN cd rust_playground && PATH=$PATH:/home/vinh/.cargo/bin cargo build
+RUN cd bevy_playground && PATH=$PATH:/home/vinh/.cargo/bin cargo build
 
 ##################
 ## Touch Typing ##
@@ -85,17 +90,9 @@ RUN nvim --headless +"TSInstallSync typescript" +qa
 RUN nvim --headless +"TSInstallSync haskell" +qa
 RUN nvim --headless +"TSInstallSync org" +qa
 
-
-#########################
-# Bevy game development #
-#########################
-USER root
-RUN apt-get install -y g++ pkg-config libx11-dev libasound2-dev libudev-dev lld
-
 #################
 # Google Chrome #
 #################
-RUN apt-get install -y wget
 RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
     && echo "deb http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list
 RUN apt-get update && apt-get -y install google-chrome-stable

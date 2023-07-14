@@ -5,7 +5,8 @@ build:
 push:
 	podman push $(IMAGE_NAME)
 run:
-	podman run -it $(IMAGE_NAME) zsh
+	# For display whatever $DISPLAY says when one opens a terminal from xquartz
+	podman run --privileged -it -e DISPLAY=host.containers.internal:0 $(IMAGE_NAME) zsh
 rebuild: rm-containers prune build
 
 rm-containers:
@@ -20,3 +21,7 @@ machine-big:
 machine-small:
 	podman machine set --memory=4096
 	podman machine set --cpus=1
+
+osx_install_xquartz:
+	brew cask install xquartz
+	/opt/X11/bin/xhost + 127.0.0.1
