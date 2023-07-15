@@ -47,5 +47,7 @@ class SentimentClassification:
             modelName=data.get("modelName", ""),
             modelVersion=data.get("modelVersion", uuid.uuid4()),
             reviewId=data.get("reviewId", ""),
-            modelOutput=[Sentiment.from_json(label) for label in data.get("modelOutput", [])]
+            modelOutput=[
+                Sentiment.from_json(label) for label in data.get("modelOutput", [])
+            ],
         )

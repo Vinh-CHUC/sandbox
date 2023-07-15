@@ -21,7 +21,9 @@ ReviewUUID = UUID
 class ErrorCode(Enum):
     REVIEW_ID_NOT_FOUND = "ReviewId not found"
     MODEL_ID_NOT_FOUND = "ModelId not found"
-    NO_CLASSIFICATION_FOUND_FOR_REVIEW = "No classification found for review"
+    NO_CLASSIFICATION_FOUND_FOR_REVIEW = (
+        "The model didn't produce any recommendations for review"
+    )
     NO_MODEL_RECOMMENDATIONS = (
         "None of the models for the review have any recommendations"
     )
@@ -84,20 +86,29 @@ class FakeNoSQLDBClient:
         else:
             return Confidence.LOW_CONFIDENCE
 
-    def topPositiveSentiments(self, reviewId: UUID, modelId: Optional[UUID]):
+    # If I had more time: a better type annotation? Literal[..] ?
+    def topPositiveSentiments(
+        self, reviewId: UUID, modelId: Optional[UUID]
+    ) -> List[str]:
         high_confidence_sentiments: List[Sentiment] = self._getHighConfidenceSentiments(
             reviewId, modelId
         )
         return [
-            s for s in high_confidence_sentiments if s.sentiment in ["happy", "amused"]
+            s.sentiment
+            for s in high_confidence_sentiments
+            if s.sentiment in ["happy", "amused"]
         ]
 
-    def topNegativeSentiments(self, reviewId: UUID, modelId: Optional[UUID]):
+    def topNegativeSentiments(
+        self, reviewId: UUID, modelId: Optional[UUID]
+    ) -> List[str]:
         high_confidence_sentiments: List[Sentiment] = self._getHighConfidenceSentiments(
             reviewId, modelId
         )
         return [
-            s for s in high_confidence_sentiments if s.sentiment in ["angry", "sad"]
+            s.sentiment
+            for s in high_confidence_sentiments
+            if s.sentiment in ["angry", "sad"]
         ]
 
     def _getHighConfidenceSentiments(self, reviewId: UUID, modelId: Optional[UUID]):
