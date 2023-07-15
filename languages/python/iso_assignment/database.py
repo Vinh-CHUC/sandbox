@@ -7,6 +7,7 @@ I didn't add any logic around modifying records, given that the API is made of r
 """
 from dataclasses import dataclass
 from enum import Enum
+from functools import lru_cache
 from typing import List, Dict, Optional
 from uuid import UUID
 
@@ -157,3 +158,23 @@ class FakeNoSQLDBClient:
     def add(self, sc: dict):
         assert "reviewId" in sc
         self.data.setdefault(sc["reviewId"], []).append(sc)
+
+
+@lru_cache(maxsize=None)
+def get_db_conn() -> FakeNoSQLDBClient:
+    from tests.utils.core_types_factories import SentimentClassificationFactory
+    from uuid import UUID
+
+    db_client = FakeNoSQLDBClient(data={})
+    classifications = [SentimentClassificationFactory.create() for _ in range(20)]
+    for c in classifications:
+        db_client.add(c)
+
+    # An entry with hardcoded ids easier to debug when playing with /docs
+    db_client.add(
+        SentimentClassificationFactory.create(
+            modelId=UUID("26ac8df3-441c-4fca-bb74-d48e9cbdebcd"),
+            reviewId=UUID("58e9fe3b-711b-4337-94fb-0c19ac292990"),
+        )
+    )
+    return db_client
