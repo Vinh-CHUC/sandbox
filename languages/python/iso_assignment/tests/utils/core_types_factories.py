@@ -29,6 +29,7 @@ class BaseFactory(Generic[T], Factory):
 
 
 """
+Using factory-boy quite an expressive way to generate fake data
 These factories are random by design, it could be an issue if the tests are flawed and do depend on
 the random part, tests might then be flaky. To mitigate this:
     - fix the random seed()

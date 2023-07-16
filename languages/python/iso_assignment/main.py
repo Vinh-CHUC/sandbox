@@ -1,5 +1,5 @@
 """
-The main API logic
+The main API logic, using FastAPI() as it's very quick to get started
 
 If I had more time, the logic of the methods could be moved to another module. This is overkill
 given that the API logic in the context of this exercise is quite thin. Other things I'd address:
