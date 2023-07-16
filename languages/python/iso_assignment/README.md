@@ -4,7 +4,10 @@
 ```
 ## The name of environment is "iso", change if needs be
 conda env create -f conda.yml
+conda activate iso
 ```
+Alternatively any recent Python installation should just work, the only dependencies are
+`factory-boy`, `fastapi[all]` and `pytest`
 
 ### Run the tests
 ```
