@@ -72,6 +72,7 @@ utils/core_types_factories.py
    I've omitted some that were very close variations to existing ones. See details in tests files
 2. Various nitpicks like having more constants instead of repeated static strings, better type
    annotations in a couple places.
+3. Do a code covage analysis to understand where the gaps are.
 
 I deliberately omitted the pagination API method as I thought it's weird. In real life I would have
 asked for some clarification from the users.
