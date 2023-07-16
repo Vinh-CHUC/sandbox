@@ -11,7 +11,7 @@ have been possible the other way around (unless we don't use python typing).
 
 tl'dr the raw dicts allow to represent more states (e.g. invalid data)
 """
-from factory import Factory, fuzzy, LazyFunction, SubFactory, generate
+from factory import Factory, fuzzy, LazyFunction
 from typing import List
 import random
 import uuid
@@ -21,11 +21,19 @@ SENTIMENTS = ["happy", "amused", "sad", "angry", "other"]
 T = TypeVar("T")
 
 
-# Trick to have create() by typing compatible
+# Trick to have create() typing compatible
 class BaseFactory(Generic[T], Factory):
     @classmethod
     def create(cls, **kwargs) -> T:
         return super().create(**kwargs)
+
+
+"""
+These factories are random by design, it could be an issue if the tests are flawed and do depend on
+the random part, tests might then be flaky. To mitigate this:
+    - fix the random seed()
+    - ensure we print the data to stdout when tests fail
+"""
 
 
 class SentimentFactory(BaseFactory[dict]):
@@ -48,7 +56,7 @@ def generate_sentiments() -> List[dict]:
     # I'm assuming each label has its own probability
     ret = []
     for s in SENTIMENTS:
-        # Ensuring we have diverse enough data by having frequent "non-confident" 
+        # Ensuring we have diverse enough data by having frequent "non-confident"
         if random.random() > 0.6:
             ret.append(
                 SentimentFactory(

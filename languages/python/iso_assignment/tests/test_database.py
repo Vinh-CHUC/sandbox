@@ -4,6 +4,8 @@ This aims to be quite exhaustive and conceptually exercise all the code paths in
 
 For each method there's a TestClass with multiple cases for happy and unhappy paths
 
+I use factories to keep the tests concise and help focus the attention to the relevant data
+
 Given that this is a Fake implementation, load/performance testing is out of scope
 """
 import uuid
@@ -116,6 +118,7 @@ class TestGetSentimentModelRecommendation:
 class TestGetTopSentimentConfidence:
     """
     Is the >= vs > useful in practice? Given that probabilities are quite precise usually
+    Would be interesting to clarify with stakeholders
     """
     def test_threshold_is_gt_not_gte(self, fake_db_client: FakeNoSQLDBClient):
         sentiments = [

@@ -4,6 +4,8 @@ A fake NoSQLDB for test purposes
 The goal is to be able to run tests against it
 
 I didn't add any logic around modifying records, given that the API is made of read-only methods
+
+There are various TODOs in this code, i'd done them if I had more time
 """
 from dataclasses import dataclass
 from enum import Enum
@@ -14,8 +16,9 @@ from uuid import UUID
 from core_types import SentimentClassification, Sentiment
 
 
-# If I had more time could have created an actual wrapper type to represent this, it'd be more
-# robut type-wise
+# TODO If I had more time could have created an actual wrapper type to represent this, it'd be more
+# robut type-wise. e.g. it would allow the type-checker to catch bugs like trying to use a
+# ReviewUUID where we need a ModelUUID
 ReviewUUID = UUID
 
 
@@ -30,6 +33,7 @@ class ErrorCode(Enum):
     )
 
 
+# TODO: a exception for each error code
 class SentimentDBException(Exception):
     def __init__(self, message):
         super().__init__(message)
@@ -47,24 +51,24 @@ class Confidence:
 
 @dataclass
 class FakeNoSQLDBClient:
+    """
+    There is 1:1 mapping between the public methods and the API ones
+    I've tried to factor out most of the common logic into various helpers (private methods)
+    """
     data: Dict[UUID, List[Dict]]
 
     # If I had more time, create a separate class to hold the metadata only (without the output)
+    # The modelOutput is truncated in the API
     def getSentimentModelMetadata(
         self, reviewId: UUID, modelId: Optional[UUID]
     ) -> SentimentClassification:
         return self._getSentimentClassification(reviewId, modelId)
 
     """
-    The corresponding API call accepts a modelId but this is quite odd?
-        - Given that the list of labels is quite small, pagination would only make sense if one
-          wanted to retrieve all the recommendations for a review?
-
-    Chose to skip this, IRL I'd talk to people and confirm things, change the rest API to
+    Chose not to implement this see comment in main.py
     """
-
     def getSentimentModelRecommendations(
-        self, _reviewId: UUID, _pages: int, _pageLimit: int
+        self, _reviewId: UUID, _pages: int, _pageLimit: int, _modelID: Optional[UUID]
     ) -> List[Sentiment]:
         return []
 
@@ -97,6 +101,7 @@ class FakeNoSQLDBClient:
         return [
             s.sentiment
             for s in high_confidence_sentiments
+            # TODO use literal constants
             if s.sentiment in ["happy", "amused"]
         ]
 
@@ -109,6 +114,7 @@ class FakeNoSQLDBClient:
         return [
             s.sentiment
             for s in high_confidence_sentiments
+            # TODO use literal constants
             if s.sentiment in ["angry", "sad"]
         ]
 
@@ -135,6 +141,8 @@ class FakeNoSQLDBClient:
         if modelId is None:
             # In a real life scenario we'd have to come up with some strategy to pick the default
             # model, most recent version from some hardcoded model name?
+            # If I had more time I would have implemented this, ie one of the models is defined as
+            # being the default
             classifications = self.data[reviewID][:1]
         else:
             classifications = [

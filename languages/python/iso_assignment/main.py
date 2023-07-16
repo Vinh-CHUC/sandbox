@@ -1,28 +1,32 @@
 """
 The main API logic
 
-If I had more time:
+If I had more time, the logic of the methods could be moved to another module. This is overkill
+given that the API logic in the context of this exercise is quite thin. Other things I'd address:
     - the error handling for invalid UUID could be more robust
-    - the routes definition could be wrapped in their own class with a db_connection attribute
-    to easily inject the fake database for easier testing (instead of mocking)
-    - the route URLs could be constant (to be shared with tests easily), althought it might be good
+    - the routes definition could be somehow wrapped in their own class with a db_connection
+    attribute to easily inject the fake database for easier testing (instead of monkeypatching)
+    - the route URLs could be constants (to be shared with tests easily), althought it might be good
       to repeat them? lowers risk of typos
 """
 import dataclasses
 from functools import wraps
-from typing import Optional, Union
+from typing import Optional
 from uuid import UUID
 
 
 from fastapi import FastAPI, HTTPException
 
 import database
-from tests.utils.core_types_factories import SentimentClassificationFactory
 
 app = FastAPI()
 
 
 def handle_400_404(func):
+    """
+    All methods share common logic around dealing with invalid UUIDs, not found reviewId/modelID
+    This decorator encapsulates this
+    """
     @wraps(func)
     def wrapper(*args, **kwargs):
         try:
@@ -55,6 +59,7 @@ def sentimentModelMetadata(reviewId: str, modelId: Optional[str] = None):
         UUID(reviewId), UUID(modelId) if modelId else None
     )
     ret = dataclasses.asdict(ret)
+    # TODO: this is a hack we should create a proper type for this
     del ret["modelOutput"]
     return ret
 
@@ -71,7 +76,7 @@ def sentimentModelRecommendations(
     pageLimit: int,
     modelId: Optional[str] = None,
 ):
-    return {}
+    raise NotImplementedError
 
 
 @app.get("/sentimentModelCount/{reviewId}")

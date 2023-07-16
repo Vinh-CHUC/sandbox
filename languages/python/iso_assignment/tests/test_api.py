@@ -2,7 +2,10 @@
 Tests for the API itself
 
 Here we're not trying to exercise all the code paths in the database code but rather the code in
-the API itself: the 400/404 errors mainly
+the API itself: the 400/404 errors mainly.
+We still need to populate some data in the database, so these tests are somewhat coupled to it.
+In a real world/more complex scenario, the API could use a higher-level db client and we could mock
+that one.
 
 We're limiting ourselves to checking the status codes mostly (given that the api logic is very
 thin), in real life it's good to eyeball the results through manual curling (or the FastAPI
@@ -44,6 +47,10 @@ def get_db_conn():
 
 TEST_CLIENT = TestClient(app)
 
+"""
+Each API method has its test case
+"""
+
 
 def test_sentimentModelMetadata(monkeypatch):
     monkeypatch.setattr(database, "get_db_conn", get_db_conn)
@@ -57,6 +64,8 @@ def test_sentimentModelMetadata(monkeypatch):
     resp = TEST_CLIENT.get("/sentimentModelMetadata/notvalidUUID")
     assert resp.status_code == 400
 
+    # Note this "a" is still a valid hex for a UUID, if it wasn't we'd trigger the 400 instead of
+    # 404
     non_existant_uuid_str = "a" + REVIEW_ID[1:]
     resp = TEST_CLIENT.get(f"/sentimentModelMetadata/{non_existant_uuid_str}")
     assert resp.status_code == 404
@@ -79,6 +88,8 @@ def test_topSentimentConfidence(monkeypatch):
     assert resp.status_code == 200
     data = resp.json()
     assert data == "high"
+
+    # If I had more time also try with medium/low
 
     # If I had more time: would repeat the 400/404 tests
 
