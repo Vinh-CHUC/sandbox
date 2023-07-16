@@ -34,6 +34,16 @@ class DPInfo:
     last_element_val: int
 
 
+"""
+Philosophical point: we necessarily depend on the results for *all* entries in dp_array
+The nature of the problem (increasing) makes it so, solution(i) does not depend on only
+solution(i-1)
+e.g.
+              *
+-10, 1, 2, 3, -9, -8, -7, -6, -5
+
+We have to go back all the way to -10
+"""
 class SolutionDP:
     def lengthOfLIS(self, nums: List[int]) -> int:
         longest = 0
