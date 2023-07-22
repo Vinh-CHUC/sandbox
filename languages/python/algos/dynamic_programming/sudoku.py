@@ -58,7 +58,7 @@ class SolutionInPlace:
                     case candidates:
                         for c in candidates:
                             board[x][y] = str(c)
-                            if self.do_solveSudoku(board) == True:
+                            if self.do_solveSudoku(board):
                                 return True
                         board[x][y] = "."
                         return False
