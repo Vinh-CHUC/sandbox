@@ -33,13 +33,13 @@ class TreeNode:
         while elements:
             node = nodes.popleft()
             el = elements.popleft()
-            if el:
+            if el is not None:
                 node.left = TreeNode(el)
                 nodes.append(node.left)
 
             if elements:
                 el = elements.popleft()
-                if el:
+                if el is not None:
                     node.right = TreeNode(el)
                     nodes.append(node.right)
 
