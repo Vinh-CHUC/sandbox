@@ -100,12 +100,3 @@ RUN apt-get update && apt-get -y install google-chrome-stable
 
 USER vinh
 WORKDIR /home/vinh/sandbox
-
-COPY . .
-USER root
-RUN chown -R vinh:vinh .
-USER vinh
-RUN /home/vinh/miniconda3/bin/conda env create -f languages/python/iso_assignment/conda.yml
-
-USER vinh
-WORKDIR /home/vinh/sandbox

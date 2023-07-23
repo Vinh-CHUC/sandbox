@@ -5,8 +5,13 @@ build:
 push:
 	podman push $(IMAGE_NAME)
 run:
-	# For display whatever $DISPLAY says when one opens a terminal from xquartz
-	podman run --privileged -p 8000:8000 -it -e DISPLAY=host.containers.internal:0 $(IMAGE_NAME) zsh
+	podman run \
+		--privileged \
+		-p 8000:8000 \
+		-it \
+		-e DISPLAY=host.containers.internal:0 \
+		$(IMAGE_NAME) \
+		zsh
 
 rebuild: rm-containers prune build
 
