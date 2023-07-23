@@ -1,3 +1,4 @@
+import math
 from collections import deque
 from copy import deepcopy
 from dataclasses import dataclass
@@ -118,29 +119,20 @@ Too slow to pass on leetcode (as I can't implement __hash__ for TreeNode)
 """
 
 
-class Solution:
+class SolutionVinh:
     @lru_cache(maxsize=None)
     def maxPathFromRoot(self, root: Optional[TreeNode]) -> int:
         match root:
             case TreeNode(val=val, left=None, right=None):
                 return val
             case TreeNode(val=val, left=None, right=right):
-                return max(
-                    val + self.maxPathFromRoot(right),
-                    val
-                )
+                return max(val + self.maxPathFromRoot(right), val)
             case TreeNode(val=val, left=left, right=None):
-                return max(
-                    val + self.maxPathFromRoot(left),
-                    val
-                )
+                return max(val + self.maxPathFromRoot(left), val)
             case TreeNode(val=val, left=left, right=right):
                 return max(
-                    val + max(
-                        self.maxPathFromRoot(left),
-                        self.maxPathFromRoot(right)
-                    ),
-                    val
+                    val + max(self.maxPathFromRoot(left), self.maxPathFromRoot(right)),
+                    val,
                 )
 
     def maxPathSum(self, root: Optional[TreeNode]) -> int:
@@ -149,16 +141,10 @@ class Solution:
                 return val
             case TreeNode(val=val, left=None, right=right):
                 return max(
-                    val + self.maxPathFromRoot(right),
-                    self.maxPathSum(right),
-                    val
+                    val + self.maxPathFromRoot(right), self.maxPathSum(right), val
                 )
             case TreeNode(val=val, left=left, right=None):
-                return max(
-                    val + self.maxPathFromRoot(left),
-                    self.maxPathSum(left),
-                    val
-                )
+                return max(val + self.maxPathFromRoot(left), self.maxPathSum(left), val)
             case TreeNode(val=val, left=left, right=right):
                 max_from_left = self.maxPathFromRoot(left)
                 max_from_right = self.maxPathFromRoot(right)
@@ -168,8 +154,11 @@ class Solution:
                     val + max_from_right,
                     self.maxPathSum(left),
                     self.maxPathSum(right),
-                    val
+                    val,
                 )
+
+
+Solution = SolutionVinh
 
 
 assert Solution().maxPathSum(TreeNode.from_breadthfirst([1, 2, 3])) == 6
@@ -181,3 +170,36 @@ assert Solution().maxPathSum(TreeNode.from_breadthfirst([-3])) == -3
 assert Solution().maxPathSum(TreeNode.from_breadthfirst([2, -1])) == 2
 assert Solution().maxPathSum(TreeNode.from_breadthfirst([-2, -1])) == -1
 assert Solution().maxPathSum(TreeNode.from_breadthfirst([1, -2, 3])) == 4
+
+
+class SolutionBest:
+    def gainFromSubtree(self, root: Optional[TreeNode]) -> Tuple[int, int]:
+        match root:
+            case None:
+                return 0, -math.inf
+            case TreeNode(val=val, left=left, right=right):
+                left_g, max_l = self.gainFromSubtree(left)
+                right_g, max_r = self.gainFromSubtree(right)
+                g = val + max(left_g, right_g, 0)
+                return (g, max(val + max(left_g, 0) + max(right_g, 0), max_l, max_r))
+
+    def maxPathSum(self, root: Optional[TreeNode]) -> int:
+        return self.gainFromSubtree(root)[1]
+
+
+Solution = SolutionBest
+
+
+assert Solution().maxPathSum(TreeNode.from_breadthfirst([1, 2, 3])) == 6
+assert (
+    Solution().maxPathSum(TreeNode.from_breadthfirst([-10, 9, 20, None, None, 15, 7]))
+    == 42
+)
+assert Solution().maxPathSum(TreeNode.from_breadthfirst([-3])) == -3
+assert Solution().maxPathSum(TreeNode.from_breadthfirst([2, -1])) == 2
+assert Solution().maxPathSum(TreeNode.from_breadthfirst([-2, -1])) == -1
+assert Solution().maxPathSum(TreeNode.from_breadthfirst([1, -2, 3])) == 4
+assert (
+    Solution().maxPathSum(TreeNode.from_breadthfirst([1, -2, -3, 1, 3, -2, None, -1]))
+    == 3
+)
