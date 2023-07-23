@@ -110,17 +110,17 @@ class TreeNode:
 
 
 class SolutionConvoluted:
-    def radiusThroughRoot(self, root: Optional[TreeNode]) -> int:
+    def LongestFromRoot(self, root: Optional[TreeNode]) -> int:
         match root:
             case TreeNode(left=None, right=None):
                 return 0
             case TreeNode(left=left, right=None):
-                return 1 + self.radiusThroughRoot(left)
+                return 1 + self.LongestFromRoot(left)
             case TreeNode(left=None, right=right):
-                return 1 + self.radiusThroughRoot(right)
+                return 1 + self.LongestFromRoot(right)
             case TreeNode(left=left, right=right):
                 return 1 + max(
-                    self.radiusThroughRoot(left), self.radiusThroughRoot(right)
+                    self.LongestFromRoot(left), self.LongestFromRoot(right)
                 )
             case _:
                 raise AssertionError
@@ -131,17 +131,17 @@ class SolutionConvoluted:
                 return 0
             case TreeNode(left=left, right=None):
                 return max(
-                    1 + self.radiusThroughRoot(left),
+                    1 + self.LongestFromRoot(left),
                     self.diameterOfBinaryTree(left)
                 )
             case TreeNode(left=None, right=right):
                 return max(
-                    1 + self.radiusThroughRoot(right),
+                    1 + self.LongestFromRoot(right),
                     self.diameterOfBinaryTree(right)
                 )
             case TreeNode(left=left, right=right):
                 return max(
-                    2 + self.radiusThroughRoot(left) + self.radiusThroughRoot(right),
+                    2 + self.LongestFromRoot(left) + self.LongestFromRoot(right),
                     self.diameterOfBinaryTree(left),
                     self.diameterOfBinaryTree(right),
                 )
@@ -150,7 +150,6 @@ class SolutionConvoluted:
 
 
 Solution = SolutionConvoluted
-
 
 assert (
     Solution().diameterOfBinaryTree(TreeNode.from_breadthfirst(list(range(1, 6)))) == 3
