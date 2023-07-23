@@ -2,6 +2,7 @@ from collections import deque
 from copy import deepcopy
 from dataclasses import dataclass
 from itertools import chain
+from functools import lru_cache
 from typing import Deque, List, Optional, Tuple, Union
 
 
@@ -44,6 +45,9 @@ class TreeNode:
                     nodes.append(node.right)
 
         return root
+
+    def __hash__(self):
+        return id(self)
 
     def bf_traversal(self) -> List[int]:
         ret = []
@@ -109,37 +113,71 @@ class TreeNode:
         return ",".join([str(i) for i in self.bf_traversal()])
 
 
+"""
+Too slow to pass on leetcode (as I can't implement __hash__ for TreeNode)
+"""
+
+
 class Solution:
-    def flipEquiv(self, root1: Optional[TreeNode], root2: Optional[TreeNode]) -> bool:
-        match (root1, root2):
-            case None, None:
-                return True
-            case (TreeNode(), None) | (None, TreeNode()):
-                return False
-            case (
-                TreeNode(val=val1),
-                TreeNode(val=val2),
-            ) if val1 != val2:
-                return False
-            case (
-                TreeNode(val=val1, left=left_1, right=right_1),
-                TreeNode(val=val2, left=left_2, right=right_2),
-            ):
-                return (
-                    self.flipEquiv(left_1, left_2) and self.flipEquiv(right_1, right_2)
-                ) or (
-                    self.flipEquiv(left_1, right_2) and self.flipEquiv(right_1, left_2)
+    @lru_cache(maxsize=None)
+    def maxPathFromRoot(self, root: Optional[TreeNode]) -> int:
+        match root:
+            case TreeNode(val=val, left=None, right=None):
+                return val
+            case TreeNode(val=val, left=None, right=right):
+                return max(
+                    val + self.maxPathFromRoot(right),
+                    val
                 )
-            case _:
-                raise AssertionError
+            case TreeNode(val=val, left=left, right=None):
+                return max(
+                    val + self.maxPathFromRoot(left),
+                    val
+                )
+            case TreeNode(val=val, left=left, right=right):
+                return max(
+                    val + max(
+                        self.maxPathFromRoot(left),
+                        self.maxPathFromRoot(right)
+                    ),
+                    val
+                )
+
+    def maxPathSum(self, root: Optional[TreeNode]) -> int:
+        match root:
+            case TreeNode(val=val, left=None, right=None):
+                return val
+            case TreeNode(val=val, left=None, right=right):
+                return max(
+                    val + self.maxPathFromRoot(right),
+                    self.maxPathSum(right),
+                    val
+                )
+            case TreeNode(val=val, left=left, right=None):
+                return max(
+                    val + self.maxPathFromRoot(left),
+                    self.maxPathSum(left),
+                    val
+                )
+            case TreeNode(val=val, left=left, right=right):
+                max_from_left = self.maxPathFromRoot(left)
+                max_from_right = self.maxPathFromRoot(right)
+                return max(
+                    val + max_from_left + max_from_right,
+                    val + max_from_left,
+                    val + max_from_right,
+                    self.maxPathSum(left),
+                    self.maxPathSum(right),
+                    val
+                )
 
 
-assert Solution().flipEquiv(
-    TreeNode.from_breadthfirst([1, 2, 3, 4, 5, 6, None, None, None, 7, 8]),
-    TreeNode.from_breadthfirst([1, 3, 2, None, 6, 4, 5, None, None, None, None, 8, 7]),
+assert Solution().maxPathSum(TreeNode.from_breadthfirst([1, 2, 3])) == 6
+assert (
+    Solution().maxPathSum(TreeNode.from_breadthfirst([-10, 9, 20, None, None, 15, 7]))
+    == 42
 )
-assert Solution().flipEquiv(None, None)
-assert not Solution().flipEquiv(
-    None,
-    TreeNode.from_breadthfirst([1]),
-)
+assert Solution().maxPathSum(TreeNode.from_breadthfirst([-3])) == -3
+assert Solution().maxPathSum(TreeNode.from_breadthfirst([2, -1])) == 2
+assert Solution().maxPathSum(TreeNode.from_breadthfirst([-2, -1])) == -1
+assert Solution().maxPathSum(TreeNode.from_breadthfirst([1, -2, 3])) == 4
