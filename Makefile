@@ -10,6 +10,7 @@ run:
 		-p 8000:8000 \
 		-it \
 		-e DISPLAY=host.containers.internal:0 \
+		-v $$(echo $$HOME)/.zsh_history:/home/vinh/.zsh_history \
 		$(IMAGE_NAME) \
 		zsh
 

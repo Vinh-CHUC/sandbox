@@ -42,15 +42,17 @@ RUN PATH=$PATH:/home/vinh/miniconda3/envs/bayes/bin make setup-ipython
 
 # haskell stack
 USER root
-RUN apt-get install -y libtinfo-dev
+RUN apt-get install -y libffi-dev libgmp-dev libgmp10 libncurses-dev libncurses5 libtinfo5 libtinfo-dev
+
 
 USER vinh
 WORKDIR /home/vinh/sandbox/languages/haskell/haskell-playground
-RUN curl -sSL https://get.haskellstack.org/ -o get_haskellstack
-RUN chmod a+x get_haskellstack
-RUN echo vinh | sudo -S ./get_haskellstack
-RUN rm get_haskellstack
-RUN stack build
+RUN curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org | \
+    BOOTSTRAP_HASKELL_NONINTERACTIVE=1 \
+    BOOTSTRAP_HASKELL_INSTALL_STACK=1 \
+    BOOTSTRAP_HASKELL_INSTALL_HLS=1 \
+    sh
+RUN /home/vinh/.ghcup/bin/stack build
 
 # rustup
 RUN curl https://sh.rustup.rs -sSf | sh -s -- --no-modify-path -y
