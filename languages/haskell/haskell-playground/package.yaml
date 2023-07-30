@@ -23,6 +23,7 @@ dependencies:
 - base >= 4.7 && < 5
 - hspec
 - hspec-contrib
+- hspec-discover
 - QuickCheck
 
 ghc-options:
@@ -53,7 +54,7 @@ executables:
 tests:
   haskell-playground-test:
     main:                Spec.hs
-    source-dirs:         test
+    source-dirs:         test/unit
     ghc-options:
     - -threaded
     - -rtsopts

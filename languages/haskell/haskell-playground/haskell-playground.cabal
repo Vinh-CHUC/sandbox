@@ -40,6 +40,7 @@ library
     , base >=4.7 && <5
     , hspec
     , hspec-contrib
+    , hspec-discover
   default-language: Haskell2010
 
 executable haskell-playground-exe
@@ -55,15 +56,17 @@ executable haskell-playground-exe
     , haskell-playground
     , hspec
     , hspec-contrib
+    , hspec-discover
   default-language: Haskell2010
 
 test-suite haskell-playground-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      StateMonadSpec
       Paths_haskell_playground
   hs-source-dirs:
-      test
+      test/unit
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       QuickCheck
@@ -71,4 +74,5 @@ test-suite haskell-playground-test
     , haskell-playground
     , hspec
     , hspec-contrib
+    , hspec-discover
   default-language: Haskell2010
