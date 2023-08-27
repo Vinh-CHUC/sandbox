@@ -1,4 +1,10 @@
-module TypeClasses.Validation where
+module TypeClasses.Validation 
+    (
+        isAnagram,
+        isWord,
+        areAnagrams,
+        run,
+    ) where
 import Data.Char (isAlpha)
 import Data.List (sort)
 
@@ -27,8 +33,8 @@ areAnagrams word1 word2 =
                         False -> "These words are not anagrams."
                         True -> "These words are anagrams"
 
-main :: IO ()
-main = do
+run :: IO ()
+run = do
     putStrLn "Please enter a word."
     word1 <- getLine
     putStrLn "Please enter a second word."
