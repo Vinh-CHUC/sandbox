@@ -1,4 +1,4 @@
-module TypeClasses.Validation 
+module TypeClasses.Validation3
     (
         isAnagram,
         isWord,

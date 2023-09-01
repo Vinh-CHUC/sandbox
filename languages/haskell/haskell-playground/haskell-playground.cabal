@@ -26,7 +26,8 @@ source-repository head
 library
   exposed-modules:
       Lib
-      TypeClasses.Validation
+      TypeClasses.Validation3
+      TypeClasses.Validation4
       VinhPlayground.Folds
       VinhPlayground.ListMonad
       VinhPlayground.ReaderMonad
