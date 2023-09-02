@@ -13,14 +13,14 @@ import Data.Char
 maxLength :: String -> Maybe String
 maxLength "" = Nothing
 maxLength xs =
-    case (length xs > 20) of
+    case length xs > 20 of
         True -> Nothing
         False -> Just xs
 
 allAlpha :: String -> Maybe String
 allAlpha "" = Nothing
 allAlpha xs =
-    case (all isAlphaNum xs) of
+    case all isAlphaNum xs of
         False -> Nothing
         True -> Just xs
 

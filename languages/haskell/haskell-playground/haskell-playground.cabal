@@ -28,6 +28,9 @@ library
       Lib
       TypeClasses.Validation3
       TypeClasses.Validation4
+      TypeClasses.Validation5
+      TypeClasses.Validation6
+      TypeClasses.Validation7
       VinhPlayground.Folds
       VinhPlayground.ListMonad
       VinhPlayground.ReaderMonad
