@@ -30,7 +30,7 @@ library
       TypeClasses.Validation4
       TypeClasses.Validation5
       TypeClasses.Validation6
-      TypeClasses.Validation7
+      TypeClasses.Validation8
       VinhPlayground.Folds
       VinhPlayground.ListMonad
       VinhPlayground.ReaderMonad
@@ -46,6 +46,7 @@ library
     , hspec
     , hspec-contrib
     , hspec-discover
+    , validation
   default-language: Haskell2010
 
 executable haskell-playground-exe
@@ -62,6 +63,7 @@ executable haskell-playground-exe
     , hspec
     , hspec-contrib
     , hspec-discover
+    , validation
   default-language: Haskell2010
 
 test-suite haskell-playground-test
@@ -80,4 +82,5 @@ test-suite haskell-playground-test
     , hspec
     , hspec-contrib
     , hspec-discover
+    , validation
   default-language: Haskell2010

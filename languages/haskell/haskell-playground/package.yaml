@@ -25,6 +25,7 @@ dependencies:
 - hspec-contrib
 - hspec-discover
 - QuickCheck
+- validation
 
 ghc-options:
 - -Wall
