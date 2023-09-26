@@ -31,6 +31,7 @@ library
       TypeClasses.Validation5
       TypeClasses.Validation6
       TypeClasses.Validation8
+      TypeClasses.Validation8_2
       VinhPlayground.Folds
       VinhPlayground.ListMonad
       VinhPlayground.ReaderMonad

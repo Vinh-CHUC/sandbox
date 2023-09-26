@@ -1,15 +1,15 @@
 module TypeClasses.Validation8 (
     passwordLength,
-    run
+    run,
+    display,
 ) where
 
 import Data.Char
 import Data.Validation
-
-newtype Password = 
+newtype Password =
     Password String deriving (Eq, Show) 
 
-newtype Error = 
+newtype Error =
     Error [String] deriving (Eq, Show)
 
 newtype Username = 
@@ -35,7 +35,7 @@ usernameLength username =
         False -> Success (Username username)
 
 stripSpace :: String -> Validation Error String
-stripSpace "" = Failure (Error ["Your password cannot be empty"])
+stripSpace "" = Failure (Error ["Cannot be left blank"])
 stripSpace (x:xs) =
     case isSpace x of
         True -> stripSpace xs
@@ -50,6 +50,9 @@ allAlpha xs =
 
 validatePassword :: Password -> Validation Error Password
 validatePassword (Password password) = 
+    -- We can't chain all the 3 checks here as allAlpha and passwordLength depend on the stripped
+    -- version of password (aka password')
+    -- We could have used monads instead?
     case stripSpace password of
         Failure err -> Failure err
         Success password' ->
@@ -58,18 +61,45 @@ validatePassword (Password password) =
 
 validateUsername :: Username -> Validation Error Username
 validateUsername (Username username) = 
+    -- We can't chain all the 3 checks here as allAlpha and passwordLength depend on the stripped
+    -- version of password (aka password')
+    -- We could have used monads instead?
     case stripSpace username of
         Failure err -> Failure err
         Success username' ->
             allAlpha username' *> usernameLength username'
+
+passwordErrors :: Password -> Validation Error Password
+passwordErrors password =
+    case validatePassword password of
+        Failure err -> Failure((Error ["Invalid password: "]) <> err)
+        Success password' -> Success password'
+
+usernameErrors :: Username -> Validation Error Username
+usernameErrors username =
+    case validateUsername username of
+        Failure err -> Failure ((Error ["Invalid username: "]) <> err)
+        Success name -> Success name
 
 -- This is the key idea here
 -- User takes two args of types Username and Password, but here the validate** return these wrapped
 -- in a Error type
 makeUser :: Username -> Password -> Validation Error User
 makeUser name password =
-    User <$> validateUsername name
-    <*> validatePassword password
+    -- A philosophical thought Error could be a list of union between UsernameError and PasswordError
+    -- It'd make this slightly more sophisticated
+    User <$> usernameErrors name
+    <*> passwordErrors password
+
+
+errorCoerce :: Error -> [String]
+errorCoerce (Error err) = err
+
+display :: Username -> Password -> IO ()
+display name password = 
+    case makeUser name password of
+        Failure err -> putStrLn (unlines (errorCoerce err))
+        Success (User (Username name) password) -> putStrLn("Welcome, " ++ name)
 
 run :: IO ()
 run = do
@@ -79,4 +109,5 @@ run = do
     -- password <- fmap Password getLine
     -- This <$> notation is the infix version of fmap
     password <- Password <$> getLine
-    print (makeUser username password)
+    putStrLn ""
+    display username password
