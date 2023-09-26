@@ -63,6 +63,9 @@ validateUsername (Username username) =
         Success username' ->
             allAlpha username' *> usernameLength username'
 
+-- This is the key idea here
+-- User takes two args of types Username and Password, but here the validate** return these wrapped
+-- in a Error type
 makeUser :: Username -> Password -> Validation Error User
 makeUser name password =
     User <$> validateUsername name
