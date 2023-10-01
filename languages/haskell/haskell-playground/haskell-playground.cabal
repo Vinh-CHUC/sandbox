@@ -26,6 +26,7 @@ source-repository head
 library
   exposed-modules:
       Lib
+      TypeClasses.Validation11
       TypeClasses.Validation3
       TypeClasses.Validation4
       TypeClasses.Validation5
