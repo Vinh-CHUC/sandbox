@@ -24,6 +24,7 @@ dependencies:
 - hspec
 - hspec-contrib
 - hspec-discover
+- lens
 - QuickCheck
 - validation
 
