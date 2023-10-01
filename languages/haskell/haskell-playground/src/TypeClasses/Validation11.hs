@@ -150,7 +150,7 @@ instance MaybeAB These where
 
 -- Exercise 2 --
 -- Context
-newtype Password = Password String
+newtype Password = Password String deriving (Eq, Show)
 checkPasswordLength :: Password -> Maybe Password
 checkPasswordLength password =
     case (length (coerce @Password @String password) > 20) of
