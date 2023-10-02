@@ -23,7 +23,7 @@ USER vinh
 ## Various language tool chains ##
 ##################################
 WORKDIR /home/vinh
-RUN git clone https://github.com/Vinh-CHUC/sandbox.git
+RUN git clone https://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@github.com/Vinh-CHUC/sandbox.git
 RUN git clone --recursive https://github.com/Vinh-CHUC/config-files.git
 
 WORKDIR /home/vinh/sandbox
