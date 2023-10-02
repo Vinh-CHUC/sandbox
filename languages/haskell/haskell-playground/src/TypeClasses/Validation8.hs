@@ -99,7 +99,7 @@ display :: Username -> Password -> IO ()
 display name password = 
     case makeUser name password of
         Failure err -> putStrLn (unlines (errorCoerce err))
-        Success (User (Username name) _) -> putStrLn("Welcome, " ++ name)
+        Success (User (Username name') _) -> putStrLn("Welcome, " ++ name')
 
 run :: IO ()
 run = do
