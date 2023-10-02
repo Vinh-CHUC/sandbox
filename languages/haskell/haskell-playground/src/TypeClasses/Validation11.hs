@@ -1,3 +1,4 @@
+{-# LANGUAGE ScopedTypeVariables #-}
 -- My own spin on top of validation course, wanted to have more explicit types
 module TypeClasses.Validation11 (
     validatePasswordLength
@@ -153,7 +154,8 @@ instance MaybeAB These where
 newtype Password = Password String deriving (Eq, Show)
 checkPasswordLength :: Password -> Maybe Password
 checkPasswordLength password =
-    case (length (coerce @Password @String password) > 20) of
+    let pwd_s :: String = coerce password in
+    case (length pwd_s > 20) of
         True -> Nothing
         False -> Just password
 
