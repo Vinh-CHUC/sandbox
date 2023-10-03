@@ -26,6 +26,7 @@ source-repository head
 library
   exposed-modules:
       Lib
+      TypeClasses.Functortown_A_1
       TypeClasses.Validation11
       TypeClasses.Validation3
       TypeClasses.Validation4
