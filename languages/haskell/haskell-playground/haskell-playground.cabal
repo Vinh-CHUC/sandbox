@@ -27,6 +27,7 @@ library
   exposed-modules:
       Lib
       TypeClasses.Functortown_A_1
+      TypeClasses.Functortown_A_2
       TypeClasses.Validation11
       TypeClasses.Validation3
       TypeClasses.Validation4
@@ -50,6 +51,7 @@ library
     , hspec-contrib
     , hspec-discover
     , lens
+    , text
     , validation
   default-language: Haskell2010
 
@@ -68,6 +70,7 @@ executable haskell-playground-exe
     , hspec-contrib
     , hspec-discover
     , lens
+    , text
     , validation
   default-language: Haskell2010
 
@@ -88,5 +91,6 @@ test-suite haskell-playground-test
     , hspec-contrib
     , hspec-discover
     , lens
+    , text
     , validation
   default-language: Haskell2010

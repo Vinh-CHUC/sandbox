@@ -26,6 +26,7 @@ dependencies:
 - hspec-discover
 - lens
 - QuickCheck
+- text
 - validation
 
 ghc-options:
