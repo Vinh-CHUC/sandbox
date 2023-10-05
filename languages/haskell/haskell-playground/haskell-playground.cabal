@@ -28,6 +28,8 @@ library
       Lib
       TypeClasses.Functortown_A_1
       TypeClasses.Functortown_A_2
+      TypeClasses.Functortown_A_3
+      TypeClasses.Functortown_A_4
       TypeClasses.Validation11
       TypeClasses.Validation3
       TypeClasses.Validation4
@@ -78,6 +80,7 @@ test-suite haskell-playground-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      FunctortownSpec
       StateMonadSpec
       Paths_haskell_playground
   hs-source-dirs:
