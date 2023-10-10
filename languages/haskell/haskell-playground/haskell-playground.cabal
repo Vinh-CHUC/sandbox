@@ -33,6 +33,7 @@ library
       TypeClasses.Functortown_A_5
       TypeClasses.Functortown_A_6
       TypeClasses.Functortown_A_7
+      TypeClasses.Functortown_B_1
       TypeClasses.Validation11
       TypeClasses.Validation3
       TypeClasses.Validation4
