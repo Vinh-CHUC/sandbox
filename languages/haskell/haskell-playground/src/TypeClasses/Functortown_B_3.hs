@@ -86,3 +86,7 @@ anythingBut c = Parser $ \str ->
     in Just (remainder, match)
 
 parenParser = exact "(" *> anythingBut ')' <* exact ")"
+
+liftA3 :: Applicative f => (a -> b -> c -> d) -> f a -> f b -> f c -> f d
+liftA3 f as bs cs = f <$> as <*> bs <*> cs
+liftA3 f as bs cs = liftA2 f as bs <*> cs
