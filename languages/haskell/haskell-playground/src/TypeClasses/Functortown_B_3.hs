@@ -11,6 +11,7 @@ import Data.Validation
 import Text.Read
 import Data.Text (strip)
 import Test.Hspec (xit)
+import Control.Lens (use)
 
 -- (*>) :: f a -> f b -> f b
 -- (<*) :: f a -> f b -> f a
@@ -63,9 +64,12 @@ parserLiftA2 :: (a -> b -> c) -> Parser a -> Parser b -> Parser c
 parserLiftA2 f (Parser p1) (Parser p2) =
     Parser $ \str ->
         do
-            (str', x) <- p1 str
+            -- x, y what has been matched, for "(" and ")" we want to throw them away hence the use
+            -- of *> and <* further below. Only the last parser will return what it consumed, the
+            -- n-1 first ones are just here the remove the "bits we don't want"
+            (str', x) <- p1 str  -- e.g. str': "abc)" x: "("
             (str'', y) <- p2 str'
-            Just (str'', f x y)
+            Just (str'', f x y)  -- In applicative style (f x) = id !!!
 
 parseMaybe :: Parser a -> String -> Maybe a
 parseMaybe (Parser p) str =
