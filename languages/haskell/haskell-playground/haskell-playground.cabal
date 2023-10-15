@@ -37,6 +37,7 @@ library
       TypeClasses.Functortown_B_2
       TypeClasses.Functortown_B_3
       TypeClasses.Functortown_B_4
+      TypeClasses.Functortown_B_5
       TypeClasses.Validation11
       TypeClasses.Validation3
       TypeClasses.Validation4
