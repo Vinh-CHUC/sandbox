@@ -19,9 +19,10 @@ _ = ((fmap .fmap) toUpper) ["vinh", "chuc"]
 --                ------- Char -> Char
 --          ------------- String -> String
 --    ------------------- [String] -> [String]
-
+--
 -- Generalising things
 -- (fmap @G . fmap @F) (a -> b) G[F[a]] -> G[F[b]]
+
 alphabetizeMaybe :: String -> String -> Maybe [String]
 alphabetizeMaybe name1 name2 =
     case (all isAlpha name1) && (all isAlpha name2) of
@@ -30,4 +31,12 @@ alphabetizeMaybe name1 name2 =
 
 alphabetizeMaybeIO :: IO (Maybe [String])
 alphabetizeMaybeIO =
+    -- Note here this is not an applicative compose, getLine still return IO String
+    -- It's just the return type of alphabetizeMaybe that switched
+    -- from:   a -> a -> [a]
+    -- to:     a -> a -> Maybe [a]
     pure alphabetizeMaybe <*> getLine <*> getLine
+
+-------------------------
+-- A whole new functor --
+-------------------------
