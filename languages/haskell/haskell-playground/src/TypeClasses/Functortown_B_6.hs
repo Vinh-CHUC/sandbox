@@ -105,7 +105,7 @@ getLine' config =
     applyLineLimit (configLineLimit config) <$> getLine
 
 getAndArrange' :: Config -> IO [String]
-getAndArrange' = runReaderIO (ReaderIO (\env -> pure (arrange' env)) <*> ReaderIO getLine' <*> ReaderIO getLine')
+getAndArrange' = runReaderIO (ReaderIO (pure . arrange') <*> ReaderIO getLine' <*> ReaderIO getLine')
 
 _ = getAndArrange' (Config Forward NoLimit)
 _ = getAndArrange' (Config Reverse (MaxLength 3))
