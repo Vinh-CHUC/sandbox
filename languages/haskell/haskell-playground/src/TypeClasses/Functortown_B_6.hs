@@ -69,6 +69,9 @@ runReaderIO (ReaderIO f) env = f env
 instance Functor (ReaderIO env) where
     fmap :: (a -> b) -> ReaderIO env a
                      -> ReaderIO env b
+    -- Note here that the more general version that is compatible with any two stacked Functors
+    -- would be ((fmap . fmap) f) g
+    --         <--> the outer fmap is the Reader functor fmap, recall that fmap[reader] f g = f . g
     fmap f (ReaderIO g) = ReaderIO (fmap f . g)
 
 instance Applicative (ReaderIO env) where
@@ -109,3 +112,20 @@ getAndArrange' = runReaderIO (ReaderIO (pure . arrange') <*> ReaderIO getLine' <
 
 _ = getAndArrange' (Config Forward NoLimit)
 _ = getAndArrange' (Config Reverse (MaxLength 3))
+
+
+-- Exercise 2
+newtype ReaderT env f a = ReaderT (env -> f a)
+
+-- type ReaderIO env a = ReaderT env IO a
+-- Note that ReaderT env f is a functor!!
+
+instance Functor f => Functor (ReaderT env f) where
+    fmap f (ReaderT g) = ReaderT (fmap f . g)
+    -- more general: (fmap . fmap) f g
+
+instance Applicative f => Applicative (ReaderT env f) where
+    pure x = ReaderT(\_ -> pure x)
+    liftA2 f (ReaderT g) (ReaderT h) =
+        ReaderT(\env -> liftA2 f (g env) (h env))
+    -- more general: (liftA2 . liftA2) f x y
