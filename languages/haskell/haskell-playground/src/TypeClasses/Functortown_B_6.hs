@@ -5,6 +5,7 @@ module TypeClasses.Functortown_B_6 (
 import Control.Applicative (Applicative (..))
 import Data.List (sort)
 import Data.Char (isAlpha, toUpper)
+import Data.Coerce
 import Test.Hspec (xit)
 
 alphabetize :: Ord a => a -> a -> [a]
