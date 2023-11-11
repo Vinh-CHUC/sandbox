@@ -18,6 +18,12 @@ import Data.Set (Set)
 --
 -- Pure preserves compose (binary functions)
 --      pure ((.) f g) = pure (.) <*> pure f <*> pure g
+--
+-- Philosophy:
+-- - `pure _` is a "dull" value
+-- - a and b both dull => a <*> b dull
+-- - a dull => a <*> X same "shape" as X
+-- - b dull => can rewrite X <*> b as b <*> X where b is dull
 
 
 -- Similarity with functors and normal composition
@@ -25,7 +31,8 @@ import Data.Set (Set)
 -- (      (.)     f     g )     x  =  f     ( g     x )  -- 1
 -- (      (.)     f     g ) <$> x  =  f <$> ( g <$> x )  -- 2
 -- ( pure (.) <*> f <*> g ) <*> x  =  f <*> ( g <*> x )  -- 3
-
+--
+-- ($ x) <$> f = f <*> pure x
 
 -- Our fantastic functor
 data Magic = Wizard | Unicorn | Leprechaun
