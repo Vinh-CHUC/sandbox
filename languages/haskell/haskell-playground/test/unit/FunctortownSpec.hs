@@ -3,8 +3,8 @@ module FunctortownSpec where
 import Data.Bifunctor
 import Test.Hspec
 import Test.QuickCheck
-import TypeClasses.Functortown_A_7
-import TypeClasses.Functortown_B_10
+import TypeClasses.Functortown_A_7_bifunctor_laws
+import TypeClasses.Functortown_B_10_applicative_laws
 import Data.Set (Set)
 
 

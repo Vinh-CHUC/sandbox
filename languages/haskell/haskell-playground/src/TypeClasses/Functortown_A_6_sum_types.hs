@@ -1,4 +1,4 @@
-module TypeClasses.Functortown_A_6 (
+module TypeClasses.Functortown_A_6_sum_types (
 ) where
 
 import Data.Align

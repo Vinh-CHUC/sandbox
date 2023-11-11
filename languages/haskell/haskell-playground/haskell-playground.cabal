@@ -29,18 +29,18 @@ library
       TypeClasses.Functortown_A_1
       TypeClasses.Functortown_A_2
       TypeClasses.Functortown_A_3
-      TypeClasses.Functortown_A_4
-      TypeClasses.Functortown_A_5
-      TypeClasses.Functortown_A_6
-      TypeClasses.Functortown_A_7
+      TypeClasses.Functortown_A_4_breaking_the_laws
+      TypeClasses.Functortown_A_5_bimap
+      TypeClasses.Functortown_A_6_sum_types
+      TypeClasses.Functortown_A_7_bifunctor_laws
       TypeClasses.Functortown_B_1
-      TypeClasses.Functortown_B_10
+      TypeClasses.Functortown_B_10_applicative_laws
       TypeClasses.Functortown_B_11
       TypeClasses.Functortown_B_2
       TypeClasses.Functortown_B_3
       TypeClasses.Functortown_B_4
-      TypeClasses.Functortown_B_5
-      TypeClasses.Functortown_B_6
+      TypeClasses.Functortown_B_5_reader_context
+      TypeClasses.Functortown_B_6_composing_applicatives
       TypeClasses.Functortown_B_7
       TypeClasses.Functortown_B_8
       TypeClasses.Functortown_B_9

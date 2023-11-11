@@ -1,5 +1,5 @@
 {-# LANGUAGE InstanceSigs #-}
-module TypeClasses.Functortown_B_6 (
+module TypeClasses.Functortown_B_6_composing_applicatives (
 ) where
 
 import Control.Applicative (Applicative (..))

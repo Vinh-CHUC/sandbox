@@ -1,5 +1,5 @@
 {-# LANGUAGE DeriveFunctor #-} 
-module TypeClasses.Functortown_B_10 (
+module TypeClasses.Functortown_B_10_applicative_laws (
     Magic(..),
     Fantastic(..)
 ) where

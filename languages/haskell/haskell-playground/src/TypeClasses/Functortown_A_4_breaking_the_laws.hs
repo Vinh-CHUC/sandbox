@@ -1,4 +1,4 @@
-module TypeClasses.Functortown_A_4 (
+module TypeClasses.Functortown_A_4_breaking_the_laws (
 ) where
 
 -- fmap id = id

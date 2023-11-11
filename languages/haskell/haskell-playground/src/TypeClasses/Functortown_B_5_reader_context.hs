@@ -1,6 +1,6 @@
 {-# LANGUAGE InstanceSigs #-}
 
-module TypeClasses.Functortown_B_5 (
+module TypeClasses.Functortown_B_5_reader_context (
 ) where
 import Control.Lens (cons)
 import Control.Applicative

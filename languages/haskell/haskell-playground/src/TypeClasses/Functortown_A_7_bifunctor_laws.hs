@@ -1,4 +1,4 @@
-module TypeClasses.Functortown_A_7 (
+module TypeClasses.Functortown_A_7_bifunctor_laws (
     These (..)
 ) where
 

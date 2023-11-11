@@ -1,4 +1,4 @@
-module TypeClasses.Functortown_A_5 (
+module TypeClasses.Functortown_A_5_bimap (
 ) where
 
 import Data.Bifunctor
