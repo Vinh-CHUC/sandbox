@@ -1,41 +1,78 @@
 use bevy::prelude::*;
 
-pub struct HelloPlugin;
-
-impl Plugin for HelloPlugin {
-    fn build(&self, app: &mut App) {
-        app.insert_resource(GreetTimer(Timer::from_seconds(2.0, TimerMode::Repeating)))
-           .add_systems(Startup, add_people)
-           .add_systems(Update, greet_people);
-    }
-}
-
+#[derive(Component)]
+struct Paddle;
 
 #[derive(Component)]
-struct Person;
+struct Ball;
 
 #[derive(Component)]
-struct Name(String);
+struct Velocity(Vec2);
+
+#[derive(Component)]
+struct Collider;
+
+#[derive(Component)]
+struct CollisionEvent;
+
+#[derive(Component)]
+struct Brick;
 
 #[derive(Resource)]
-struct GreetTimer(Timer);
+struct CollisionSound(Handle<AudioSource>);
 
-fn add_people(mut commands: Commands){
-    commands.spawn((Person, Name("Elaina Proctor".to_string())));
-    commands.spawn((Person, Name("Renzo Hume".to_string())));
-    commands.spawn((Person, Name("Zayna Nieves".to_string())));
+#[derive(Bundle)]
+struct WallBundle {
+    sprite_bundle: SpriteBundle,
+    collider: Collider,
 }
 
-fn greet_people(time: Res<Time>, mut timer: ResMut<GreetTimer>, query: Query<&Name, With<Person>>) {
-    if timer.0.tick(time.delta()).just_finished() {
-        for name in &query {
-            println!("hello {}", name.0);
+enum WallLocation {
+    Left,
+    Right,
+    Bottom,
+    Top,
+}
+
+// x coordinates
+const LEFT_WALL: f32 = -450.;
+const RIGHT_WALL: f32 = 450.;
+// y coordinates
+const BOTTOM_WALL: f32 = -300.;
+const TOP_WALL: f32 = 300.;
+
+//
+const WALL_THICKNESS: f32 = 10.0;
+
+impl WallLocation {
+    fn position(&self) -> Vec2 {
+        match self {
+            WallLocation::Left => Vec2::new(LEFT_WALL, 0.),
+            WallLocation::Right => Vec2::new(RIGHT_WALL, 0.),
+            WallLocation::Bottom => Vec2::new(0., BOTTOM_WALL),
+            WallLocation::Top => Vec2::new(0., TOP_WALL),
+        }
+    }
+
+    fn size(&self) -> Vec2 {
+        let arena_height = TOP_WALL - BOTTOM_WALL;
+        let arena_width = RIGHT_WALL - LEFT_WALL;
+        assert!(arena_height > 0.0);
+        assert!(arena_width > 0.0);
+
+        match self {
+            WallLocation::Left | WallLocation::Right => {
+                Vec2::new(WALL_THICKNESS, arena_height  + WALL_THICKNESS)
+            }
+            WallLocation::Bottom | WallLocation::Top => {
+                Vec2::new(arena_height  + WALL_THICKNESS, WALL_THICKNESS)
+            }
         }
     }
 }
 
 fn main(){
     App::new()
-        .add_plugins((DefaultPlugins, HelloPlugin))
+        .add_plugins(DefaultPlugins)
         .run();
 }
