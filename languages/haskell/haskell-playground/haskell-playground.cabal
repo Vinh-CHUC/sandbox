@@ -26,7 +26,7 @@ source-repository head
 library
   exposed-modules:
       Lib
-      TypeClasses.Functortown_A_1
+      TypeClasses.Functortown_A_1_intro_to_mapping
       TypeClasses.Functortown_A_2
       TypeClasses.Functortown_A_3
       TypeClasses.Functortown_A_4_breaking_the_laws
@@ -36,12 +36,12 @@ library
       TypeClasses.Functortown_B_1
       TypeClasses.Functortown_B_10_applicative_laws
       TypeClasses.Functortown_B_11
-      TypeClasses.Functortown_B_2
-      TypeClasses.Functortown_B_3
-      TypeClasses.Functortown_B_4
+      TypeClasses.Functortown_B_2_monoids_in_functor
+      TypeClasses.Functortown_B_3_sequencing_effects
+      TypeClasses.Functortown_B_4_zippy_applicatives
       TypeClasses.Functortown_B_5_reader_context
       TypeClasses.Functortown_B_6_composing_applicatives
-      TypeClasses.Functortown_B_7
+      TypeClasses.Functortown_B_7_compose_newtype
       TypeClasses.Functortown_B_8
       TypeClasses.Functortown_B_9
       TypeClasses.Validation11

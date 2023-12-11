@@ -1,4 +1,4 @@
-module TypeClasses.Functortown_B_2 (
+module TypeClasses.Functortown_B_2_monoids_in_functor (
 ) where
 import Control.Applicative
 

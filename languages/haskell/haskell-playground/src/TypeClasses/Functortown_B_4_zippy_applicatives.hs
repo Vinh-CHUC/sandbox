@@ -1,5 +1,5 @@
 {-# LANGUAGE DeriveFunctor #-}
-module TypeClasses.Functortown_B_4 (
+module TypeClasses.Functortown_B_4_zippy_applicatives (
 ) where
 
 import Control.Applicative hiding (ZipList (..))

@@ -1,6 +1,6 @@
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-module TypeClasses.Functortown_B_7 (
+module TypeClasses.Functortown_B_7_compose_newtype (
 ) where
 
 import Control.Applicative (Applicative (..))

@@ -1,7 +1,7 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE DeriveFunctor #-}
 
-module TypeClasses.Functortown_B_3 (
+module TypeClasses.Functortown_B_3_sequencing_effects (
 ) where
 import Control.Applicative (Applicative (..))
 import qualified Data.List as List

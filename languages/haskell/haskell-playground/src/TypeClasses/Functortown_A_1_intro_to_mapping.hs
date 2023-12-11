@@ -1,4 +1,4 @@
-module TypeClasses.Functortown_A_1 (
+module TypeClasses.Functortown_A_1_intro_to_mapping(
 ) where
 
 database :: [(Integer, String)]
