@@ -53,6 +53,7 @@ library
       TypeClasses.Validation8
       TypeClasses.Validation8_2
       VinhPlayground.Folds
+      VinhPlayground.FromTo_LikeInRust
       VinhPlayground.ListMonad
       VinhPlayground.ReaderMonad
       VinhPlayground.StateBasic
