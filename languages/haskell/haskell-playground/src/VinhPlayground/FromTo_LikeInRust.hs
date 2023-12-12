@@ -1,14 +1,22 @@
-{-# LANGUAGE TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
 
 module VinhPlayground.FromTo_LikeInRust where
 
-class To a where
+--------------------------------
+-- Only one degree of freedom --
+--------------------------------
+-- String -> a
+class Into a where
     convertTo :: String -> a
 
-instance To String where
+-- Fails as the the type is not mentioned in the typeclass
+-- class From a where
+--     convertFrom :: String -> Bool
+
+instance Into String where
     convertTo str = str
 
-instance To Bool where
+instance Into Bool where
     convertTo "True" = True
     convertTo "TRUE" = True
     convertTo "1" = True
@@ -27,3 +35,11 @@ f2 = convertTo "hello"  -- "hello"
 -- This will not resolve to the typeclass
 -- f3 :: [Int]
 -- f3 = convertTo "hello"
+
+-- In Rust it's a bit convoluted I guess given the "redundancy" between Into and From
+
+-----------------------------
+-- Two degrees of freedom ---
+-----------------------------
+class Convert a b where
+    convert :: a -> b
