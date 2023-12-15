@@ -19,6 +19,7 @@ import Data.Text (Text)
 import Data.Time (Day)
 import Data.Validation (Validation (..), validation)
 import Data.Vector (Vector)
+import Data.Function (on)
 
 -- Reads a CSV file, prints a histogram of all days I've tweeted at Julie.
 -- If any rows fail to parse, prints a list of failed rows instead.
@@ -32,6 +33,9 @@ type Row = Map Text Text
 type Problems = NonEmpty Row
 
 -- Runs the continuation with the CSV parse result, or prints an error.
+--
+-- Example of the continuation style, for this to make sense note that the continue is not used on
+-- all the return paths. Otherwise one could instead just compose
 withInput :: (Vector Row -> IO ()) -> IO ()
 withInput continue =
     readBytes >>= decode >>= failOrContinue
