@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "playground"
+version = "0.1.0"
+description = ""
+authors = ["Vinh Chuc <vinh.chuc@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+pyright = "^1.1.340"
+mypy = "^1.7.1"
+numpy = "^1.26.2"
+pandas = "^2.1.4"
+hypothesis = "^6.92.0"
+pytest = "^7.4.3"
+factory-boy = "^3.3.0"
+black = "^23.12.0"
+ruff = "^0.1.8"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
