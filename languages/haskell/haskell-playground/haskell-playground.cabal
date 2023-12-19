@@ -52,6 +52,7 @@ library
       TypeClasses.Validation6
       TypeClasses.Validation8
       TypeClasses.Validation8_2
+      VinhPlayground.Foldl_Lib
       VinhPlayground.Folds
       VinhPlayground.FromTo_LikeInRust
       VinhPlayground.ListMonad
@@ -68,6 +69,7 @@ library
     , bytestring
     , cassava
     , containers
+    , foldl
     , hspec
     , hspec-contrib
     , hspec-discover
@@ -93,6 +95,7 @@ executable haskell-playground-exe
     , bytestring
     , cassava
     , containers
+    , foldl
     , haskell-playground
     , hspec
     , hspec-contrib
@@ -122,6 +125,7 @@ test-suite haskell-playground-test
     , bytestring
     , cassava
     , containers
+    , foldl
     , haskell-playground
     , hspec
     , hspec-contrib

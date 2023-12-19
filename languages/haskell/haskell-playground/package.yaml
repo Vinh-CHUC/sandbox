@@ -24,6 +24,7 @@ dependencies:
 - bytestring
 - cassava
 - containers
+- foldl
 - hspec
 - hspec-contrib
 - hspec-discover
