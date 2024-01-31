@@ -4,21 +4,32 @@
 3. Dotfiles for graph
 4. Dot for each iteration of evaluation and derivation
 """
-from abc import abstractmethod
-from dataclasses import dataclass
+from abc import ABC, abstractmethod, abstractproperty
+from dataclasses import dataclass, field
 from typing import assert_never, NewType
 
 import jax.numpy as jnp
-import numpy as np
 
 Dot = NewType('Dot', str)
+
+@dataclass
+class NamesGenerator():
+    inc: int = 0
+
+    def incr(self) -> int:
+        self.inc += 1
+        return self.inc
+
+NAMES = NamesGenerator()
+
 
 @dataclass(frozen=True)
 class ValueAndPartial:
     value: float
     partial: float
 
-class Expression:
+@dataclass(frozen=True)
+class Expression(ABC):
     def __add__(self, other):
         return Plus(self, other)
 
@@ -39,6 +50,7 @@ class Expression:
 @dataclass(frozen=True)
 class Variable(Expression):
     value: float
+    name: str
 
     def evaluate_and_derive(self, variable) -> ValueAndPartial:
         if self == variable:
@@ -46,10 +58,14 @@ class Variable(Expression):
         else:
             return ValueAndPartial(self.value, 0)
 
+    def generate_dot_repr(self) -> Dot:
+        return Dot("")
+
 @dataclass(frozen=True)
 class Plus(Expression):
     A: Expression
     B: Expression
+    name: str = field(default_factory=lambda: f"v{NAMES.incr()}")
 
     def evaluate_and_derive(self, variable) -> ValueAndPartial:
         x = (self.A.evaluate_and_derive(variable), self.B.evaluate_and_derive(variable))
@@ -59,10 +75,14 @@ class Plus(Expression):
             case _ as unreachable:
                 assert_never(unreachable)
 
+    def generate_dot_repr(self) -> Dot:
+        return Dot("")
+
 @dataclass(frozen=True)
 class Multiply(Expression):
     A: Expression
     B: Expression
+    name: str = field(default_factory=lambda: f"v{NAMES.incr()}")
 
     def evaluate_and_derive(self, variable) -> ValueAndPartial:
         x = (self.A.evaluate_and_derive(variable), self.B.evaluate_and_derive(variable))
@@ -72,10 +92,14 @@ class Multiply(Expression):
             case _ as unreachable:
                 assert_never(unreachable)
 
+    def generate_dot_repr(self) -> Dot:
+        return Dot("")
+
 @dataclass(frozen=True)
 class Power(Expression):
     A: Expression
     B: Expression
+    name: str = field(default_factory=lambda: f"v{NAMES.incr()}")
 
     def evaluate_and_derive(self, variable) -> ValueAndPartial:
         x = (self.A.evaluate_and_derive(variable), self.B.evaluate_and_derive(variable))
@@ -90,8 +114,11 @@ class Power(Expression):
             case _ as unreachable:
                 assert_never(unreachable)
 
-x = Variable(2.0)
-y = Variable(3.0)
+    def generate_dot_repr(self) -> Dot:
+        return Dot("")
+
+x = Variable(2.0, "x")
+y = Variable(3.0, "y")
 
 def test(x, y):
     return (x * y)**(x + y)
