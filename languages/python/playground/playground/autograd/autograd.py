@@ -1,9 +1,17 @@
+"""
+1. Add names to Variables
+2. Add non-compulsory names to other expressions, if not specified generate from some global counter
+3. Dotfiles for graph
+4. Dot for each iteration of evaluation and derivation
+"""
 from abc import abstractmethod
 from dataclasses import dataclass
-from typing import assert_never
+from typing import assert_never, NewType
 
 import jax.numpy as jnp
 import numpy as np
+
+Dot = NewType('Dot', str)
 
 @dataclass(frozen=True)
 class ValueAndPartial:
@@ -22,6 +30,10 @@ class Expression:
 
     @abstractmethod
     def evaluate_and_derive(self, variable) -> ValueAndPartial:
+        pass
+
+    @abstractmethod
+    def generate_dot_repr(self) -> Dot:
         pass
 
 @dataclass(frozen=True)
