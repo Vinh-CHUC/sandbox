@@ -1,4 +1,8 @@
+"""
+tl;dr: The types in the match patterns have to be a real type! A newtype won't do it
+"""
 from collections import namedtuple
+from dataclasses import dataclass
 from typing import NamedTuple, NewType, Union
 
 idA = NewType('idA', int)
@@ -28,6 +32,9 @@ def g(x: Union[idA, idB]):
         case idB():
             print("I am an idB")
 
+# Will fail
+# g(idA(5))
+
 class idC(NamedTuple):
     val: int
 
@@ -42,4 +49,19 @@ def h(x: Union[idC, idD]):
         case idC():
             print("I am an idC")
         case idD():
+            print("I am an idD")
+
+@dataclass
+class Data:
+    x: int
+
+idE = NewType('idE', Data)
+idF = NewType('idF', Data)
+
+def i(x: Union[idE, idF]):
+    match x:
+        ## Will fail at runtime with "called match pattern must be a type
+        case idE():
+            print("I am an idC")
+        case idF():
             print("I am an idD")
