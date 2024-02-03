@@ -6,7 +6,7 @@ authors = ["Vinh Chuc <vinh.chuc@gmail.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.11"
+python = "^3.12"
 pyright = "^1.1.340"
 mypy = "^1.7.1"
 numpy = "^1.26.2"
