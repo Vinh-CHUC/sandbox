@@ -1,13 +1,13 @@
 """
-1. Add names to Variables
-2. Add non-compulsory names to other expressions, if not specified generate from some global counter
-3. Dotfiles for graph
-4. Dot for each iteration of evaluation and derivation
+1. Dotfiles for graph
+2. Dot for each iteration of evaluation and derivation
+3. Backwards
 """
 from abc import ABC, abstractmethod, abstractproperty
 from dataclasses import dataclass, field
 from typing import assert_never, NewType
 
+from graphviz.graphs import Digraph
 import jax.numpy as jnp
 
 Dot = NewType('Dot', str)
@@ -28,26 +28,29 @@ class ValueAndPartial:
     value: float
     partial: float
 
-@dataclass(frozen=True)
+@dataclass
 class Expression(ABC):
     def __add__(self, other):
-        return Plus(self, other)
+        return Plus(self, other, name=f"{self.get_name()} + {other.get_name()}")
 
     def __mul__(self, other):
-        return Multiply(self, other)
+        return Multiply(self, other, name=f"{self.get_name()} * {other.get_name()}")
 
     def __pow__(self, other):
-        return Power(self, other)
+        return Power(self, other, name=f"{self.get_name()} ^ {other.get_name()}")
 
     @abstractmethod
     def evaluate_and_derive(self, variable) -> ValueAndPartial:
         pass
 
     @abstractmethod
-    def generate_dot_repr(self) -> Dot:
+    def generate_dot_repr(self, dot: Digraph):
         pass
 
-@dataclass(frozen=True)
+    def get_name(self) -> str:
+        return self.name  # type: ignore
+
+@dataclass
 class Variable(Expression):
     value: float
     name: str
@@ -58,10 +61,10 @@ class Variable(Expression):
         else:
             return ValueAndPartial(self.value, 0)
 
-    def generate_dot_repr(self) -> Dot:
-        return Dot("")
+    def generate_dot_repr(self, dot: Digraph):
+        pass
 
-@dataclass(frozen=True)
+@dataclass
 class Plus(Expression):
     A: Expression
     B: Expression
@@ -75,10 +78,15 @@ class Plus(Expression):
             case _ as unreachable:
                 assert_never(unreachable)
 
-    def generate_dot_repr(self) -> Dot:
-        return Dot("")
+    def generate_dot_repr(self, dot: Digraph):
+        dot.node(self.A.get_name())
+        dot.node(self.B.get_name())
+        dot.edge(self.A.get_name(), self.get_name())
+        dot.edge(self.B.get_name(), self.get_name())
+        self.A.generate_dot_repr(dot)
+        self.B.generate_dot_repr(dot)
 
-@dataclass(frozen=True)
+@dataclass
 class Multiply(Expression):
     A: Expression
     B: Expression
@@ -92,10 +100,15 @@ class Multiply(Expression):
             case _ as unreachable:
                 assert_never(unreachable)
 
-    def generate_dot_repr(self) -> Dot:
-        return Dot("")
+    def generate_dot_repr(self, dot: Digraph):
+        dot.node(self.A.get_name())
+        dot.node(self.B.get_name())
+        dot.edge(self.A.get_name(), self.get_name())
+        dot.edge(self.B.get_name(), self.get_name())
+        self.A.generate_dot_repr(dot)
+        self.B.generate_dot_repr(dot)
 
-@dataclass(frozen=True)
+@dataclass
 class Power(Expression):
     A: Expression
     B: Expression
@@ -114,8 +127,13 @@ class Power(Expression):
             case _ as unreachable:
                 assert_never(unreachable)
 
-    def generate_dot_repr(self) -> Dot:
-        return Dot("")
+    def generate_dot_repr(self, dot: Digraph):
+        dot.node(self.A.get_name())
+        dot.node(self.B.get_name())
+        dot.edge(self.A.get_name(), self.get_name())
+        dot.edge(self.B.get_name(), self.get_name())
+        self.A.generate_dot_repr(dot)
+        self.B.generate_dot_repr(dot)
 
 x = Variable(2.0, "x")
 y = Variable(3.0, "y")

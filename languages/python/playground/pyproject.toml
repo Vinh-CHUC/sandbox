@@ -19,6 +19,7 @@ ruff = "^0.1.8"
 ipython = "^8.18.1"
 flake8 = "^6.1.0"
 jax-metal = "^0.0.5"
+graphviz = "^0.20.1"
 
 
 [build-system]
