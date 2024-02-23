@@ -52,7 +52,6 @@ library
       TypeClasses.Validation6
       TypeClasses.Validation8
       TypeClasses.Validation8_2
-      TypeClasses_TweeHistory.HistogramType
       VinhPlayground.Foldl_Lib
       VinhPlayground.Folds
       VinhPlayground.FromTo_LikeInRust

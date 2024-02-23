@@ -12,6 +12,14 @@ provider "aws" {
   region = "eu-west-2"
 }
 
+#### Variables
+variable "subnet_prefix" {
+    description = "cidr block for the subnet"
+}
+
+
+#### Resources
+
 # VPC
 resource "aws_vpc" "main-vpc" {
   cidr_block = "10.0.0.0/16"
@@ -36,7 +44,7 @@ resource "aws_route_table" "example" {
 
   route {
     ipv6_cidr_block        = "::/0"
-    egress_only_gateway_id = aws_internet_gateway.main-gw.id
+    gateway_id = aws_internet_gateway.main-gw.id
   }
 
   tags = {
@@ -47,8 +55,8 @@ resource "aws_route_table" "example" {
 # Subnet
 resource "aws_subnet" "main" {
   vpc_id     = aws_vpc.main-vpc.id
-  cidr_block = "10.0.1.0/24"
-  availability_zone = "eu-west-2"
+  cidr_block = var.subnet_prefix
+  availability_zone = "eu-west-2a"
 
   tags = {
     Name = "Main"
@@ -69,7 +77,7 @@ resource "aws_security_group" "main-security-group" {
 }
 
 resource "aws_vpc_security_group_ingress_rule" "https" {
-  security_group_id = aws_security_group.allow_tls.id
+  security_group_id = aws_security_group.main-security-group.id
   cidr_ipv4         = "0.0.0.0/0"
   from_port         = 443
   to_port           = 443
@@ -81,7 +89,7 @@ resource "aws_vpc_security_group_ingress_rule" "https" {
 }
 
 resource "aws_vpc_security_group_ingress_rule" "http" {
-  security_group_id = aws_security_group.allow_tls.id
+  security_group_id = aws_security_group.main-security-group.id
   cidr_ipv4         = "0.0.0.0/0"
   from_port         = 80
   to_port           = 80
@@ -92,10 +100,10 @@ resource "aws_vpc_security_group_ingress_rule" "http" {
 }
 
 resource "aws_vpc_security_group_ingress_rule" "ssh" {
-  security_group_id = aws_security_group.allow_tls.id
+  security_group_id = aws_security_group.main-security-group.id
   cidr_ipv4         = "0.0.0.0/0"
-  from_port         = 20
-  to_port           = 20
+  from_port         = 22
+  to_port           = 22
   ip_protocol       = "tcp"
   tags = {
     Name = "Allow ssh"
@@ -103,7 +111,7 @@ resource "aws_vpc_security_group_ingress_rule" "ssh" {
 }
 
 resource "aws_vpc_security_group_egress_rule" "allow_all_traffic_ipv4" {
-  security_group_id = aws_security_group.allow_tls.id
+  security_group_id = aws_security_group.main-security-group.id
   cidr_ipv4         = "0.0.0.0/0"
   ip_protocol       = "-1" # semantically equivalent to all ports
   tags = {
@@ -127,7 +135,7 @@ resource "aws_eip" "lb" {
 resource "aws_instance" "web" {
   ami = "ami-0e5f882be1900e43b"
   instance_type = "t2.micro"
-  availability_zone = "eu-west-2"
+  availability_zone = "eu-west-2a"
   key_name = "main-key"
 
   tags = {
@@ -143,6 +151,15 @@ resource "aws_instance" "web" {
     sudo apt update -y
     sudo apt install apache2 -y
     sudo systemctl start apache2
-    sudo bash -c 'echo your very first web server' > /var/www/html/index.html'
+    sudo bash -c 'echo your very first web server' > /var/www/html/index.html
     EOF
+}
+
+#### Output
+output "server_public_ip" {
+    value = aws_eip.lb.public_ip
+}
+
+output "server_private_ip" {
+    value = aws_eip.lb.private_ip
 }

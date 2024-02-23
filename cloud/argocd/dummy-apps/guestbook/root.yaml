@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: test
+  namespace: default
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: default
+  project: default
+  source:
+    path: cloud/argocd/dummy-apps/guestbook
+    repoURL: /tmp/apps-repos/sandbox
+    targetRevision: HEAD
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
