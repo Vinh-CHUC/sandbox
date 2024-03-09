@@ -1,4 +1,6 @@
-## Bootstrapping minikube and argocd
+#######################################
+## Bootstrapping minikube and argocd ##
+#######################################
 minikube-reset:
 	minikube delete
 	minikube start
@@ -21,6 +23,18 @@ argocd-changepassword:
 ## Interacting with it
 argocd-portforward:
 	kubectl port-forward svc/argocd-server -n argocd 8080:443
+
+#######################
+## Dummy application ##
+#######################
+create-deployment:
+	kubectl create deployment web --image=gcr.io/google-samples/hello-app:1.0
+	## Minikube tunnetl only looks for LoadBalancer deployments
+	kubectl expose deployment web --type=LoadBalancer --port=8080
+
+## Exposing argocd **
+expose-argocd:
+	kubectl expose deployment argocd-server --type=LoadBalancer --port=80 --name=argocd-server-lb -n argocd
 
 argocd-add-app:
 	argocd app \
