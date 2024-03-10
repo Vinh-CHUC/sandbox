@@ -8,7 +8,7 @@ main = putStrLn ?greetings
 -- main : IO ()
 -- main = putStrLn ?greetings
 
-substract : Nat -> Nat -> Nat
+substract : Integer -> Integer -> Integer
 substract x y = x - y
 
 StringOrInt : Bool -> Type

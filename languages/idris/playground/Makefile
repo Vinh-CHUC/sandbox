@@ -3,7 +3,7 @@ build:
 	idris2 main.idr -o main
 
 check:
-	idris2 --check main.idr && echo "OK"
+	idris2 --check *.idr
 
 run: build
 	./build/exec/main
