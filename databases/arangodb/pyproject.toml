@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "arangodb"
+version = "0.1.0"
+description = ""
+authors = ["Vinh Chuc <vinh.chuc@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+python-arango = "^7.9.1"
+pydantic = "^2.6.4"
+
+[tool.poetry.group.dev.dependencies]
+ipython = "^8.22"
+pyright = "^1.1.353"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
