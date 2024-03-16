@@ -1,5 +1,9 @@
 module Basics
 
+import Data.String
+import Data.List
+import System.REPL
+
 add : Int -> Int -> Int
 add x y = x + y
 
@@ -24,3 +28,27 @@ identity x = x
 -- Constrained types
 double : Num ty => ty -> ty
 double x = x + x
+
+twice : (a -> a) -> a -> a
+twice f x = f (f x)
+
+-- Let and where
+longer : String -> String -> String
+longer w1 w2 = 
+  let len1 = length w1
+      len2 = length w2
+  in 
+      if len1 > len2 then w1 else w2
+
+-- Example function
+average: String -> Double
+average str = let numwords = length str_words
+                  totalLength = sum (map length str_words)
+              in cast totalLength / cast numwords
+where
+  str_words = words str
+
+-- Interactive program
+-- Reminder you need to do :exec main from the repl
+main : IO  ()
+main = repl "> " reverse
