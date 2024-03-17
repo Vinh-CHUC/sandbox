@@ -1,12 +1,6 @@
 .PHONY: build
 build:
-	idris2 main.idr -o main
-
-check:
-	idris2 --check *.idr
-
-run: build
-	./build/exec/main
+	idris2 --build playground.ipkg
 
 repl:
-	idris2 main.idr
+	idris2 Basics.idr
