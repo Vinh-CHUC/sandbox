@@ -16,7 +16,7 @@ authors = "vinh.chuc@gmail.com"
 -- depends =
 
 -- modules to install
-modules = Basics, Main, InteractiveDev
+modules = Basics, Main, InteractiveDev, UserDefinedTypes
 
 -- main file (i.e. file to load at REPL)
 -- main =
