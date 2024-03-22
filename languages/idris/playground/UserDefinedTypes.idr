@@ -65,3 +65,40 @@ testPicture = Combine
                     (Translate 35 5 circle)
                     (Translate 15 25 triangle)
                   )
+
+pictureArea : Picture -> Double
+pictureArea (Primitive shape) = area shape
+pictureArea (Combine x y) = pictureArea x + pictureArea y
+pictureArea (Rotate dbl x) = pictureArea x
+pictureArea (Translate dbl dbl1 x) = pictureArea x
+
+-------------------
+-- Generic types --
+-------------------
+data Biggest = NoTriangle | Size Double
+
+biggest_helper : Biggest -> Biggest -> Biggest
+biggest_helper NoTriangle NoTriangle = NoTriangle
+biggest_helper NoTriangle (Size dbl) = Size dbl
+biggest_helper (Size dbl) NoTriangle = Size dbl
+biggest_helper (Size dbl) (Size dbl1) = Size $ max dbl dbl1
+
+biggestTriangle : Picture -> Biggest
+biggestTriangle (Primitive t@(Triangle dbl dbl1)) = Size $ area t
+biggestTriangle (Primitive (Rectangle dbl dbl1)) = NoTriangle
+biggestTriangle (Primitive (Circle dbl)) = NoTriangle
+biggestTriangle (Combine x y) = (biggest_helper (biggestTriangle x) (biggestTriangle y))
+biggestTriangle (Rotate dbl x) = biggestTriangle x
+biggestTriangle (Translate dbl dbl1 x) = biggestTriangle x
+
+data Tree elem = Empty | Node (Tree elem) elem (Tree elem)
+
+insert : Ord elem => elem -> Tree elem -> Tree elem
+insert x Empty = Node Empty x Empty
+insert x (Node left val right) = if x <= val
+                                    then Node (insert x left) val right
+                                    else Node left x (insert x right)
+
+data BSTree : Type where
+  Empty : Ord elem => BSTree elem
+  Node : Ord elem => (left : BSTree elem) -> (val : elem) -> (right : BSTree elem) -> BStree elem
