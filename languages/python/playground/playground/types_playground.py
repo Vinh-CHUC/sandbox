@@ -1,5 +1,4 @@
-"""
-tl;dr: The types in the match patterns have to be a real type! A newtype won't do it
+""" tl;dr: The types in the match patterns have to be a real type! A newtype won't do it
 """
 from collections import namedtuple
 from dataclasses import dataclass
@@ -102,3 +101,14 @@ def g(x: A | B, y: A | B | C):
             pass
         case _:
             assert_never(arg)
+ 
+@dataclass
+class Leaf:
+    val: int = 1
+
+@dataclass
+class Tree:
+    left: Union["Tree", Leaf]
+    right: Union["Tree", Leaf]
+
+t = Tree(Leaf(), Tree(Leaf(), Leaf()))
