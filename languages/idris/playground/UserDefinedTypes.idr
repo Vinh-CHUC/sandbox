@@ -95,10 +95,25 @@ data Tree elem = Empty | Node (Tree elem) elem (Tree elem)
 
 insert : Ord elem => elem -> Tree elem -> Tree elem
 insert x Empty = Node Empty x Empty
-insert x (Node left val right) = if x <= val
-                                    then Node (insert x left) val right
-                                    else Node left x (insert x right)
+insert x orig@(Node left val right) =
+  case compare x val of
+    LT => Node (insert x left) val right
+    EQ => orig
+    GT => Node left val (insert x right)
 
-data BSTree : Type where
-  Empty : Ord elem => BSTree elem
-  Node : Ord elem => (left : BSTree elem) -> (val : elem) -> (right : BSTree elem) -> BStree elem
+data BSTree : Type -> Type where
+    BSEmpty : Ord elem => BSTree elem
+    BSNode : Ord elem => (left : BSTree elem) -> (val : elem) -> (right : BSTree elem) -> BSTree elem
+
+BSinsert : elem -> BSTree elem -> BSTree elem
+BSinsert x BSEmpty = BSNode BSEmpty x BSEmpty
+BSinsert x orig@(BSNode left val right) =
+  case compare x val of 
+    LT => BSNode (BSinsert x left) val right
+    EQ => orig
+    GT => BSNode left val (BSinsert x right)
+
+-- Exercises
+listToTree : Ord a => List a -> Tree a
+listToTree [] = Empty
+listToTree (x :: xs) = insert x $ listToTree xs
