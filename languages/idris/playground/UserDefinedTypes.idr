@@ -117,3 +117,58 @@ BSinsert x orig@(BSNode left val right) =
 listToTree : Ord a => List a -> Tree a
 listToTree [] = Empty
 listToTree (x :: xs) = insert x $ listToTree xs
+
+treeToList : Tree a -> List a
+treeToList Empty = []
+treeToList (Node left val right) = treeToList left ++ [val] ++ treeToList right
+
+data Expr : Type -> Type where
+  Atom : Num a => (val : a) -> Expr a
+  Add : Num a => (left : Expr a) -> (right : Expr a) -> Expr a
+  Mult : Num a => (left : Expr a) -> (right : Expr a) -> Expr a
+
+evaluate : Expr a -> a
+evaluate (Atom val) = val
+evaluate (Add left right) = evaluate left + evaluate right
+evaluate (Mult left right) = evaluate left * evaluate right
+
+--------------------------
+-- Dependent data types --
+--------------------------
+
+data PowerSource = Petrol | Pedal
+
+-- This is a type that is dependent on PowerSource **values**, Petrol and Pedal are values!!!
+-- There are effectively 2 types in this declaration
+data Vehicle : PowerSource -> Type where
+  Bicycle : Vehicle Pedal
+  Car : (fuel : Nat) -> Vehicle Petrol
+  Bus : (fuel : Nat) -> Vehicle Petrol
+
+-- Using a type variable, as this works for all types
+wheels: Vehicle power -> Nat
+wheels Bicycle = 2
+wheels (Car fuel) = 4
+wheels (Bus fuel) = 4
+
+-- Restricing on `Petrol` here effectively restricts the subset of the "type family" that this
+-- fnuction can operate on
+refuel: Vehicle Petrol -> Vehicle Petrol
+refuel (Car fuel) = Car 100
+refuel (Bus fuel) = Bus 200
+refuel Bicycle impossible
+
+-- -- Vect example
+data Vect : Nat -> Type -> Type where
+  Nil : Vect Z a
+  (::) : (x : a) -> (xs: Vect k a) -> Vect (S k) a
+
+%name Vect xs, ys, ys
+
+append: Vect n elem -> Vect m elem -> Vect (n + m) elem
+append [] ys = ys
+append (x :: xs) ys = x :: append xs ys
+
+zip : Vect n a -> Vect n b -> Vect n (a, b)
+zip [] ys = []
+zip (x :: xs) (y :: ys) = (x, y) :: zip xs ys
