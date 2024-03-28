@@ -3,7 +3,7 @@ tl;dr: The types in the match patterns have to be a real type! A newtype won't d
 """
 from collections import namedtuple
 from dataclasses import dataclass
-from typing import NamedTuple, NewType, Union
+from typing import assert_never, NamedTuple, NewType, Union, TypeVar, List
 
 idA = NewType('idA', int)
 idB = NewType('idB', int)
@@ -65,3 +65,40 @@ def i(x: Union[idE, idF]):
             print("I am an idC")
         case idF():
             print("I am an idD")
+
+#######################
+# Generics playground #
+#######################
+class A:
+    pass
+class B:
+    pass
+class C:
+    pass
+
+a = A()
+getattr(a, "id")
+
+
+####################
+# Pattern matching #
+####################
+def f(x: A | B, y: A | B | C):
+    match x:
+        case A():
+            pass
+        case B():
+            pass
+        case _:
+            assert_never(x)
+
+
+def g(x: A | B, y: A | B | C):
+    arg = (x, y)
+    match arg:
+        case (A(), A()):
+            pass
+        case (x, y):
+            pass
+        case _:
+            assert_never(arg)

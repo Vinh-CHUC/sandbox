@@ -9,6 +9,7 @@ readme = "README.md"
 python = "^3.12"
 python-arango = "^7.9.1"
 pydantic = "^2.6.4"
+faker = "^24"
 
 [tool.poetry.group.dev.dependencies]
 ipython = "^8.22"

@@ -7,7 +7,7 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.12"
-pyright = "^1.1.340"
+pyright = "^1.1.356"
 mypy = "^1.7.1"
 numpy = "^1.26.2"
 pandas = "^2.1.4"
