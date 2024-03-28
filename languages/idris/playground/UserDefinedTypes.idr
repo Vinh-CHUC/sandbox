@@ -138,29 +138,58 @@ evaluate (Mult left right) = evaluate left * evaluate right
 
 data PowerSource = Petrol | Pedal
 
+FuelType : Nat -> PowerSource
+FuelType k = if k == 10 then Petrol else Pedal
+
 -- This is a type that is dependent on PowerSource **values**, Petrol and Pedal are values!!!
 -- There are effectively 2 types in this declaration
+--
+-- This captures a function from <Constructor> --> "Concrete Type"
+--
+-- In essence this is quite different from a typeclass bound generic:
+-- - in that instance (generic with bounds), you only know the interface
+-- - in the case of Value --> Type, the value is destructurable (always?)
 data Vehicle : PowerSource -> Type where
   Bicycle : Vehicle Pedal
   Car : (fuel : Nat) -> Vehicle Petrol
   Bus : (fuel : Nat) -> Vehicle Petrol
+  Buss : (fuel : Nat) -> Vehicle (FuelType fuel)
+  -- Note you can have the Dependent Type itself dependent on the constructor parameters for
+  -- example:
+  --  FuelType : Nat -> PowerSource
+  --  FuelType k = if k == 10 then Petrol else Pedal
+  -- 
+  --  (another constructor)
+  --  Buss : (fuel : Nat) -> Vehicle (FuelType fuel)
+  -- 
+  --  A clause to a function accepting Vehicle Petrol
+  --  refuel (Buss 10) = ...   # Will be valid
+  --  refuel (Buss 11) = ...   # Will be invalid
+
 
 -- Using a type variable, as this works for all types
 wheels: Vehicle power -> Nat
 wheels Bicycle = 2
 wheels (Car fuel) = 4
 wheels (Bus fuel) = 4
+wheels (Buss _) = 10
 
 -- Restricing on `Petrol` here effectively restricts the subset of the "type family" that this
--- fnuction can operate on
+-- function can operate on
 refuel: Vehicle Petrol -> Vehicle Petrol
 refuel (Car fuel) = Car 100
 refuel (Bus fuel) = Bus 200
-refuel Bicycle impossible
+refuel (Buss 10) = Buss 10
+-- The following clauses aren't valid as Buss 11 definitely isn't a Vehicle Petrol and Buss _ is
+-- not decidable
+-- refuel (Buss 11) = Buss 10
+-- refuel (Buss _) = Buss 10
 
 -- -- Vect example
 data Vect : Nat -> Type -> Type where
   Nil : Vect Z a
+  -- Another example where the output dependent type depends on values in the constructor params
+  -- here (S k)
   (::) : (x : a) -> (xs: Vect k a) -> Vect (S k) a
 
 %name Vect xs, ys, ys
@@ -172,3 +201,9 @@ append (x :: xs) ys = x :: append xs ys
 zip : Vect n a -> Vect n b -> Vect n (a, b)
 zip [] ys = []
 zip (x :: xs) (y :: ys) = (x, y) :: zip xs ys
+
+-- index : Fin n -> Vect n a -> a
+
+-- Capturing the dependent type value (have to explicitly capture it to avoir type erasure)
+vinhtest : {n: _} -> Vect n a -> Nat
+vinhtest v = n
