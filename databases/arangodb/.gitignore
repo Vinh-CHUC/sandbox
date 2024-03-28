@@ -1,1 +1,4 @@
 *.jsonl
+*.json
+*.ts
+node_modules/
