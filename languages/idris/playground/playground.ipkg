@@ -22,6 +22,7 @@ modules =
     Book.InteractiveDev,
     Book.UserDefinedTypes,
     Book.UserDefinedTypes_2,
+    Book.UserDefinedTypes_InteractiveDataStore,
     StateMachine
 
 -- main file (i.e. file to load at REPL)
