@@ -1,4 +1,4 @@
-module Main
+module Book.Main
 
 main : IO ()
 main = putStrLn ?greetings

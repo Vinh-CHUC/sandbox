@@ -1,4 +1,4 @@
-module UserDefinedTypes_2
+module Book.UserDefinedTypes_2
 
 import Data.Vect
 

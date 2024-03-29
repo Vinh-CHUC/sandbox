@@ -1,4 +1,4 @@
-module UserDefinedTypes
+module Book.UserDefinedTypes
 
 ------------------
 -- Enumerations --

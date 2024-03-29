@@ -16,7 +16,13 @@ authors = "vinh.chuc@gmail.com"
 -- depends =
 
 -- modules to install
-modules = Basics, Main, InteractiveDev, UserDefinedTypes
+modules = 
+    Book.Basics,
+    Book.Main,
+    Book.InteractiveDev,
+    Book.UserDefinedTypes,
+    Book.UserDefinedTypes_2,
+    StateMachine
 
 -- main file (i.e. file to load at REPL)
 -- main =
@@ -24,7 +30,7 @@ modules = Basics, Main, InteractiveDev, UserDefinedTypes
 -- name of executable
 -- executable =
 -- opts =
--- sourcedir =
+sourcedir = "src"
 -- builddir =
 -- outputdir =
 

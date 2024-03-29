@@ -1,4 +1,4 @@
-module InteractiveDev
+module Book.InteractiveDev
 
 import Data.Vect
 

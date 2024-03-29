@@ -1,4 +1,4 @@
-module Basics
+module Book.Basics
 
 import Data.String
 import Data.List
