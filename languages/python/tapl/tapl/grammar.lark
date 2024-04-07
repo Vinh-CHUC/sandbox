@@ -1,0 +1,11 @@
+?start: expression
+?expression: if_expr | BOOLEAN
+
+if_expr: IF BOOLEAN THEN expression ELSE expression
+BOOLEAN: "true" | "false"
+
+IF: "if"
+THEN: "then"
+ELSE: "else"
+
+%ignore /\s+/  // Ignores all whitespace characters (spaces, tabs, newlines)
