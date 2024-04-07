@@ -56,5 +56,6 @@ processInput store str =
        Nothing => Just ("Invalid Command \n", store)
        Just cmd => processCommand cmd store
 
+-- replWith : HasIO io => a -> String -> (a -> String -> Maybe (String, a)) -> io()
 main : IO ()
 main = replWith (MkData _ []) "Command: " processInput
