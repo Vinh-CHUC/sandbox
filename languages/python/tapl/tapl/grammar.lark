@@ -1,5 +1,5 @@
 ?start: expression
-?expression: if_expr | BOOLEAN
+?expression: if_expr | BOOLEAN | LEFTRB if_expr RIGHTRB
 
 if_expr: IF BOOLEAN THEN expression ELSE expression
 BOOLEAN: "true" | "false"
@@ -7,5 +7,7 @@ BOOLEAN: "true" | "false"
 IF: "if"
 THEN: "then"
 ELSE: "else"
+LEFTRB: "("
+RIGHTRB: ")"
 
 %ignore /\s+/  // Ignores all whitespace characters (spaces, tabs, newlines)
