@@ -1,5 +1,7 @@
-?start: expression
-?expression: if_expr | BOOLEAN | LEFTRB if_expr RIGHTRB
+?start: expression_
+
+?expression_: if_expr | BOOLEAN
+?expression: LEFTRB expression_ RIGHTRB | expression_
 
 if_expr: IF BOOLEAN THEN expression ELSE expression
 BOOLEAN: "true" | "false"
