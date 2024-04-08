@@ -1,0 +1,10 @@
+apiVersion: "database.arangodb.com/v1"
+kind: "ArangoDeployment"
+metadata:
+  name: "example-arangodb-cluster"
+spec:
+  bootstrap:
+    passwordSecretNames:
+      # Magic value will turn into <deploymentname>-root-password
+      root: Auto
+  mode: Cluster

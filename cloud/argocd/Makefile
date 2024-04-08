@@ -55,3 +55,9 @@ print-apps-repos:
 
 print-apps-images:
 	kubectl get pods --all-namespaces -o=jsonpath='{range .items[*].spec.containers[*]}{.image}{"\n"}{end}'
+
+###############
+## Arango DB ##
+###############
+helm-install-arangodb:
+	helm install --generate-name https://github.com/arangodb/kube-arangodb/releases/download/1.2.39/kube-arangodb-1.2.39.tgz --set "operator.features.storage=true"
