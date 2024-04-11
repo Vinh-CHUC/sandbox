@@ -6,9 +6,9 @@ authors = ["Vinh Chuc <vinh.chuc@gmail.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
+simpy = "^4.1.1"
 python = "^3.12"
 pyright = "^1.1.356"
-mypy = "^1.7.1"
 numpy = "^1.26.2"
 pandas = "^2.1.4"
 hypothesis = "^6.92.0"
