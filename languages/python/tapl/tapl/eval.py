@@ -40,6 +40,3 @@ class IsZero:
 
 
 type Term = TrueV | FalseV | Zero | If | Succ | Pred | IsZero
-    
-
-def eval(t: Tree) -> None
