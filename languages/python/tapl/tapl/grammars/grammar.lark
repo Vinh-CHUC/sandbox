@@ -3,7 +3,7 @@
 ?expression: LEFTRB expression_ RIGHTRB | expression_
 ?expression_: if_expr | succ_expr | pred_expr | iszero_expr | BOOLEAN | ZERO
  
-if_expr: IF BOOLEAN THEN expression ELSE expression
+if_expr: IF expression THEN expression ELSE expression
 
 succ_expr: SUCC expression
 pred_expr: PRED expression

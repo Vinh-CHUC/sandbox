@@ -1,42 +1,58 @@
-from dataclasses import dataclass
-from enum import Enum
-from typing import Literal
+from typing import assert_never
 
-from lark.tree import Tree
+from tapl.parser import FalseV, If, IsZero, Pred, Succ, Term, TrueV, Value, Zero
 
-@dataclass
-class Info:
+class NoRulesApply(Exception):
     pass
 
-@dataclass
-class TrueV:
-    info: Info
 
-@dataclass
-class FalseV:
-    info: Info
+def ss_eval(t: Term) -> Term:
+    match t:
+        case If(If=TrueV(),Then=then_):
+            return then_
+        case If(If=FalseV(),Else=else_):
+            return else_
+        case If(If=if_,Then=then_,Else=else_):
+            return If(If=ss_eval(if_), Then=then_, Else=else_)
 
-@dataclass
-class Zero:
-    info: Info
+        case Succ(term=t):
+            return Succ(ss_eval(t))
+        case Pred(term=Zero()):
+            return Zero()
+        case Pred(term=Succ(term=t1)) if isnumericalval(t1):
+            return t1
+        case Pred(term=t1):
+            return Pred(ss_eval(t1))
 
-@dataclass
-class If:
-    If: "Term"
-    Then: "Term"
-    Else: "Term"
+        case IsZero(term=Zero()):
+            return TrueV()
+        case IsZero(term=Succ(t1)) if isnumericalval(t1):
+            return FalseV()
+        case IsZero(term=t1):
+            return IsZero(ss_eval(t1))
 
-@dataclass
-class Succ:
-    term: "Term"
+        case Zero() | Succ() | TrueV() | FalseV():
+            raise NoRulesApply()
 
-@dataclass
-class Pred:
-    term: "Term"
+        case _:
+            assert_never(t)
 
-@dataclass
-class IsZero:
-    term: "Term"
+def isval(t: Term) -> bool:
+    match t:
+        case TrueV():
+            return True
+        case FalseV():
+            return True
+        case _ if isnumericalval(t):
+            return True
+        case _:
+            return False
 
-
-type Term = TrueV | FalseV | Zero | If | Succ | Pred | IsZero
+def isnumericalval(t: Term) -> bool:
+    match t:
+        case Succ():
+            return True
+        case Zero():
+            return True
+        case _:
+            return False

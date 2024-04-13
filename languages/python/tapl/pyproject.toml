@@ -10,6 +10,7 @@ lark = "^1.1.9"
 python = "^3.12"
 
 [tool.poetry.group.dev.dependencies]
+black = "^24.4.0"
 ipython = "^8.23"
 hypothesis = "^6.100"
 pytest = "^8.1.1"
