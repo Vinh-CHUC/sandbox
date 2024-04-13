@@ -1,7 +1,8 @@
+from os import truncate
 import pytest
 
 from tapl.parser import parse_str
-from tapl.eval import NoRulesApply, isnumericalval, isval, ss_eval
+from tapl.eval import NoRulesApply, isnumericalval, isval, ss_eval, eval
 
 
 def test_isval():
@@ -39,3 +40,12 @@ class TestSSEval:
 
     def test_numerics(self):
         assert ss_eval(parse_str("pred succ succ 0")) == parse_str("succ 0")
+
+
+def test_eval():
+    assert eval(
+        parse_str("if (iszero 0) then (pred succ succ 0) else false")
+    ) == parse_str("succ 0")
+    assert eval(
+        parse_str("succ succ succ succ 0")
+    ) == parse_str("succ succ succ succ 0")

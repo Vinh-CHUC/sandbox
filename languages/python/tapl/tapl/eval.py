@@ -6,6 +6,13 @@ class NoRulesApply(Exception):
     pass
 
 
+def eval(t: Term) -> Term:
+    try:
+        t1 = ss_eval(t)
+        return eval(t1)
+    except NoRulesApply:
+        return t
+
 def ss_eval(t: Term) -> Term:
     match t:
         case If(If=TrueV(),Then=then_):
