@@ -1,6 +1,13 @@
 import simpy
 from simpy.core import Environment
 
+## Minimal examples
+def car(env: Environment):
+    while True:
+        parking_duration = 5
+        yield env.timeout(parking_duration)
+##
+
 class Car:
     def __init__(self, env: Environment):
         self.env = env
@@ -34,11 +41,11 @@ env.run(until=15)
 
 
 ##
-def car2(env: Environment, name: str, bcs: list[simpy.Resource], driving_time, charge_duration):
+def car2(env: Environment, name: str, bcs: simpy.Resource, driving_time, charge_duration):
     yield env.timeout(driving_time)
 
     print('%s arriving at %d' %(name, env.now))
-    with simpy.AnyOf(bcs) as req:
+    with bcs.request() as req:
         yield req
 
         print('%s starting to charge at %s' % (name, env.now))
