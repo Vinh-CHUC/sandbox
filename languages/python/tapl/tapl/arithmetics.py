@@ -36,3 +36,5 @@ assert plus(THREE, THREE)(lambda x: x + 1, 0) == 6
 
 def times(m: ChurchNum, n: ChurchNum):
     return m(plus_curry(n), ZERO)
+
+assert times(THREE, THREE)(lambda x: x + 1, 0) == 9

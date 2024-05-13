@@ -1,3 +1,10 @@
+fn test<T>(x: Option<T>) -> Option<T> {
+    match x {
+        None => None,
+        Some(i) => None,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     #[test]
