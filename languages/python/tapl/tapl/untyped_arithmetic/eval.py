@@ -1,6 +1,6 @@
 from typing import assert_never
 
-from tapl.untyped_arithmetic.parser import FalseV, If, IsZero, Pred, Succ, Term, TrueV, Value, Zero
+from tapl.untyped_arithmetic.parser import FalseV, If, IsZero, Pred, Succ, Term, TrueV, Zero
 
 class NoRulesApply(Exception):
     pass

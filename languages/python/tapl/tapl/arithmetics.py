@@ -18,7 +18,7 @@ T = TypeVar("T")
 
 type ChurchNum[T] = Callable[[Callable[[T], T], T], T]
 
-ZERO : ChurchNum = lambda s, z: z
+ZERO : ChurchNum = lambda s, z: z  # noqa:E731
 
 def scc(n: ChurchNum) -> ChurchNum:
     return lambda s, z: n(s, s(z))

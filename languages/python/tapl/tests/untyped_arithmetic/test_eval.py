@@ -1,4 +1,3 @@
-from os import truncate
 import pytest
 
 from tapl.untyped_arithmetic.parser import parse_str
