@@ -3,10 +3,10 @@ from pathlib import Path
 import pytest
 from lark import exceptions, Lark
 
-from tapl.parser import parse
+from tapl.untyped_arithmetic.parser import parse
 
 
-GRAMMAR_P = Path(__file__).parent.parent / Path("tapl/grammars/grammar.lark")
+GRAMMAR_P = Path(__file__).parent.parent.parent / Path("tapl/untyped_arithmetic/grammars/grammar.lark")
 PARSER = Lark(Path.open(GRAMMAR_P))
 
 

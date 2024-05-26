@@ -1,8 +1,8 @@
 from os import truncate
 import pytest
 
-from tapl.parser import parse_str
-from tapl.eval import NoRulesApply, isnumericalval, isval, ss_eval, eval
+from tapl.untyped_arithmetic.parser import parse_str
+from tapl.untyped_arithmetic.eval import NoRulesApply, isnumericalval, isval, ss_eval, eval
 
 
 def test_isval():
