@@ -41,5 +41,7 @@ def parse(t: Tree | Token) -> Term:
             return Variable(index=int(val))
         case Tree(data=Token("RULE", "application"), children=[child1, child2]):
             return Application(abstraction=parse(child1), operand=parse(child2))
+        case Tree(data=Token("RULE", "abstraction"), children=[_, child]):
+            return Abstraction(term=parse(child))
         case _:
             raise NotImplementedError
