@@ -1,0 +1,19 @@
+?start: term
+
+?term: paren_term | term_
+?term_: abstraction | application | variable
+?paren_term: LEFTRB term_ RIGHTRB
+
+?primary: abstraction | variable | paren_term
+
+variable: INTEGER
+abstraction: LAMBDA term
+application: term primary  // make left associativity explicit
+
+
+LAMBDA: /lambda *:/
+LEFTRB: "("
+RIGHTRB: ")"
+INTEGER: /(0|[1-9][0-9]*)/
+
+%ignore /\s+/  // Ignores all whitespace characters (spaces, tabs, newlines)
