@@ -42,3 +42,23 @@ class TestParser:
     )
     def test_precedence(self, test_input, expected):
         assert repr(parse(PARSER.parse(test_input))) == expected
+
+    @pytest.mark.parametrize(
+        "test_input,expected",
+        [
+            (
+                "lambda: lambda: (lambda: lambda:3 2 1 0) (lambda: 0)",
+                "(lambda: (lambda: ((lambda: (lambda: (((3 2) 1) 0))) (lambda: 0))))"
+            ),
+            (
+                "lambda: lambda: (lambda: (lambda: 1) 0) lambda: 2 1 0",
+                "(lambda: (lambda: ((((lambda: ((lambda: 1) 0)) (lambda: 2)) 1) 0)))"
+            ),
+            (
+                "lambda: lambda: (lambda: (lambda: 1) 0) (lambda: 2 1 0)",
+                "(lambda: (lambda: ((lambda: ((lambda: 1) 0)) (lambda: ((2 1) 0)))))"
+            ),
+        ]
+    )
+    def test_complex_use_cases(self, test_input, expected):
+        assert repr(parse(PARSER.parse(test_input))) == expected
