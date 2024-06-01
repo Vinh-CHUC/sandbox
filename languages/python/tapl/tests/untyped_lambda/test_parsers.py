@@ -1,13 +1,6 @@
-from pathlib import Path
-
 import pytest
-from lark import exceptions, Lark
 
 from tapl.untyped_lambda.parser import parse
-
-
-GRAMMAR_P = Path(__file__).parent.parent.parent / Path("tapl/untyped_lambda/grammars/grammar.lark")
-PARSER = Lark(Path.open(GRAMMAR_P))
 
 
 @pytest.mark.parametrize(
@@ -19,7 +12,7 @@ PARSER = Lark(Path.open(GRAMMAR_P))
     ]
 )
 def test_applications(test_input, expected):
-    assert repr(parse(PARSER.parse(test_input))) == expected
+    assert repr(parse(test_input)) == expected
 
 
 @pytest.mark.parametrize(
@@ -29,7 +22,7 @@ def test_applications(test_input, expected):
     ]
 )
 def test_abstractions(test_input, expected):
-    assert repr(parse(PARSER.parse(test_input))) == expected
+    assert repr(parse(test_input)) == expected
 
 class TestParser:
     @pytest.mark.parametrize(
@@ -41,7 +34,7 @@ class TestParser:
         ]
     )
     def test_precedence(self, test_input, expected):
-        assert repr(parse(PARSER.parse(test_input))) == expected
+        assert repr(parse(test_input)) == expected
 
     @pytest.mark.parametrize(
         "test_input,expected",
@@ -61,4 +54,4 @@ class TestParser:
         ]
     )
     def test_complex_use_cases(self, test_input, expected):
-        assert repr(parse(PARSER.parse(test_input))) == expected
+        assert repr(parse(test_input)) == expected

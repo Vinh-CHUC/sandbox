@@ -1,13 +1,14 @@
+import string
 from typing import assert_never
 
 from tapl.untyped_lambda.parser import Abstraction, Application, Term, Variable
 
 
-def eval(Term) -> Abstraction:
-    pass
+# def eval(Term[int]) -> Abstraction:
+#     pass
 
 
-def shift(by: int, above: int, t: Term) -> Term:
+def shift(by: int, above: int, t: Term[int]) -> Term[int]:
     match t:
         case Variable(index=index) if index >= above:
             return Variable(index=index + by)
@@ -23,7 +24,7 @@ def shift(by: int, above: int, t: Term) -> Term:
             assert_never(t)
 
 
-def substitute(index: int, from_term: Term, to_term: Term) -> Term:
+def substitute(index: int, from_term: Term[int], to_term: Term[int]) -> Term[int]:
     match from_term:
         case Variable(index=idx) if idx == index:
             return to_term
