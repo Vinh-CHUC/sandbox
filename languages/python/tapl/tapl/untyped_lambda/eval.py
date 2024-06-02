@@ -1,11 +1,37 @@
 import string
 from typing import assert_never
 
+from lark.lark import abstractmethod
+
 from tapl.untyped_lambda.parser import Abstraction, Application, Term, Variable
 
+class NoRulesApply(Exception):
+    pass
 
-# def eval(Term[int]) -> Abstraction:
-#     pass
+
+def eval(t: Term[int]) -> Term[int]:
+    try:
+        t1 = ss_eval(t)
+        return eval(t1)
+    except NoRulesApply:
+        return t
+
+def ss_eval(t: Term[int]) -> Term[int]:
+    match t:
+        case Variable():
+            raise AssertionError
+        case Abstraction() as abs:
+            raise NoRulesApply
+        case Application(abstraction=Abstraction() as abs, operand=Abstraction() as oper):
+            shifted_operand = shift(by=1, above=0, t=oper)
+            substituted = substitute(0, abs.term, shifted_operand)
+            shifted_back = shift(by=-1, above=0, t=substituted)
+            return shifted_back
+        case Application(abstraction=Abstraction() as abs, operand=oper):
+            return Application(abstraction=abs, operand=eval(oper))
+        case Application(abstraction=abs, operand=oper):
+            return Application(abstraction=eval(abs), operand=oper)
+
 
 
 def shift(by: int, above: int, t: Term[int]) -> Term[int]:

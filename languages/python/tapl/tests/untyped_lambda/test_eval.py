@@ -1,14 +1,8 @@
-from pathlib import Path
-
 import pytest
-from lark import exceptions, Lark
 
-from tapl.untyped_lambda.eval import shift
+from tapl.untyped_lambda.eval import eval, shift
 from tapl.untyped_lambda.parser import parse
 
-
-GRAMMAR_P = Path(__file__).parent.parent.parent / Path("tapl/untyped_lambda/grammars/grammar.lark")
-PARSER = Lark(Path.open(GRAMMAR_P))
 
 @pytest.mark.parametrize(
     "test_input,shift_by,shift_above,expected",
@@ -21,8 +15,25 @@ PARSER = Lark(Path.open(GRAMMAR_P))
         ("lambda: 1", 5, 0, "(lambda: 6)"),
         ("(lambda: 1) (lambda: 1)", 5, 0, "((lambda: 6) (lambda: 6))"),
         ("lambda: 0 (lambda: 0 1 2)", 2, 0, "(lambda: (0 (lambda: ((0 1) 4))))"),
-    ]
+    ],
 )
 def test_shift(test_input, shift_by, shift_above, expected):
-    term = parse(PARSER.parse(test_input))
+    term = parse(test_input)
     assert repr(shift(shift_by, shift_above, term)) == expected
+
+
+@pytest.mark.parametrize(
+    "a,b",
+    [
+        ("lambda: 0", "lambda: 0"),
+        ("(lambda: 0) (lambda:  0)", "lambda: 0"),
+        # The lambda being applied is constant
+        ("(lambda: lambda: 0)(lambda: lambda: lambda: 0)", "lambda: 0"),
+        (
+            "(lambda: lambda: lambda: 0 2 1) (lambda: 0) (lambda: lambda: 0) (lambda: lambda: 1)",
+            "lambda: 0",
+        ),
+    ],
+)
+def test_eval(a, b):
+    assert eval(parse(a)) == parse(b)
