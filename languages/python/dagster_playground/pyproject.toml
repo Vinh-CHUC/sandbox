@@ -7,18 +7,25 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 dagster = "^1.7.10"
+dagster_duckdb_pandas = "*"
+dagster_duckdb = "*"
+dagster-cloud = "*"
 duckdb = "^1.0.0"
 fspec = "^2024.3.1"
 gcsfs = "^2024.6.0"
 numpy = "^1.26.4"
 pandas = "^2.2.2"
-python = "^3.12"
+python = "3.12.*"
 pydantic = "^2.7.1"
+requests = "*"
 
 [tool.poetry.group.dev.dependencies]
 black = "^24.4.2"
+dagster-webserver = "*"
 factory-boy = "^3.3.0"
+Faker = "18.4.0"
 hypothesis = "^6.103.2"
+matplotlib = "*"
 ipython = "^8.25.0"
 pyright = "^1.1.367"
 pytest = "^8.2.2"
@@ -28,3 +35,6 @@ ruff-lsp = "^0.0.53"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.dagster]
+module_name = "dagster_playground.tutorial"
