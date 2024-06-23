@@ -5,6 +5,9 @@ project(playground)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Include directories
+include_directories(${PROJECT_SOURCE_DIR}/include)
+
 # GTest
 include(FetchContent)
 FetchContent_Declare(
@@ -15,17 +18,19 @@ FetchContent_MakeAvailable(googletest)
 
 enable_testing()
 
+file(GLOB_RECURSE TEST_SOURCES "tests/*.cpp")
 add_executable(
-  hello_test
-  tests/hello_test.cpp
+  playground_test
+  ${TEST_SOURCES}
 )
 target_link_libraries(
-  hello_test
+  playground_test
   GTest::gtest_main
 )
 
 include(GoogleTest)
-gtest_discover_tests(hello_test)
+gtest_discover_tests(playground_test)
 
 # Main executable
-add_executable(playground src/main.cpp)
+file(GLOB_RECURSE SOURCES "src/*.cpp")
+add_executable(playground ${SOURCES})

@@ -1,6 +1,11 @@
 #include <iostream>
+#include <string>
+
+#include "MyString.h"
 
 int main() {
-    std::cout << "Hello, World!" << std::endl;
+    MyString str2(std::move(MyString(std::string("hi"))));
+    std::cout << str2.get() << std::endl;
+    std::cout << str2.move_assignment_count << std::endl;
     return 0;
 }
