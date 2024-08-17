@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include "VString.h"
+#include "vstring.h"
 
 VString::VString(const std::string &str)
     : move_constructor_count(0), value(str) {

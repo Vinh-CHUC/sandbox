@@ -4,6 +4,6 @@ cc_binary(
     name = "main",
     srcs = ["main.cc"],
     deps = [
-        "//VString:VString",
+        "//vstring:vstring",
     ],
 )

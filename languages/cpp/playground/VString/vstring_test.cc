@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include <iostream>
 
-#include "VString/VString.h"
+#include "vstring/vstring.h"
 
 // Demonstrate some basic assertions.
 TEST(HelloTest, BasicAssertions) {

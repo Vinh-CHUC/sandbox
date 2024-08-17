@@ -1,18 +1,18 @@
 load("@rules_cc//cc:defs.bzl", "cc_library")
 
 cc_library(
-    name = "VString",
-    srcs = ["VString.cc"],
-    hdrs = ["VString.h"],
+    name = "vstring",
+    srcs = ["vstring.cc"],
+    hdrs = ["vstring.h"],
     visibility = ["//visibility:public"],
 )
 
 cc_test(
-    name = "VString_test",
+    name = "vstring_test",
     size = "small",
-    srcs = ["VString_test.cc"],
+    srcs = ["vstring_test.cc"],
     deps = [
-        ":VString",
+        ":vstring",
         "@googletest//:gtest",
         "@googletest//:gtest_main",
     ],
