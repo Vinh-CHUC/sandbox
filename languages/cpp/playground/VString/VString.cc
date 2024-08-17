@@ -9,6 +9,8 @@ VString::VString(const std::string &str)
 
 const std::string &VString::get() const { return value; }
 
+int VString::get_moves_count() const { return move_constructor_count; }
+
 VString::VString(VString &&other) noexcept
     : move_constructor_count(other.move_constructor_count),
       value(std::move(other.value)) {
