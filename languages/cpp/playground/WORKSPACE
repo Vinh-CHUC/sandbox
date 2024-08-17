@@ -1,5 +1,9 @@
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 
+################
+# Hermetic GCC #
+################
+
 http_archive(
     name = "aspect_gcc_toolchain",
     sha256 = "3341394b1376fb96a87ac3ca01c582f7f18e7dc5e16e8cf40880a31dd7ac0e1e",
@@ -20,6 +24,10 @@ gcc_register_toolchain(
     target_arch = ARCHS.x86_64,
 )
 
+##########
+# Hedron #
+##########
+
 # Hedron's Compile Commands Extractor for Bazel
 # https://github.com/hedronvision/bazel-compile-commands-extractor
 http_archive(
@@ -39,3 +47,17 @@ load("@hedron_compile_commands//:workspace_setup_transitive_transitive.bzl", "he
 hedron_compile_commands_setup_transitive_transitive()
 load("@hedron_compile_commands//:workspace_setup_transitive_transitive_transitive.bzl", "hedron_compile_commands_setup_transitive_transitive_transitive")
 hedron_compile_commands_setup_transitive_transitive_transitive()
+
+##############
+# Clang Tidy #
+##############
+load(
+    "@bazel_tools//tools/build_defs/repo:git.bzl",
+    "git_repository",
+)
+
+git_repository(
+       name = "bazel_clang_tidy",
+       commit = "bff5c59c843221b05ef0e37cef089ecc9d24e7da",
+       remote = "https://github.com/erenon/bazel_clang_tidy.git",
+)
