@@ -1,6 +1,48 @@
+#include "builder/builder.h"
+
 #include <boost/hana.hpp>
 #include <cassert>
 #include <string>
+
+ABuilder::ABuilder()
+    : a{"default"}, b{"default"}, c{"default"}, move_count(0) {}
+A ABuilder::build() {
+  return A{
+      .a = std::move(a),
+      .b = std::move(b),
+      .c = std::move(c),
+  };
+}
+
+ABuilder &ABuilder::seta(const std::string &s) {
+  a = s;
+  return *this;
+}
+ABuilder &ABuilder::setb(const std::string &s) {
+  b = s;
+  return *this;
+}
+ABuilder &ABuilder::setc(const std::string &s) {
+  c = s;
+  return *this;
+}
+
+ABuilder &ABuilder::seta(std::string &&s) {
+  move_count++;
+  a = std::move(s);
+  return *this;
+}
+ABuilder &ABuilder::setb(std::string &&s) {
+  move_count++;
+  b = std::move(s);
+  return *this;
+}
+ABuilder &ABuilder::setc(std::string &&s) {
+  move_count++;
+  c = std::move(s);
+  return *this;
+}
+
 namespace hana = boost::hana;
 using namespace hana::literals;
 

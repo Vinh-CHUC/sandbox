@@ -19,6 +19,8 @@ public:
   const std::string &get() const;
   int get_moves_count() const;
 
+  VString &&consume();
+
 private:
   int move_constructor_count;
   std::string value;
