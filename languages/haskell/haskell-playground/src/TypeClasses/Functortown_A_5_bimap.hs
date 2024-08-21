@@ -1,9 +1,10 @@
+{-# LANGUAGE DeriveFunctor #-}
 module TypeClasses.Functortown_A_5_bimap (
 ) where
 
 import Data.Bifunctor
 
-data IncrementPair a b = IncrementPair a b deriving (Show, Eq)
+data IncrementPair a b = IncrementPair a b deriving (Show, Eq, Functor)
 
 -- class Bifunctor (p :: * -> * -> *) where
 --   bimap :: (a -> b) -> (c -> d) -> p a c -> p b d

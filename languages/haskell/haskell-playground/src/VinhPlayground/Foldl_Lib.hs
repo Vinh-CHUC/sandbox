@@ -26,10 +26,10 @@ import GHC.Generics (Datatype(datatypeName))
 -- The functor/applicative instance really focus on the extractor function
 -- e.g. fmapping composes on top of (x -> b) so it's like instance Functor (Fold a)
 
-sumAndLength = L.fold ((,) <$> L.sum <*> L.length)
-sumAndProductAndLength = L.fold ((,,) <$> L.sum <*> L.product <*> L.length)
+sumAndLength x = L.fold ((,) <$> L.sum <*> L.length) x
+sumAndProductAndLength x = L.fold ((,,) <$> L.sum <*> L.product <*> L.length) x
 -- liftA2 style:
-sumAndLengthA2 = L.fold (liftA2 (,) L.sum L.length)
+sumAndLengthA2 x = L.fold (liftA2 (,) L.sum L.length) x
 
 -- One can also meditate on this datatypeName
 -- data FoldM m a b = FoldM (x -> a -> m x) (m x) (x -> m b)
