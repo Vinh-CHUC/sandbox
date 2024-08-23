@@ -2,44 +2,54 @@
 
 #include <boost/hana.hpp>
 #include <cassert>
+#include <cwchar>
 #include <string>
 
-ABuilder::ABuilder()
-    : a{"default"}, b{"default"}, c{"default"}, move_count(0) {}
+ABuilder::ABuilder() : x{"default"}, b_builder(), move_count(0) {}
 A ABuilder::build() {
   return A{
-      .a = std::move(a),
-      .b = std::move(b),
-      .c = std::move(c),
+      .x = std::move(x),
+      .b = b_builder.build(),
   };
 }
 
-ABuilder &ABuilder::seta(const std::string &s) {
-  a = s;
+ABuilder &ABuilder::setx(const std::string &s) {
+  // IRL one could reuse the other variant by doing
+  // return setx(std::string(s)) --> This is rvalue
+  x = s;
   return *this;
 }
-ABuilder &ABuilder::setb(const std::string &s) {
-  b = s;
-  return *this;
-}
-ABuilder &ABuilder::setc(const std::string &s) {
-  c = s;
+ABuilder &ABuilder::setb_builder(const BBuilder &bb) {
+  this->b_builder = bb;
   return *this;
 }
 
-ABuilder &ABuilder::seta(std::string &&s) {
+ABuilder &ABuilder::setx(std::string &&s) {
   move_count++;
-  a = std::move(s);
+  x = std::move(s);
   return *this;
 }
-ABuilder &ABuilder::setb(std::string &&s) {
+ABuilder &ABuilder::setb_builder(BBuilder &&bb) {
   move_count++;
-  b = std::move(s);
+  this->b_builder = std::move(bb);
   return *this;
 }
-ABuilder &ABuilder::setc(std::string &&s) {
-  move_count++;
-  c = std::move(s);
+
+BBuilder::BBuilder() : x{"default"} {}
+
+B BBuilder::build() {
+  return B{
+      .x = std::move(x),
+  };
+}
+
+BBuilder &BBuilder::setx(const std::string &s) {
+  x = s;
+  return *this;
+}
+
+BBuilder &BBuilder::setx(std::string &&s) {
+  x = std::move(s);
   return *this;
 }
 
