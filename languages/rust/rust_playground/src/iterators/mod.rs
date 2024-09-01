@@ -1,13 +1,12 @@
 mod tests {
     #[cfg(test)]
     pub fn vec_factory() -> Vec<Vec<i32>> {
-        (1..10).into_iter().map(
-            |x| { 
-                (1..x).into_iter().collect()
-            }
-        ).collect()
+        (1..10)
+            .into_iter()
+            .map(|x| (1..x).into_iter().collect())
+            .collect()
     }
-    
+
     #[test]
     fn lambda_syntax() {
         // Need to explicitly annotate type otherwise the compiler cannot guess!!
@@ -18,7 +17,7 @@ mod tests {
         assert_eq!(5, c2(5));
 
         // No need
-        let c3 = |x| { x + 1 };
+        let c3 = |x| x + 1;
         assert_eq!(5, c3(4));
 
         let _c4 = || println!("Hiiiii!!");
@@ -48,10 +47,11 @@ mod tests {
         {
             let list = vec![1, 2, 3];
             let c1 = |v| println!("{:?}", v);
-            // let c1 = |v: &_| println!("{:?}", v); The reference declaration is optional actually
+
+            // let c1 = |v: &_| println!("{:?}", v);
+            // The reference declaration is optional actually as Rust infers from this line below
             c1(&list);
 
-            // The presence of this statement is what causes Rust to use reference capture!!!
             println!("{:?}", list);
         }
         // By mutable reference
@@ -77,43 +77,47 @@ mod tests {
             println!("Before calling closure: {:?}", list);
             // list.push(5);  // Would not work if we had let mut list
 
-            borrows();  // Note that the lifetimes of list and the closure capture do overlap
+            borrows(); // Note that the lifetimes of list and the closure capture do overlap
             println!("After calling closure: {:?}", list);
         }
         // Mutable reference
         {
             let mut list = vec![1, 2, 3];
             let mut borrows_mut = || list.push(5);
-            borrows_mut();  // Note that the lifetimes of list and the closure capture do overlap
-            // Another access to "list" here would have been forbidden
+            borrows_mut(); // Note that the lifetimes of list and the closure capture do overlap
+                           // Another access to "list" here would have been forbidden
         }
         // Move
         {
             let list = vec![1, 2, 3];
             let moves = move || println!("{:?}", list);
-            moves();  // Note that the lifetimes of list and the closure capture do overlap
-            // Cant access list here
+            moves(); // Note that the lifetimes of list and the closure capture do overlap
+                     // Cant access list here
         }
     }
 
     #[test]
-    fn for_loops(){
+    fn for_loops() {
         // A for_loop implicitly calls into_iter(), which may yield T, &T or &mut T dependeing on
         // the context
-        { // T
+        {
+            // T
             let v1 = vec![1, 2, 3];
             for val in v1 {
                 println!("{}", val);
             }
             // Can't access v1
         }
-        { // &T
+        {
+            // &T
             let v1 = vec![1, 2, 3];
             for val in &v1 {
                 println!("{}", val);
             }
             println!("{:?}", v1);
-        }{ // &mut T
+        }
+        {
+            // &mut T
             let mut v1 = vec![1, 2, 3];
             for val in &mut v1 {
                 *val = 5;
@@ -123,7 +127,7 @@ mod tests {
     }
 
     #[test]
-    fn explicit_iterators(){
+    fn explicit_iterators() {
         // &reference
         {
             let v1 = vec![1, 2, 3];
@@ -137,7 +141,7 @@ mod tests {
             // v1.iter_mut().map(|x| {*x = 10}).collect::<()>();
             // Note we can do this again as the closures are contained in one line
             // v1.iter_mut().map(|x| {*x = 20}).collect::<()>();
-            v1.iter_mut().for_each(|x| {*x = 10});
+            v1.iter_mut().for_each(|x| *x = 10);
             assert_eq!(v1, vec![10, 10, 10])
         }
         // Consuming the input
@@ -148,13 +152,16 @@ mod tests {
             // }
             // Note that the move in front of the closure is not necessary!!
             let v = vec_factory();
-            let r = v.into_iter().map(|x| x.len()).fold(0, |acc, el| { acc + el });
+            let r = v.into_iter().map(|x| x.len()).fold(0, |acc, el| acc + el);
             assert_eq!(r, 36);
         }
         // Consuming the input 2
         {
             let v = vec_factory();
-            let r: Vec<Vec<i32>> = v.into_iter().map(|x| {x.into_iter().map(|y| {-y}).collect()}).collect();
+            let r: Vec<Vec<i32>> = v
+                .into_iter()
+                .map(|x| x.into_iter().map(|y| -y).collect())
+                .collect();
             assert!(r[0].is_empty());
             assert_eq!(r[1], vec![-1]);
             assert_eq!(r[2], vec![-1, -2]);

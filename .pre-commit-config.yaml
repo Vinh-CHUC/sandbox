@@ -21,8 +21,3 @@ repos:
   rev: v18.1.8
   hooks:
   - id: clang-format
-- repo: https://github.com/doublify/pre-commit-rust
-  rev: master
-  hooks:
-  - id: fmt
-  - id: cargo-check

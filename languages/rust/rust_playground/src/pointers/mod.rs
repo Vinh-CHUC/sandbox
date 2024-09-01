@@ -10,17 +10,17 @@ use std::rc::Rc;
 #[cfg(test)]
 enum List {
     Cons(i32, Box<List>),
-    Nil
+    Nil,
 }
 
 #[cfg(test)]
 enum List2 {
     Cons(i32, Rc<List2>),
-    Nil
+    Nil,
 }
 
 // A tuple struct
-struct VinhsBox<T> (T);
+struct VinhsBox<T>(T);
 
 #[cfg(test)]
 impl<T> VinhsBox<T> {
@@ -44,7 +44,7 @@ pub fn hello(name: &str) {
 }
 
 pub struct CustomSmartPointer {
-    pub data: String
+    pub data: String,
 }
 
 impl Drop for CustomSmartPointer {
@@ -52,7 +52,6 @@ impl Drop for CustomSmartPointer {
         println!("Dropping CustomSmartPointer with data `{}`!", self.data);
     }
 }
-
 
 mod LimitTracker {
     pub trait Messenger {
@@ -84,24 +83,25 @@ mod LimitTracker {
             if percentage_of_max >= 1.0 {
                 self.messenger.send("Error: You are over your quota!");
             } else if percentage_of_max >= 0.9 {
-                self.messenger.send("Urgent warning: You've used up over 90% of your quota!");
+                self.messenger
+                    .send("Urgent warning: You've used up over 90% of your quota!");
             } else if percentage_of_max >= 0.75 {
-                self.messenger.send("Warning: You've used up over 75% of your quota!");
+                self.messenger
+                    .send("Warning: You've used up over 75% of your quota!");
             }
         }
     }
-
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::pointers::VinhsBox;
     use crate::pointers::hello;
     use crate::pointers::CustomSmartPointer;
+    use crate::pointers::LimitTracker::{LimitTracker, Messenger};
     use crate::pointers::List::{Cons, Nil};
-    use std::rc::Rc;
     use crate::pointers::List2;
-    use crate::pointers::LimitTracker::{Messenger, LimitTracker};
+    use crate::pointers::VinhsBox;
+    use std::rc::Rc;
 
     #[test]
     fn basic_pointers() {
@@ -147,8 +147,12 @@ mod tests {
 
     #[test]
     fn drop_trait() {
-        let _one = CustomSmartPointer{data: String::from("hi there")};
-        let _two = CustomSmartPointer{data: String::from("como estas")};
+        let _one = CustomSmartPointer {
+            data: String::from("hi there"),
+        };
+        let _two = CustomSmartPointer {
+            data: String::from("como estas"),
+        };
 
         // Explicit destructor calls not allowed
         // one.drop();
@@ -156,9 +160,8 @@ mod tests {
         // But one can call the standard drop() function whenever
         let myvec = vec![1, 2, 3];
         drop(myvec); // Of course it has to move...
-        // println!("{:?}", myvec);
+                     // println!("{:?}", myvec);
     }
-
 
     #[test]
     fn vec_factory() {
@@ -172,7 +175,10 @@ mod tests {
         // Can't as things are moved in a box
         // let c = Cons(3, Box::new(a));
 
-        let a = Rc::new(List2::Cons(5, Rc::new(List2::Cons(10, Rc::new(List2::Nil)))));
+        let a = Rc::new(List2::Cons(
+            5,
+            Rc::new(List2::Cons(10, Rc::new(List2::Nil))),
+        ));
         let _b = List2::Cons(3, Rc::clone(&a));
         let _c = List2::Cons(3, Rc::clone(&a));
 
@@ -186,7 +192,7 @@ mod tests {
     }
 
     struct MockMessenger {
-        sent_messages: Vec<String>
+        sent_messages: Vec<String>,
     }
 
     impl MockMessenger {
@@ -204,7 +210,7 @@ mod tests {
     }
 
     #[test]
-    fn ref_cells(){
+    fn ref_cells() {
         // The point is to allow to mutate the value held inside even if the RefCell itself is
         // immutable
         // e.g. "interior mutability" like mutable fields in C++
