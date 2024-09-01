@@ -1,3 +1,5 @@
+{-# LANGUAGE FlexibleContexts #-}
+
 module VinhPlayground.ListMonad
     (
         explodeBasedOnModulo2,
@@ -32,8 +34,9 @@ test :: () -> [Integer]
 test () =
     [1..10] >>= explodeBasedOnModulo2 >>= explodeBasedOnModulo3
 
-test2 :: Integer -> [Integer]
-test2 x = do
+test2 :: [Integer] -> [Integer]
+test2 xs = do
+    x <- xs
     y <- explodeBasedOnModulo2 x
     z <- explodeBasedOnModulo3 y
     removeMultiplesOf5 z
@@ -47,7 +50,7 @@ test2_2 x =
         (\y -> explodeBasedOnModulo3 y)
 
 test2_3 :: Integer -> [Integer]
-test2_3 x = 
+test2_3 x =
     explodeBasedOnModulo2 x >>=
         -- Could add more brackets (\y -> ( but they are redundant
         (\y ->explodeBasedOnModulo3 y >>=

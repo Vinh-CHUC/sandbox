@@ -1,9 +1,11 @@
-module VinhPlayground.Foldl_Lib where
+module VinhPlayground.Foldl_Lib (
+    sumAndLength, sumAndProductAndLength, sumAndLengthA2
+) where
 -- https://github.com/Gabriella439/foldl
 
 import qualified Control.Foldl as L
-import Control.Applicative (Applicative (..))
-import GHC.Generics (Datatype(datatypeName))
+import Control.Applicative()
+import GHC.Generics()
 
 -- This library is organised around this main datatype Fold a b =
 -- Fold (x -> a -> x) x (x -> b)
@@ -26,9 +28,14 @@ import GHC.Generics (Datatype(datatypeName))
 -- The functor/applicative instance really focus on the extractor function
 -- e.g. fmapping composes on top of (x -> b) so it's like instance Functor (Fold a)
 
+sumAndLength :: (Foldable f, Num a) => f a -> (a, Int)
 sumAndLength x = L.fold ((,) <$> L.sum <*> L.length) x
+
+sumAndProductAndLength :: (Foldable f, Num a) => f a -> (a, a, Int)
 sumAndProductAndLength x = L.fold ((,,) <$> L.sum <*> L.product <*> L.length) x
+
 -- liftA2 style:
+sumAndLengthA2 :: (Foldable f, Num a) => f a -> (a, Int)
 sumAndLengthA2 x = L.fold (liftA2 (,) L.sum L.length) x
 
 -- One can also meditate on this datatypeName

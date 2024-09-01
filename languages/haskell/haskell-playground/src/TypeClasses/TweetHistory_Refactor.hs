@@ -1,6 +1,7 @@
 {-# LANGUAGE LambdaCase, OverloadedStrings, TypeApplications #-}
 
 module TypeClasses.TweetHistory_Refactor (
+    main
 ) where
 
 
@@ -19,7 +20,7 @@ import Data.Text (Text)
 import Data.Time (Day)
 import Data.Validation (Validation (..), validation)
 import Data.Vector (Vector)
-import Data.Function (on)
+import Data.Function()
 
 -- Reads a CSV file, prints a histogram of all days I've tweeted at Julie.
 -- If any rows fail to parse, prints a list of failed rows instead.

@@ -1,6 +1,7 @@
 module TypeClasses.Functortown_B_2_monoids_in_functor (
+    nonEmpty, mkPerson, mkPerson2, x
 ) where
-import Control.Applicative
+import Control.Applicative ()
 
 -- Remember the definition of liftA2 :: (a -> b -> c) -> f a -> f b -> f c
 -- And the duality with <*> :: f (a -> b) -> f a -> f b
@@ -36,7 +37,8 @@ mkPerson2 name' pl' =
 -- forced to have uniform types
 -- But once we fmap, the (a -> b) is then wrapped in the context f(a -> b)!
 -- We do deal with two things in the functor context, the function and another value
-_ = liftA2 (<) ("vinh", 1) (" chuc", 2)  -- => ("vinhchuc", True) !!! wut??
+x :: (String, Bool)
+x = liftA2 (<) ("vinh", 1 :: Int) (" chuc", 2)  -- => ("vinhchuc", True) !!! wut??
 
 -- For the 2-elements tuple, the first then has to be a monoid, it gives a way to combine these
 
@@ -46,5 +48,5 @@ _ = liftA2 (<) ("vinh", 1) (" chuc", 2)  -- => ("vinhchuc", True) !!! wut??
 -- Practice!!!
 -- instance Monoid a => Applicative ((,) a) where
 --     pure x = (mempty, x)
---     liftA2 f (a1, b) (a2, c) = (a1 <> a2, f b c) 
+--     liftA2 f (a1, b) (a2, c) = (a1 <> a2, f b c)
 --     (a1, f) <*> (a2, b) = (a1 <> a2, f b)

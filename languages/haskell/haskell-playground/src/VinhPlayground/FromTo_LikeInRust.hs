@@ -1,6 +1,8 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
 
-module VinhPlayground.FromTo_LikeInRust where
+module VinhPlayground.FromTo_LikeInRust (
+    f1, f2, Convert(..)
+) where
 
 --------------------------------
 -- Only one degree of freedom --

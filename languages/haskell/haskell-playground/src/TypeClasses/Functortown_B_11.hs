@@ -1,5 +1,5 @@
-{-# LANGUAGE DeriveFunctor #-} 
-module TypeClasses.Functortown_B_11 where
+{-# LANGUAGE DeriveFunctor #-}
+module TypeClasses.Functortown_B_11 () where
 
 -- Could a "Maybe with 2 Nothings" still be an applicative functors?
 

@@ -1,10 +1,11 @@
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 module TypeClasses.Functortown_B_7_compose_newtype (
+    compose, getCompose
 ) where
 
-import Control.Applicative (Applicative (..))
-import Test.Hspec (xit, fit)
+import Control.Applicative()
+import Test.Hspec()
 import Data.Coerce
 
 composePure ::

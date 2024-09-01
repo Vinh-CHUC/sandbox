@@ -1,9 +1,11 @@
 {-# LANGUAGE InstanceSigs #-}
 
 module TypeClasses.Functortown_B_5_reader_context (
+   functionPure, functionLiftA2, functionAp, runReader, m, assembleMessage, personalizedSalutation,
+   personalizedPitch, messageForVinh
 ) where
-import Control.Lens (cons)
-import Control.Applicative
+import Control.Lens()
+import Control.Applicative()
 
 -- Qui l'eut cru?
 -- instance Functor ((->) a) where
@@ -32,7 +34,8 @@ instance Functor (Reader env) where
     fmap :: (a -> b) -> Reader env a -> Reader env b
     fmap f (Reader a) = Reader $ f . a
 
-_ = runReader (fmap (+1) (Reader (+2))) 5
+m :: Int
+m = runReader (fmap (+1) (Reader (+2))) 5
 
 instance Applicative (Reader e) where
     pure :: a -> Reader env a
@@ -57,6 +60,7 @@ personalizedPitch :: String -> String
 personalizedPitch name = "I have been looking at your work, " ++ name ++
     ", and I have an opportunity in the Bay Area that seems right up your alley."
 
+genericClosing :: String
 genericClosing = "- Recruiter"
 
 personalizedMessage :: Reader String String
@@ -66,4 +70,5 @@ personalizedMessage =
         <*> Reader personalizedPitch
         <*> pure genericClosing
 
+messageForVinh :: String
 messageForVinh = runReader personalizedMessage "Vinh"

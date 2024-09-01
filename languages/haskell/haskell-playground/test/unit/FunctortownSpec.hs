@@ -1,28 +1,13 @@
-module FunctortownSpec where
+module FunctortownSpec (spec) where
 
 import Data.Bifunctor
+import Data.Set()
 import Test.Hspec
 import Test.QuickCheck
+
 import TypeClasses.Functortown_A_7_bifunctor_laws
 import TypeClasses.Functortown_B_10_applicative_laws
-import Data.Set (Set)
 
-
-instance Arbitrary Magic where
-    arbitrary = elements [Wizard, Unicorn, Leprechaun]
-
-instance Arbitrary a => Arbitrary (Fantastic a) where
-    arbitrary = Fantastic <$> arbitrary <*> arbitrary
-
-data TestFunction = Add Int | Multiply Int deriving Show
-
-applyTestFunction :: TestFunction -> Int -> Int
-applyTestFunction f = case f of
-    Add x -> (+ x)
-    Multiply x -> (* x)
-
-instance Arbitrary TestFunction where
-    arbitrary = oneof [Add <$> arbitrary, Multiply <$> arbitrary]
 
 spec :: Spec
 spec = do
@@ -42,10 +27,10 @@ spec = do
                     bimap (+5) (*3) (These a b) ==
                         (first (+5) . second (*3)) (These a b)
                     &&
-                    bimap (+5) (*3) (This a) ==
+                    bimap (+(5 :: Int)) (*(3 :: Int)) (This a) ==
                         (first (+5) . second (*3)) (This a)
                     &&
-                    bimap (+5) (*3) (That b) ==
+                    bimap (+(5 :: Int)) (*3) (That b) ==
                         (first (+5) . second (*3)) (That b)
     describe "Applicative Laws" $ do
         it "Respects identity law" $ do

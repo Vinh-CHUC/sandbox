@@ -1,4 +1,5 @@
 module TypeClasses.Functortown_A_4_breaking_the_laws (
+    a, b
 ) where
 
 -- fmap id = id
@@ -14,8 +15,11 @@ data Pair a = Pair a a deriving Show
 instance Functor Pair where
     fmap f (Pair l r) = Pair (f r) (f l)
 
-_ = fmap ((+5).(*100)) (Pair 5 100)
-_ = ((fmap (+5)).(fmap (*100))) (Pair 5 100)
+
+a :: Pair Int
+a = fmap ((+(5 :: Int)).(*100)) (Pair 5 100)
+b :: Pair Int
+b = ((fmap (+(5 :: Int))).(fmap (*100))) (Pair 5 100)
 
 data IncrementPair a = IncrementPair Integer a deriving (Show, Eq)
 

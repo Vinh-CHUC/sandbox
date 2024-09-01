@@ -12,15 +12,15 @@ module TypeClasses.Validation6 (
 ) where
 
 import Data.Char
-import Control.Monad (when)
+import Control.Monad()
 
-newtype Password = 
-    Password String deriving (Eq, Show) 
+newtype Password =
+    Password String deriving (Eq, Show)
 
-newtype Error = 
+newtype Error =
     Error String deriving (Eq, Show)
 
-newtype Username = 
+newtype Username =
     Username String deriving (Eq, Show)
 
 data User = User Username Password
@@ -28,13 +28,13 @@ data User = User Username Password
 
 passwordLength :: String -> Either Error Password
 passwordLength "" = Left (Error "Your password cannot be empty")
-passwordLength password = 
+passwordLength password =
     case length password > 20 of
         True -> Left (Error "Your password cannot be longer than 20 characters.")
         False -> Right (Password password)
 
 usernameLength :: String -> Either Error Username
-usernameLength username = 
+usernameLength username =
     case length username > 15 of
         True -> Left (Error "Your username cannot be longer than 15 characters.")
         False -> Right (Username username)
@@ -54,13 +54,13 @@ allAlpha xs =
         True -> Right xs
 
 validatePassword :: Password -> Either Error Password
-validatePassword (Password password) = 
+validatePassword (Password password) =
     stripSpace password
     >>= allAlpha
     >>= passwordLength
 
 validateUsername :: Username -> Either Error Username
-validateUsername (Username username) = 
+validateUsername (Username username) =
     stripSpace username
     >>= allAlpha
     >>= usernameLength
@@ -69,7 +69,7 @@ makeUser :: Username -> Password -> Either Error User
 makeUser name password =
     User <$> validateUsername name
     -- The line above gives a:
-    --      Either Error (User Username _)  
+    --      Either Error (User Username _)
     -- The _ indicates that we're missing another argument, hence the applicative comes into play
     <*> validatePassword password
     -- Either Error (User Username Password)

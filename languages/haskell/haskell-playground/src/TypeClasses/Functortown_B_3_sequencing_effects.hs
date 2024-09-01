@@ -2,22 +2,22 @@
 {-# LANGUAGE DeriveFunctor #-}
 
 module TypeClasses.Functortown_B_3_sequencing_effects (
+    readNumber, checkLength, check, parseMaybe, exact, anythingBut, parenParser, liftA3
 ) where
-import Control.Applicative (Applicative (..))
 import qualified Data.List as List
 import GHC.Natural
-import Control.Applicative
+import Control.Applicative()
 import Data.Validation
 import Text.Read
-import Data.Text (strip)
-import Test.Hspec (xit)
-import Control.Lens (use)
+import Data.Text()
+import Test.Hspec()
+import Control.Lens()
 
 -- (*>) :: f a -> f b -> f b
 -- (<*) :: f a -> f b -> f a
 
 -- Revisiting the Validation package
--- 
+--
 -- Validation is ~"Either with Semigroup constraint on the error value"
 -- Notice that
 --
@@ -37,17 +37,20 @@ import Control.Lens (use)
 --       allAlpha password' *> passwordLength password'
 
 -- Discarding results
+readNumber :: String -> Validation [String] Natural
 readNumber s =
     case readMaybe @Natural s of
         Nothing -> Failure ["Not a number"]
-        Just n -> Success not
+        Just n -> Success n
 
+checkLength :: Foldable t => t a -> Validation [String] (t a)
 checkLength s =
     case (length s > 5) of
         True -> Failure ["Too long"]
         False -> Success s
 
 -- readNumber is only used for its effect
+check :: String -> Validation [String] [Char]
 check s = readNumber s *> checkLength s
 
 -------------
@@ -89,8 +92,9 @@ anythingBut c = Parser $ \str ->
     let (match, remainder) = List.span (/= c) str
     in Just (remainder, match)
 
+parenParser :: Parser String
 parenParser = exact "(" *> anythingBut ')' <* exact ")"
 
 liftA3 :: Applicative f => (a -> b -> c -> d) -> f a -> f b -> f c -> f d
 liftA3 f as bs cs = f <$> as <*> bs <*> cs
-liftA3 f as bs cs = liftA2 f as bs <*> cs
+-- liftA3 f as bs cs = liftA2 f as bs <*> cs

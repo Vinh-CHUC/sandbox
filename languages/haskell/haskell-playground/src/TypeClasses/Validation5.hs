@@ -2,6 +2,7 @@ module TypeClasses.Validation5 (
     maxLength,
     allAlpha,
     stripSpace,
+    run
 ) where
 
 import Data.Char
@@ -29,7 +30,7 @@ stripSpace (x:xs) =
 
 
 validatePassword :: String -> Either String String
-validatePassword password = 
+validatePassword password =
     stripSpace password
     >>= maxLength
     >>= allAlpha

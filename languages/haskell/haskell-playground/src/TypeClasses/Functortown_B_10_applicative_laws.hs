@@ -1,17 +1,19 @@
-{-# LANGUAGE DeriveFunctor #-} 
+{-# LANGUAGE DeriveFunctor #-}
 module TypeClasses.Functortown_B_10_applicative_laws (
     Magic(..),
-    Fantastic(..)
+    Fantastic(..),
+    applyTestFunction
 ) where
 import qualified Data.Set as Set
 import Data.Set (Set)
+import Test.QuickCheck
 -- Homomorphism:
 -- - pure f <*> pure x = pure (f x)
 --
 -- Deriving the applicative functor laws through homomorphism thinking:
 --
 -- Pure preserves identity
---      pure id x = x 
+--      pure id x = x
 --
 -- Pure preserves apply (unary functions)
 --      pure f <*> pure x = pure (f x)
@@ -47,3 +49,19 @@ instance Applicative Fantastic where
         Fantastic
             (Set.union magic1 magic2)
             (f x)
+
+data TestFunction = Add Int | Multiply Int deriving Show
+
+instance Arbitrary Magic where
+    arbitrary = elements [Wizard, Unicorn, Leprechaun]
+
+instance Arbitrary a => Arbitrary (Fantastic a) where
+    arbitrary = Fantastic <$> arbitrary <*> arbitrary
+
+instance Arbitrary TestFunction where
+    arbitrary = oneof [Add <$> arbitrary, Multiply <$> arbitrary]
+
+applyTestFunction :: TestFunction -> Int -> Int
+applyTestFunction f = case f of
+    Add x -> (+ x)
+    Multiply x -> (* x)

@@ -12,7 +12,7 @@ isAnagram :: String -> String -> Bool
 isAnagram word1 word2 = sort word1 == sort word2
 
 isWord :: String -> Maybe String
-isWord word = 
+isWord word =
     case null word of
         True -> Nothing
         False ->
@@ -22,14 +22,14 @@ isWord word =
 
 
 areAnagrams :: String -> String -> String
-areAnagrams word1 word2 = 
+areAnagrams word1 word2 =
     case isWord word1 of
         Nothing -> "The first word is invalid."
-        Just word1 ->
+        Just x ->
             case isWord word2 of
                 Nothing -> "The second word is invalid."
-                Just word2 ->
-                    case (isAnagram word1 word2) of
+                Just y ->
+                    case (isAnagram x y) of
                         False -> "These words are not anagrams."
                         True -> "These words are anagrams"
 

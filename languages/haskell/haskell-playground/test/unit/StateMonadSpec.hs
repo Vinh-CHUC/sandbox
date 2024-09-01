@@ -1,4 +1,4 @@
-module StateMonadSpec where
+module StateMonadSpec (spec) where
 
 import VinhPlayground.StateBasic as S
 import Test.Hspec

@@ -1,12 +1,11 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 -- My own spin on top of validation course, wanted to have more explicit types
 module TypeClasses.Validation11 (
-    validatePasswordLength
+    validatePasswordLength, LiftAB(..), MaybeAB(..), FoldAB(..), x, y
 ) where
 import Data.Validation
 import Data.Coerce
 import Control.Lens
-import Test.Hspec (Example)
 
 -- Similarities between the Validation and Either TypeClasses
 -- As in a way there are both plain sum types with two sides
@@ -72,8 +71,10 @@ instance FoldAB Validation where
 
 -- A generalised fmap
 -- _Success is a "prism"
-_ = over _Success (+ 1) (Success 4)
-_ = over _Success (+ 1) (Failure "x")
+x :: Validation err Int
+x = over _Success (+ (1 :: Int)) (Success 4)
+y :: Validation String Int
+y = over _Success (+ (1 :: Int)) (Failure "x")
 
 -- fmap :: Functor f     => (a -> b) -> (f a -> f b)
 -- over :: Prism s t a b -> (a -> b) -> (s   -> t)
@@ -82,7 +83,7 @@ _ = over _Success (+ 1) (Failure "x")
 -- bifunctor rather than simple functors?)
 --
 -- Simple prism type Prism' s a = Prism s s a a
--- Note: we still have to specify a!!!! 
+-- Note: we still have to specify a!!!!
 -- Why ???
 -- Because s can be an Either a b for example so we need to specify the type of the element that
 -- prism looks at

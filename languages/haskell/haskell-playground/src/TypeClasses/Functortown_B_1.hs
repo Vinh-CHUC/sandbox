@@ -1,10 +1,11 @@
 module TypeClasses.Functortown_B_1 (
+    userList, fetchUsers, readSortMaybe, liftAp, sortUsers, myLiftA2
 ) where
 
 import Data.List (sortBy)
 import Data.Function (on)
 import Numeric.Natural
-import Data.Functor.Classes (Read1(liftReadPrec))
+import Data.Functor.Classes()
 
 data User = User {
     name :: String,
@@ -63,10 +64,10 @@ data Either2 a b = Left2 a | Right2 b deriving Show
 
 instance Functor (Either2 a) where
     fmap f (Right2 b) = Right2 (f b)
-    fmap f (Left2 a) = Left2 a
+    fmap _f (Left2 a) = Left2 a
 
 instance Applicative (Either2 a) where
     pure = Right2
     Left2 f <*> _ = Left2 f
     _ <*> Left2 x = Left2 x
-    Right2 f <*> Right2 b = Right2 (f b) 
+    Right2 f <*> Right2 b = Right2 (f b)

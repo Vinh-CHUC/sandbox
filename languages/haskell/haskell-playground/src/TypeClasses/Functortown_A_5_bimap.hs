@@ -1,5 +1,6 @@
 {-# LANGUAGE DeriveFunctor #-}
 module TypeClasses.Functortown_A_5_bimap (
+    a, b
 ) where
 
 import Data.Bifunctor
@@ -15,5 +16,7 @@ data IncrementPair a b = IncrementPair a b deriving (Show, Eq, Functor)
 instance Bifunctor IncrementPair where
     bimap f g (IncrementPair int r) = IncrementPair (f int) (g r)
 
-_ = first (+1) (IncrementPair 0 0)
-_ = bimap (+5) (*100) (IncrementPair 0 0)
+a :: IncrementPair Int Int
+a = first (+1) (IncrementPair 0 0)
+b :: IncrementPair Int Int
+b = bimap (+5) (*100) (IncrementPair 0 0)

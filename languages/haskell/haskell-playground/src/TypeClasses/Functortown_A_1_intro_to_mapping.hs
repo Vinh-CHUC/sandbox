@@ -1,4 +1,5 @@
 module TypeClasses.Functortown_A_1_intro_to_mapping(
+    database, mapToMaybe, mapToEither, greetUser
 ) where
 
 database :: [(Integer, String)]
@@ -12,7 +13,7 @@ mapToMaybe _ Nothing = Nothing
 mapToMaybe f (Just s) = Just $ f s
 
 mapToEither :: (a -> b) -> Either l a -> Either l b
-mapToEither f (Left l) = Left l
+mapToEither _f (Left l) = Left l
 mapToEither f (Right r) = Right (f r)
 
 greetUser :: Integer -> Maybe String

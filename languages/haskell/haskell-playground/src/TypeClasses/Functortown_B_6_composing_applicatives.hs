@@ -1,12 +1,13 @@
 {-# LANGUAGE InstanceSigs #-}
 module TypeClasses.Functortown_B_6_composing_applicatives (
+    alphabetizeIO, alphabetizeMaybeIO, runReaderIO, getAndArrange', Config(..)
 ) where
 
-import Control.Applicative (Applicative (..))
+import Control.Applicative()
 import Data.List (sort)
 import Data.Char (isAlpha, toUpper)
-import Data.Coerce
-import Test.Hspec (xit)
+import Data.Coerce()
+import Test.Hspec()
 
 alphabetize :: Ord a => a -> a -> [a]
 alphabetize name1 name2 = sort [name1, name2]
@@ -65,6 +66,7 @@ instance Applicative MaybeList where
 --
 
 newtype ReaderIO env a = ReaderIO (env -> IO a)
+runReaderIO :: ReaderIO env a -> env -> IO a
 runReaderIO (ReaderIO f) env = f env
 
 instance Functor (ReaderIO env) where
@@ -105,7 +107,7 @@ arrange' :: Config -> String -> String -> [String]
 arrange' config = arrange (configOrder config)
 
 getLine' :: Config -> IO String
-getLine' config = 
+getLine' config =
     applyLineLimit (configLineLimit config) <$> getLine
 
 getAndArrange' :: Config -> IO [String]

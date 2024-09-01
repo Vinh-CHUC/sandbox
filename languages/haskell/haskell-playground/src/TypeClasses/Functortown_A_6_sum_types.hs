@@ -1,4 +1,5 @@
 module TypeClasses.Functortown_A_6_sum_types (
+    m, n, mn, foldunalign, myunalign
 ) where
 
 import Data.Align
@@ -64,6 +65,9 @@ foldunalign (xs, ys) (These x y) = ([x] ++ xs, [y] ++ ys)
 foldunalign (xs, ys) (This x) = ([x] ++ xs, ys)
 foldunalign (xs, ys) (That y) = (xs, [y] ++ ys)
 
-a = take 10 (repeat 5)
-b = take 20 (repeat 1)
-ab = align a b
+m :: [Int]
+m = take 10 (repeat 5)
+n :: [Int]
+n = take 20 (repeat 1)
+mn :: [These Int Int]
+mn = align m n
