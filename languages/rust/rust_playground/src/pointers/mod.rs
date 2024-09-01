@@ -1,48 +1,8 @@
-use std::ops::Deref;
-#[cfg(test)]
-use std::rc::Rc;
-
 // Recursive type this won't compile!!!
 // enum List {
 //     Const(i32, List),
 //     Nil
 // }
-#[cfg(test)]
-enum List {
-    Cons(i32, Box<List>),
-    Nil,
-}
-
-#[cfg(test)]
-enum List2 {
-    Cons(i32, Rc<List2>),
-    Nil,
-}
-
-// A tuple struct
-struct VinhsBox<T>(T);
-
-#[cfg(test)]
-impl<T> VinhsBox<T> {
-    fn new(x: T) -> Self {
-        Self(x)
-    }
-}
-
-impl<T> Deref for VinhsBox<T> {
-    type Target = T;
-
-    // Important to return a reference other we'd move thigns out of self!
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-#[cfg(test)]
-pub fn hello(name: &str) {
-    print!("{}", name);
-}
-
 pub struct CustomSmartPointer {
     pub data: String,
 }
@@ -53,55 +13,42 @@ impl Drop for CustomSmartPointer {
     }
 }
 
-mod LimitTracker {
-    pub trait Messenger {
-        fn send(&self, msg: &str);
-    }
-
-    pub struct LimitTracker<'a, T: Messenger> {
-        messenger: &'a T,
-        value: usize,
-        max: usize,
-    }
-
-    impl<'a, T> LimitTracker<'a, T>
-    where
-        T: Messenger,
-    {
-        pub fn new(messenger: &'a T, max: usize) -> LimitTracker<'a, T> {
-            LimitTracker {
-                messenger,
-                value: 0,
-                max,
-            }
-        }
-        pub fn set_value(&mut self, value: usize) {
-            self.value = value;
-
-            let percentage_of_max = self.value as f64 / self.max as f64;
-
-            if percentage_of_max >= 1.0 {
-                self.messenger.send("Error: You are over your quota!");
-            } else if percentage_of_max >= 0.9 {
-                self.messenger
-                    .send("Urgent warning: You've used up over 90% of your quota!");
-            } else if percentage_of_max >= 0.75 {
-                self.messenger
-                    .send("Warning: You've used up over 75% of your quota!");
-            }
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
-    use crate::pointers::hello;
     use crate::pointers::CustomSmartPointer;
-    use crate::pointers::LimitTracker::{LimitTracker, Messenger};
-    use crate::pointers::List::{Cons, Nil};
-    use crate::pointers::List2;
-    use crate::pointers::VinhsBox;
     use std::rc::Rc;
+    use std::ops::Deref;
+
+    enum List {
+        Cons(i32, Box<List>),
+        Nil,
+    }
+
+    enum List2 {
+        Cons(i32, Rc<List2>),
+        Nil,
+    }
+
+    pub fn hello(name: &str) {
+        print!("{}", name);
+    }
+
+    struct VinhsBox<T>(T);
+
+    impl<T> VinhsBox<T> {
+        fn new(x: T) -> Self {
+            Self(x)
+        }
+    }
+
+    impl<T> Deref for VinhsBox<T> {
+        type Target = T;
+
+        // Important to return a reference other we'd move thigns out of self!
+        fn deref(&self) -> &Self::Target {
+            &self.0
+        }
+    }
 
     #[test]
     fn basic_pointers() {
@@ -170,8 +117,11 @@ mod tests {
 
     #[test]
     fn rc_pointers() {
-        let a = Cons(5, Box::new(Cons(10, Box::new(Nil))));
-        let _b = Cons(3, Box::new(a));
+        let a = List::Cons(5, Box::new(List::Cons(10, Box::new(List::Nil))));
+        let b = List::Cons(3, Box::new(a));
+
+        if let List::Cons(_e, _f) = b {}
+
         // Can't as things are moved in a box
         // let c = Cons(3, Box::new(a));
 
@@ -180,33 +130,17 @@ mod tests {
             Rc::new(List2::Cons(10, Rc::new(List2::Nil))),
         ));
         let _b = List2::Cons(3, Rc::clone(&a));
-        let _c = List2::Cons(3, Rc::clone(&a));
+        let c = List2::Cons(3, Rc::clone(&a));
 
-        assert_eq!(Rc::strong_count(&a), 3);
+        if let List2::Cons(_e, _f) = c {}
+
+        assert_eq!(Rc::strong_count(&a), 2);
 
         {
             let _d = Rc::clone(&a);
-            assert_eq!(Rc::strong_count(&a), 4);
+            assert_eq!(Rc::strong_count(&a), 3);
         }
-        assert_eq!(Rc::strong_count(&a), 3);
-    }
-
-    struct MockMessenger {
-        sent_messages: Vec<String>,
-    }
-
-    impl MockMessenger {
-        fn new() -> MockMessenger {
-            MockMessenger {
-                sent_messages: vec![],
-            }
-        }
-    }
-
-    impl Messenger for MockMessenger {
-        fn send(&self, message: &str) {
-            // self.sent_messages.push(String::from(message));
-        }
+        assert_eq!(Rc::strong_count(&a), 2);
     }
 
     #[test]
