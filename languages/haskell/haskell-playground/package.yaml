@@ -20,6 +20,7 @@ extra-source-files:
 description:         Please see the README on GitHub at <https://github.com/githubuser/haskell-playground#readme>
 
 dependencies:
+- adjunctions
 - base >= 4.7 && < 5
 - bytestring
 - cassava
@@ -28,6 +29,7 @@ dependencies:
 - hspec
 - hspec-contrib
 - hspec-discover
+- megaparsec
 - lens
 - QuickCheck
 - semialign

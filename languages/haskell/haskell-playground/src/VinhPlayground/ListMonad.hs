@@ -11,6 +11,7 @@ module VinhPlayground.ListMonad
         test2_2,
         test2_3
     ) where
+import Control.Monad (when)
 
 explodeBasedOnModulo2 :: (Integral a) => a -> [a]
 explodeBasedOnModulo2 x
@@ -49,9 +50,14 @@ test2_2 x =
     explodeBasedOnModulo2 x >>=
         (\y -> explodeBasedOnModulo3 y)
 
-test2_3 :: Integer -> [Integer]
-test2_3 x =
-    explodeBasedOnModulo2 x >>=
+test2_3 :: [Integer] -> [Integer]
+test2_3 xs =
+    xs >>=
+    (\x -> explodeBasedOnModulo2 x >>=
         -- Could add more brackets (\y -> ( but they are redundant
         (\y ->explodeBasedOnModulo3 y >>=
-            (\z -> removeMultiplesOf5 z))
+            (\z -> removeMultiplesOf5 z)))
+
+    -- ma >>=
+    --     (a -> mb >>=
+    --         (b -> mc))

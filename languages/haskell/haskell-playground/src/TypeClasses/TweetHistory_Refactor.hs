@@ -1,7 +1,7 @@
 {-# LANGUAGE LambdaCase, OverloadedStrings, TypeApplications #-}
 
 module TypeClasses.TweetHistory_Refactor (
-    main
+    mainfn
 ) where
 
 
@@ -24,8 +24,8 @@ import Data.Function()
 
 -- Reads a CSV file, prints a histogram of all days I've tweeted at Julie.
 -- If any rows fail to parse, prints a list of failed rows instead.
-main :: IO ()
-main = withInput (printOutput . processData)
+mainfn :: IO ()
+mainfn = withInput (printOutput . processData)
 
 -- A row of input from the CSV file
 type Row = Map Text Text
