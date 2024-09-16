@@ -59,6 +59,7 @@ library
       VinhPlayground.ListMonad
       VinhPlayground.ReaderMonad
       VinhPlayground.StateBasic
+      VinhPlayground.ToyParser
       VinhPlayground.TypeClasses
       VinhPlayground.Yoneda
   other-modules:
@@ -79,6 +80,7 @@ library
     , hspec-discover
     , lens
     , megaparsec
+    , ormolu
     , semialign
     , text
     , these
@@ -108,6 +110,7 @@ executable haskell-playground-exe
     , hspec-discover
     , lens
     , megaparsec
+    , ormolu
     , semialign
     , text
     , these
@@ -141,6 +144,7 @@ test-suite haskell-playground-test
     , hspec-discover
     , lens
     , megaparsec
+    , ormolu
     , semialign
     , text
     , these

@@ -1,18 +1,20 @@
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE FlexibleInstances #-}
-module VinhPlayground.TypeClasses (
-    Extract(..)
-) where
+{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+
+module VinhPlayground.TypeClasses
+  ( Extract (..),
+  )
+where
 
 class Extract container elem | container -> elem where
-    extract :: container -> elem
+  extract :: container -> elem
 
 --------------
 -- Conflict --
 --------------
 instance Extract (Int, Int) Int where
-    extract (x, _) = x
+  extract (x, _) = x
 
 -- This instance and the one above do conflict
 -- instance Extract (Int, Int) Bool where
@@ -22,10 +24,10 @@ instance Extract (Int, Int) Int where
 -- No Conflict !! --
 --------------------
 instance Extract (a, b) a where
-    extract (x, _) = x
+  extract (x, _) = x
 
 instance Extract (a, b) b where
-    extract (_, x) = x
+  extract (_, x) = x
 
 --------------
 -- Conflict --

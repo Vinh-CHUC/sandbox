@@ -31,6 +31,7 @@ dependencies:
 - hspec-discover
 - megaparsec
 - lens
+- ormolu
 - QuickCheck
 - semialign
 - text
