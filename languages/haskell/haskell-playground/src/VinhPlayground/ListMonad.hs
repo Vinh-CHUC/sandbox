@@ -11,7 +11,7 @@ module VinhPlayground.ListMonad
         test2_2,
         test2_3
     ) where
-import Control.Monad (when)
+import Control.Monad ()
 
 explodeBasedOnModulo2 :: (Integral a) => a -> [a]
 explodeBasedOnModulo2 x

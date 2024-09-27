@@ -1,3 +1,3 @@
 module VinhPlayground.Yoneda () where
 
-import Data.Functor.Rep
+import Data.Functor.Rep()

@@ -126,6 +126,7 @@ test-suite haskell-playground-test
       FunctortownSpec
       ListMonadSpec
       StateMonadSpec
+      ToyParserSpec
       Paths_haskell_playground
   hs-source-dirs:
       test/unit
