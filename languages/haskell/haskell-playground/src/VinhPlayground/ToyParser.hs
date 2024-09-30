@@ -4,7 +4,8 @@ module VinhPlayground.ToyParser (
   char,
   Error(..),
   Parser(..),
-  satisfy
+  satisfy,
+  traverse
 )
 where
 
@@ -61,3 +62,6 @@ satisfy predicate = Parser $ \case
 
 char :: Eq i => i -> Parser i e i
 char i = satisfy (== i)
+
+string :: Eq i => [i] -> Parser i e [i]
+string = traverse char

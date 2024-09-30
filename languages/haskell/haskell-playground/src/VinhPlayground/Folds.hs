@@ -2,6 +2,9 @@
 -- https://www.joachim-breitner.de/various/foldl-foldr-flipped.png
 module VinhPlayground.Folds
     (
+        a,
+        a0,
+        a1,
         myfoldr,
         myfoldl,
     ) where
@@ -27,3 +30,22 @@ myfoldr f acc (x:xs) = f x (myfoldr f acc xs)
 myfoldl :: (b->a->b) -> b -> [a] -> b
 myfoldl _f acc [] = acc
 myfoldl f acc (x:xs) = myfoldl f (f acc x)  xs
+
+-----------------
+-- Traversable --
+-----------------
+-- instance Traversable [] where
+-- 	traverse f = List.foldr cons_f (pure [])
+-- 		where cons_f x ys = liftA2 (:) (f x) ys
+-- 	-- If one inline things
+-- 	traverse f = List.foldr (\x ys -> liftA2 (:) x ys) (pure [])
+
+a :: [Maybe Int]
+a = [Just 1, Just 2, Just 3, Just 4, Just 5]
+
+a0 :: Maybe [Int]
+a0 = liftA2 (:) (Just 5) (Just [])  -- Just ([5])
+
+a1 :: Maybe [Int]
+a1 = liftA2 (:) (Just 4) (Just [5])  -- Just ([4, 5])
+-- ...
