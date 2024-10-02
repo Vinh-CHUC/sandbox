@@ -58,6 +58,7 @@ library
       VinhPlayground.FromTo_LikeInRust
       VinhPlayground.ListMonad
       VinhPlayground.ReaderMonad
+      VinhPlayground.SExp
       VinhPlayground.StateBasic
       VinhPlayground.ToyParser
       VinhPlayground.TypeClasses
