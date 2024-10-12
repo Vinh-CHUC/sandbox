@@ -1,13 +1,14 @@
 module VinhPlayground.SExp
   ( atom,
     bool,
+    identifier,
     integer,
-    integer2,
+    sexp,
     SExp (..),
+    str,
   )
 where
 
-import Control.Exception (SomeException (SomeException))
 import Data.Void (Void)
 import Text.Megaparsec
 import Text.Megaparsec.Char
@@ -39,12 +40,31 @@ atom :: Parser SExp
 atom =
   choice
     [ SBool <$> bool,
-      SInteger <$> integer
+      SInteger <$> integer,
+      SString <$> str,
+      SId <$> identifier,
+      uncurry SSExp <$> sexp
     ]
 
-integer :: Parser Integer
-integer = label "integer" $ read <$> some numberChar
-
 -- Accepts negative numbers
-integer2 :: Parser Integer
-integer2 = label "integer" $ read <$> (some numberChar <|> ((:) <$> char '-' <*> some numberChar))
+integer :: Parser Integer
+integer = label "integer" $ read <$> (some numberChar <|> ((:) <$> char '-' <*> some numberChar))
+
+str :: Parser String
+str = label "string" $ between (char '"') (char '"') (takeWhileP Nothing (/= '"'))
+-- Or:
+--- str = label "string" $ char '"' <* (takewhileP Nothing (/= '"')) *> char '"'
+
+identifier :: Parser Identifier
+identifier = label "identifier" $ do
+  first <- letterChar <|> char '_'
+  rest <- many $ alphaNumChar <|> char '_'
+  pure $ Identifier $ first : rest
+-- Or:
+-- identifier = Identifier <$> label "identifier" ((:) <$> (letterChar <|> char '_') <*> many (alphaNumChar <|> char '_'))
+
+-- Naive way
+sexp :: Parser (SExp, [SExp])
+sexp = label "S-expression" $ between (char '(') (char ')')  ((,) <$> atom <*> many atom)
+-- Or:
+-- sexp = label "S-expression" $ char '(' *> ((,) <$> atom <*> many atom) <* char ')'
