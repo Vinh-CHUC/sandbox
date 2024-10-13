@@ -27,6 +27,7 @@ library
   exposed-modules:
       Lib
       Tapl.Parser
+      Tapl.UntypedArithExpr.Parser
       TypeClasses.Functortown_A_1_intro_to_mapping
       TypeClasses.Functortown_A_2
       TypeClasses.Functortown_A_3
@@ -127,6 +128,7 @@ test-suite haskell-playground-test
       FunctortownSpec
       ListMonadSpec
       StateMonadSpec
+      Tapl.UntypedArithExprSpec
       ToyParserSpec
       Paths_haskell_playground
   hs-source-dirs:
