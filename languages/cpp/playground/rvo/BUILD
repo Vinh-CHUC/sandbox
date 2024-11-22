@@ -3,6 +3,9 @@ cc_library(
     srcs = ["rvo.cc"],
     hdrs = ["rvo.h"],
     visibility = ["//visibility:public"],
+    deps = [
+        "//vstring:vstring",
+    ]
 )
 
 cc_test(
@@ -12,6 +15,5 @@ cc_test(
         ":rvo",
         "@googletest//:gtest",
         "@googletest//:gtest_main",
-        "@ranges-v3//:range-v3",
     ]
 )

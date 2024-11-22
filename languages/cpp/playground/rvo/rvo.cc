@@ -1,4 +1,5 @@
 #include "rvo/rvo.h"
+
 #include <string>
 #include <vector>
 
@@ -7,7 +8,23 @@ void mutate_vec(std::vector<std::string> &vec){
   vec.push_back("there");
 }
 
-std::vector<std::string> build_vec() {
-  std::vector<std::string> vec = {"hello", "there"};
-  return vec;
+VString build_vstring() {
+  return VString(std::string("hi"));
+}
+
+VString build_vstring2() {
+  VString str(std::string("hi"));
+  return str;
+}
+
+// NRVO doesn't apply
+VString build_vstring3() {
+  VString str(std::string("hi"));
+  VString str2(std::string("hello there"));
+
+  if (str.get_copy_count() < str2.get_copy_count()){
+    return str;
+  } else {
+    return str2;
+  }
 }

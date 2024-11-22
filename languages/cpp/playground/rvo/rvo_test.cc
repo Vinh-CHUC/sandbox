@@ -1,11 +1,21 @@
 #include "rvo/rvo.h"
 
-#include <vector>
-#include <string>
 #include <gtest/gtest.h>
 
-TEST(RangesV3Test, Mutation) {
-    std::vector<std::string> vec;
-    mutate_vec(vec);
-    ASSERT_EQ(vec[0], "hello");
+TEST(RVO, RVO) {
+  VString str = build_vstring();
+  ASSERT_EQ(str.get_copy_count(), 0);
+  ASSERT_EQ(str.get_moves_count(), 0);
+}
+
+TEST(RVO, NRVO) {
+  VString str = build_vstring2();
+  ASSERT_EQ(str.get_copy_count(), 0);
+  ASSERT_EQ(str.get_moves_count(), 0);
+}
+
+TEST(RVO, RVODoesNotApply) {
+  VString str = build_vstring3();
+  ASSERT_EQ(str.get_copy_count(), 0);
+  ASSERT_EQ(str.get_moves_count(), 1);
 }
