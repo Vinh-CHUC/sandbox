@@ -14,6 +14,12 @@ TEST(RVO, NRVO) {
   ASSERT_EQ(str.get_moves_count(), 0);
 }
 
+TEST(RVO, RecursiveNRVO) {
+  VString str = pass_along();
+  ASSERT_EQ(str.get_copy_count(), 0);
+  ASSERT_EQ(str.get_moves_count(), 0);
+}
+
 TEST(RVO, RVODoesNotApply) {
   VString str = build_vstring3();
   ASSERT_EQ(str.get_copy_count(), 0);

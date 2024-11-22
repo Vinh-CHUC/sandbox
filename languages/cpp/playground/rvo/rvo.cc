@@ -17,6 +17,11 @@ VString build_vstring2() {
   return str;
 }
 
+VString pass_along() {
+  VString str = build_vstring2();
+  return str;
+}
+
 // NRVO doesn't apply
 VString build_vstring3() {
   VString str(std::string("hi"));
