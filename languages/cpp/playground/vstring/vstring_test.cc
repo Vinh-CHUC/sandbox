@@ -1,5 +1,4 @@
 #include <gtest/gtest.h>
-#include <iostream>
 
 #include "vstring/vstring.h"
 
@@ -24,4 +23,19 @@ TEST(VStringTest, MoveSemanticsConsumeFromMethod) {
 
   // clang-tidy will not warn about this!!!
   ASSERT_EQ(str.get(), "");
+}
+
+TEST(VStringTest, CopyCtorAndAssignment) {
+  VString str("foo");
+  VString str2("bar");
+
+  // Copy assignment
+  str2 = str;
+  ASSERT_EQ(str2.get_copy_count(), 1);
+  str2 = str;
+  ASSERT_EQ(str2.get_copy_count(), 2);
+
+  // Copy ctr
+  VString str3 = str2;
+  ASSERT_EQ(str3.get_copy_count(), 3);
 }
