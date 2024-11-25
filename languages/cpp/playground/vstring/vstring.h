@@ -11,7 +11,7 @@ public:
   VString(VString &&other) noexcept;
 
   VString &operator=(const VString &other);
-  VString &operator=(VString &&other) noexcept = default;
+  VString &operator=(VString &&other) noexcept;
 
   ~VString() = default;
 

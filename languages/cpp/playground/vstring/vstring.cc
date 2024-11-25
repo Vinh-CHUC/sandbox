@@ -18,6 +18,12 @@ VString& VString::operator=(const VString &other){
   return *this;
 }
 
+VString& VString::operator=(VString &&other) noexcept {
+  move_constructor_count++;
+  value = std::move(other.value);
+  return *this;
+}
+
 const std::string &VString::get() const { return value; }
 
 VString &&VString::consume() { return std::move(*this); }
