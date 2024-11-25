@@ -16,6 +16,9 @@ public:
   ~VString() = default;
 
   const std::string &get() const;
+
+  std::string move_field_out();
+
   int get_moves_count() const;
   int get_copy_count() const;
 

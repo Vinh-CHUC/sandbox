@@ -26,6 +26,10 @@ VString& VString::operator=(VString &&other) noexcept {
 
 const std::string &VString::get() const { return value; }
 
+// Have to std::move as return a member is not a prvalue
+// Contrary to local vars or arguments
+std::string VString::move_field_out() { return std::move(value); }
+
 VString &&VString::consume() { return std::move(*this); }
 
 int VString::get_moves_count() const { return move_constructor_count; }

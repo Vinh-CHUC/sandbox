@@ -39,3 +39,11 @@ TEST(VStringTest, CopyCtorAndAssignment) {
   VString str3 = str2;
   ASSERT_EQ(str3.get_copy_count(), 3);
 }
+
+TEST(VStringTest, MoveAttribute) {
+  VString str("foo");
+
+  std::string s = str.move_field_out();
+
+  ASSERT_EQ(str.get(), "");
+}
