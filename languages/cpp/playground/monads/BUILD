@@ -5,6 +5,7 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         "@tartanllama_expected//:expected",
+        "@tartanllama_optional//:optional",
     ]
 )
 

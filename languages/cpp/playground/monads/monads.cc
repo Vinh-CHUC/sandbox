@@ -1,5 +1,18 @@
 #include "monads/monads.h"
 
-tl::expected<std::string, int> build_expected() {
-  return tl::expected<std::string, int>{std::string{}};
+EBuilder::EBuilder(): a(""), b(""), c(""){}
+
+EBuilder& EBuilder::setA(std::string && str){
+  a = tl::optional<std::string>{std::move(str)};
+  return *this;
+}
+
+EBuilder& EBuilder::setB(std::string && str){
+  b = std::move(str);
+  return *this;
+}
+
+EBuilder& EBuilder::setC(std::string && str){
+  c = std::move(str);
+  return *this;
 }
