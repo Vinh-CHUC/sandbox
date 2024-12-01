@@ -1,4 +1,5 @@
 #include "monads/monads.h"
+#include <functional>
 
 EBuilder::EBuilder(): a(""), b(""), c(""){}
 
@@ -17,17 +18,26 @@ EBuilder& EBuilder::setC(std::string str){
   return *this;
 }
 
-tl::expected<EBuilder*, std::string> EBuilder::setD(std::string str){
+tl::expected<std::reference_wrapper<EBuilder>, std::string> EBuilder::setD(std::string str){
   d = tl::make_optional(std::move(str));
-  return tl::expected<EBuilder*, std::string>(this);
+  return {std::ref(*this)};
 }
 
-tl::expected<EBuilder*, std::string> EBuilder::setE(std::string str){
+tl::expected<std::reference_wrapper<EBuilder>, std::string> EBuilder::setE(std::string str){
   e = tl::make_optional(std::move(str));
-  return tl::expected<EBuilder*, std::string> {this};
+  return {std::ref(*this)};
 }
 
-tl::expected<EBuilder*, std::string> EBuilder::setF(std::string str){
+tl::expected<std::reference_wrapper<EBuilder>, std::string> EBuilder::setF(std::string str){
   f = tl::make_optional(std::move(str));
-  return tl::expected<EBuilder*, std::string> {this};
+  return {std::ref(*this)};
+}
+
+tl::expected<std::reference_wrapper<EBuilder>, std::string> build_expected(){
+  auto e = EBuilder{};
+  return e.setD("hello").and_then(
+    [](std::reference_wrapper<EBuilder> b){
+      EBuilder& _b = b; return _b.setE("bar");
+    }
+  );
 }
