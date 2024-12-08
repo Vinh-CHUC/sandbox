@@ -33,11 +33,23 @@ tl::expected<std::reference_wrapper<EBuilder>, std::string> EBuilder::setF(std::
   return {std::ref(*this)};
 }
 
-tl::expected<std::reference_wrapper<EBuilder>, std::string> build_expected(){
-  auto e = EBuilder{};
-  return e.setD("hello").and_then(
-    [](std::reference_wrapper<EBuilder> b){
-      EBuilder& _b = b; return _b.setE("bar");
+tl::expected<std::reference_wrapper<EBuilder>, std::string> build_expected(
+    std::string d,
+    std::string e,
+    std::string f
+){
+  auto builder = EBuilder{};
+  return builder.setD("hello").and_then(
+    [&](auto b){
+      return b.get().setD(d);
+    }
+  ).and_then(
+    [&](auto b){
+      EBuilder& _b = b; return _b.setE(e);
+    }
+  ).and_then(
+    [&](auto b){
+      EBuilder& _b = b; return _b.setF(f);
     }
   );
 }

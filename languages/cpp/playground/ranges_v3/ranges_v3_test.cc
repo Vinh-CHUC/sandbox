@@ -3,10 +3,29 @@
 #include <string>
 #include <gtest/gtest.h>
 
+
 TEST(RangesV3Test, MoveIntoAnotherVector) {
     std::vector<std::string> vec = {"one", "two", "three"};
     auto moved_vector = vec | ranges::views::move | ranges::to<std::vector>();
     ASSERT_EQ(vec[0], "");
+
+    auto yo{5};
+    std::cout << yo + 6 << std::endl;
+}
+
+TEST(RangesV3Test, FilterMinMap) {
+    int ref = 6;
+    std::vector<int> vec = {1, 2, 3, 4, 5};
+    auto buildings = vec
+      | ranges::views::filter([](const int &el) {
+          return true;
+        });
+
+    auto min = ranges::min(
+      buildings,
+      [&](const int& a, const int& b){return std::abs(ref - a) < std::abs(ref - b);}
+    );
+    ASSERT_EQ(min, 5);
 }
 
 TEST(RangesV3Test, MoveAndTransformIntoAnotherVector) {

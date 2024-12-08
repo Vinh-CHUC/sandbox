@@ -1,6 +1,5 @@
 #include <algorithm>
 #include <gtest/gtest.h>
-#include <iostream>
 #include <iterator>
 #include <ranges>
 #include <vector>
