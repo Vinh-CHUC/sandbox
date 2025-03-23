@@ -20,3 +20,8 @@ TEST(FunctorTest, Basic) {
   /* Cannot infer type, have to say map<std::string> */
   /* Functor<std::string> str_container2 = int_container.map(tstr); */
 }
+
+TEST(FunctorTest, Advanced) {
+  MyClassPlain a;
+  MyClassSharedPtr b;
+}
