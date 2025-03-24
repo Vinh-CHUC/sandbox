@@ -5,6 +5,7 @@
 #include <memory>
 
 template <class T> using Identity = T;
+template <class T> using Ref = std::reference_wrapper<T>;
 
 struct A {};
 struct B {};
@@ -15,10 +16,16 @@ struct MyClass {
   F<A> a;
   F<B> b;
   F<C> c;
+
+  MyClass(F<A> a, F<B> b, F<C> c);
 };
 
 using MyClassPlain = MyClass<Identity>;
-using MyClassSharedPtr = MyClass<std::shared_ptr>;
+using MyClassRef = MyClass<Ref>;
+
+template<> MyClass<Identity>::MyClass(A _a, B _b, C _c): a(_a), b(_b), c(_c) {}
+
+template<> MyClass<Ref>::MyClass(Ref<A> _a, Ref<B> _b, Ref<C> _c): a(_a), b(_b), c(_c) {}
 
 template <class T> class Functor {
 public:

@@ -22,6 +22,9 @@ TEST(FunctorTest, Basic) {
 }
 
 TEST(FunctorTest, Advanced) {
-  MyClassPlain a;
-  MyClassSharedPtr b;
+  MyClassPlain m(A{}, B{}, C{});
+  A a{};
+  B b{};
+  C c{};
+  MyClassRef m2(a, b, c);
 }
