@@ -1,0 +1,8 @@
+build:
+    bazel build //...
+
+test:
+    bazel test //...
+
+hedron:
+    bazel run @hedron_compile_commands//:refresh_all
