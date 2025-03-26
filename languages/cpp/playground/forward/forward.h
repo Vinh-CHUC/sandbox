@@ -16,7 +16,7 @@ RefType doSomething(T&& x){
   } else if constexpr (std::is_rvalue_reference_v<T&&>){
     return RefType::rref;
   } else {
-    return RefType::rref;
+    return RefType::error;
   }
 }
 

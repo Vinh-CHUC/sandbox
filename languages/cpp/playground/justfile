@@ -6,3 +6,9 @@ test:
 
 hedron:
     bazel run @hedron_compile_commands//:refresh_all
+
+tidy:
+    bazel build //... \
+      --aspects @bazel_clang_tidy//clang_tidy:clang_tidy.bzl%clang_tidy_aspect \
+      --output_groups=report \
+      --verbose_failures
