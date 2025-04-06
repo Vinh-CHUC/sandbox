@@ -6,10 +6,10 @@ class Solution:
     def lengthOfLongestSubstring(self, s: str) -> int:
         longest_length = 0
         for i in range(len(s)):
-            for j in range(i+1, len(s)+1):
+            for j in range(i + 1, len(s) + 1):
                 if len(set(s[i:j])) == len(s[i:j]):
-                    if j-i > longest_length:
-                        longest_length = j-i
+                    if j - i > longest_length:
+                        longest_length = j - i
                 else:
                     continue
         return longest_length
@@ -20,6 +20,7 @@ assert Solution().lengthOfLongestSubstring("bbbbbb") == 1
 assert Solution().lengthOfLongestSubstring("pwwkew") == 3
 assert Solution().lengthOfLongestSubstring("aab") == 2
 assert Solution().lengthOfLongestSubstring("tmmzuxt") == 5
+
 
 # Mine
 class Solution:

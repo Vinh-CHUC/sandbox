@@ -35,7 +35,7 @@ class SolutionN:
             if idx == 0:
                 DP.append(n)
             else:
-                DP.append(max(DP[idx-1] + n, n))
+                DP.append(max(DP[idx - 1] + n, n))
             max_sub_array = max(max_sub_array, DP[idx])
 
         return max_sub_array
@@ -59,10 +59,10 @@ class SolutionN_B:
             if idx == 0:
                 DP.append(n)
             else:
-                if DP[idx-1] < 0:
+                if DP[idx - 1] < 0:
                     DP.append(n)
                 else:
-                    DP.append(DP[idx-1] + n)
+                    DP.append(DP[idx - 1] + n)
             max_sub_array = max(max_sub_array, DP[idx])
 
         return max_sub_array

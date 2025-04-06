@@ -119,9 +119,7 @@ class SolutionConvoluted:
             case TreeNode(left=None, right=right):
                 return 1 + self.LongestFromRoot(right)
             case TreeNode(left=left, right=right):
-                return 1 + max(
-                    self.LongestFromRoot(left), self.LongestFromRoot(right)
-                )
+                return 1 + max(self.LongestFromRoot(left), self.LongestFromRoot(right))
             case _:
                 raise AssertionError
 
@@ -131,13 +129,11 @@ class SolutionConvoluted:
                 return 0
             case TreeNode(left=left, right=None):
                 return max(
-                    1 + self.LongestFromRoot(left),
-                    self.diameterOfBinaryTree(left)
+                    1 + self.LongestFromRoot(left), self.diameterOfBinaryTree(left)
                 )
             case TreeNode(left=None, right=right):
                 return max(
-                    1 + self.LongestFromRoot(right),
-                    self.diameterOfBinaryTree(right)
+                    1 + self.LongestFromRoot(right), self.diameterOfBinaryTree(right)
                 )
             case TreeNode(left=left, right=right):
                 return max(
@@ -226,8 +222,8 @@ class SolutionSimpler:
                     max(
                         max_left,
                         max_right,
-                        current_left_right.left + current_left_right.right
-                    )
+                        current_left_right.left + current_left_right.right,
+                    ),
                 )
 
     def diameterOfBinaryTree(self, root: Optional[TreeNode]) -> int:

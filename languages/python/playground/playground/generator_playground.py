@@ -9,6 +9,7 @@ def my_generator():
     for i in range(10):
         print(f"from generator {yield i}")
 
+
 gen = my_generator()
 
 # Will return 0 BUT generator will not print yet
@@ -40,17 +41,21 @@ gen.send(1)  # => 1
 # BUT! This would not work with things that only yield once, as we need to preseve this concept
 # of stopiteration
 
+
 def my_generator_2():
     yield 42
+
 
 ############
 ## islice ##
 ############
 
+
 def my_generator_3():
     while True:
         print("hi there")
         yield "hello"
+
 
 ## Accumulate
 def accumul_rec(arr):
@@ -62,6 +67,7 @@ def accumul_rec(arr):
         case [*rest, last]:
             temp = accumul(rest)
             return temp + [temp[-1] + last]
+
 
 def accumul_it(arr):
     if not arr:

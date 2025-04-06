@@ -60,6 +60,7 @@ assert merged.values() == [0]
 
 #############################
 
+
 class SolutionIter:
     def mergeTwoLists(
         self, l1: Union[ListNode, None], l2: Union[ListNode, None]
@@ -69,7 +70,6 @@ class SolutionIter:
 
         ret = ListNode(-1)
         prev = ret
-
 
         def _consume(prev: ListNode, list_node: ListNode) -> Union[ListNode, None]:
             prev.next = list_node

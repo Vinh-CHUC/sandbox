@@ -8,16 +8,19 @@ from numpy.core.multiarray import where
 
 L = 10**6
 
+
 def some_fn(a: float, b: float):
     if a > b:
         return a - b
     else:
         return a + b
 
+
 class Variant(Enum):
     BASELINE = 1
     NUMPY = 2
     JAX = 3
+
 
 def baseline(variant: Variant):
     match variant:
@@ -28,22 +31,25 @@ def baseline(variant: Variant):
         case Variant.JAX:
             return 10.0 * jnp.ones(L)
 
+
 # GOTCHA!
 # The vectorize function is provided for convenience, not for performance. The implementation is
 # essentially a for loop
 NPFUNC = np.vectorize(some_fn)
 JAXFUNC = jax.vmap(some_fn, in_axes=[0, None])
 
+
 def vectorize(input: Union[np.ndarray, jnp.ndarray, List[Any]]) -> object:
     match input:
         case list():
-            return [some_fn(x, L//2) for x in input]
+            return [some_fn(x, L // 2) for x in input]
         case np.ndarray():
-            return np.where(input > L//2, input - L//2, input + L//2)
+            return np.where(input > L // 2, input - L // 2, input + L // 2)
         case jnp.ndarray():
-            return jnp.where(input > L//2, input - L//2, input + L//2)
+            return jnp.where(input > L // 2, input - L // 2, input + L // 2)
         case _:
             assert_never(input)
+
 
 """
 base = baseline(Variant.BASELINE)

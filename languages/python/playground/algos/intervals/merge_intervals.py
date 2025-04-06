@@ -3,7 +3,9 @@ from typing import Deque, List
 
 
 class SolutionRecFromTheEnd:
-    def do_merge(self, merged: List[List[int]], intervals: List[List[int]]) -> List[List[int]]:
+    def do_merge(
+        self, merged: List[List[int]], intervals: List[List[int]]
+    ) -> List[List[int]]:
         if not intervals:
             return merged
         else:
@@ -68,7 +70,9 @@ assert Solution().merge([[1, 4], [4, 5]]) == [[1, 5]]
 
 
 class SolutionRecFromTheBeginning:
-    def do_merge(self, merged: List[List[int]], intervals: List[List[int]]) -> List[List[int]]:
+    def do_merge(
+        self, merged: List[List[int]], intervals: List[List[int]]
+    ) -> List[List[int]]:
         if not intervals:
             return merged
         else:

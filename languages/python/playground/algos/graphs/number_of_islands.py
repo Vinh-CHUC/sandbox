@@ -15,12 +15,12 @@ class Solution:
         grid[coord[0]][coord[1]] = "0"
 
         valid_neighours = [
-            c for c in
-            [
+            c
+            for c in [
                 (coord[0], coord[1] - 1),
                 (coord[0], coord[1] + 1),
                 (coord[0] - 1, coord[1]),
-                (coord[0] + 1, coord[1])
+                (coord[0] + 1, coord[1]),
             ]
             if (
                 c[0] > -1

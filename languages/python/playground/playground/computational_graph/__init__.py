@@ -3,10 +3,12 @@ from dataclasses import dataclass
 from typing import Dict
 # 2x - 3y
 
+
 class Node(ABC):
     @abstractmethod
     def eval(self, env: Dict):
         pass
+
 
 @dataclass
 class Literal(Node):
@@ -14,6 +16,7 @@ class Literal(Node):
 
     def eval(self, _env: Dict) -> object:
         return self.value
+
 
 @dataclass
 class Variable(Node):
@@ -23,6 +26,7 @@ class Variable(Node):
         assert self.name in env
         return env[self.name]
 
+
 @dataclass
 class Multiply(Node):
     left: Node
@@ -30,6 +34,7 @@ class Multiply(Node):
 
     def eval(self, env: Dict) -> object:
         return self.left.eval(env) * self.right.eval(env)
+
 
 @dataclass
 class Substract(Node):
@@ -39,10 +44,10 @@ class Substract(Node):
     def eval(self, env: Dict) -> object:
         return self.left.eval(env) - self.right.eval(env)
 
+
 # 2x - 3y
 EXPR = Substract(
-    left=Multiply(Literal(2), Variable("x")),
-    right=Multiply(Literal(3), Variable("y"))
+    left=Multiply(Literal(2), Variable("x")), right=Multiply(Literal(3), Variable("y"))
 )
 
 EXPR.eval({"x": 5, "y": 10})

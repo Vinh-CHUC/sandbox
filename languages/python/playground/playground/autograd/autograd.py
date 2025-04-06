@@ -3,6 +3,7 @@
 2. Dot for each iteration of evaluation and derivation
 3. Backwards
 """
+
 from abc import ABC, abstractmethod, abstractproperty
 from dataclasses import dataclass, field
 from typing import assert_never, NewType
@@ -10,15 +11,17 @@ from typing import assert_never, NewType
 from graphviz.graphs import Digraph
 import jax.numpy as jnp
 
-Dot = NewType('Dot', str)
+Dot = NewType("Dot", str)
+
 
 @dataclass
-class NamesGenerator():
+class NamesGenerator:
     inc: int = 0
 
     def incr(self) -> int:
         self.inc += 1
         return self.inc
+
 
 NAMES = NamesGenerator()
 
@@ -27,6 +30,7 @@ NAMES = NamesGenerator()
 class ValueAndPartial:
     value: float
     partial: float
+
 
 @dataclass
 class Expression(ABC):
@@ -50,6 +54,7 @@ class Expression(ABC):
     def get_name(self) -> str:
         return self.name  # type: ignore
 
+
 @dataclass
 class Variable(Expression):
     value: float
@@ -64,6 +69,7 @@ class Variable(Expression):
     def generate_dot_repr(self, dot: Digraph):
         pass
 
+
 @dataclass
 class Plus(Expression):
     A: Expression
@@ -73,7 +79,10 @@ class Plus(Expression):
     def evaluate_and_derive(self, variable) -> ValueAndPartial:
         x = (self.A.evaluate_and_derive(variable), self.B.evaluate_and_derive(variable))
         match x:
-            case (ValueAndPartial(value=A_val, partial=A_deriv), ValueAndPartial(value=B_val, partial=B_deriv)):
+            case (
+                ValueAndPartial(value=A_val, partial=A_deriv),
+                ValueAndPartial(value=B_val, partial=B_deriv),
+            ):
                 return ValueAndPartial(A_val + B_val, A_deriv + B_deriv)
             case _ as unreachable:
                 assert_never(unreachable)
@@ -86,6 +95,7 @@ class Plus(Expression):
         self.A.generate_dot_repr(dot)
         self.B.generate_dot_repr(dot)
 
+
 @dataclass
 class Multiply(Expression):
     A: Expression
@@ -95,7 +105,10 @@ class Multiply(Expression):
     def evaluate_and_derive(self, variable) -> ValueAndPartial:
         x = (self.A.evaluate_and_derive(variable), self.B.evaluate_and_derive(variable))
         match x:
-            case (ValueAndPartial(value=A_val, partial=A_deriv), ValueAndPartial(value=B_val, partial=B_deriv)):
+            case (
+                ValueAndPartial(value=A_val, partial=A_deriv),
+                ValueAndPartial(value=B_val, partial=B_deriv),
+            ):
                 return ValueAndPartial(A_val * B_val, A_val * B_deriv + B_val * A_deriv)
             case _ as unreachable:
                 assert_never(unreachable)
@@ -108,6 +121,7 @@ class Multiply(Expression):
         self.A.generate_dot_repr(dot)
         self.B.generate_dot_repr(dot)
 
+
 @dataclass
 class Power(Expression):
     A: Expression
@@ -117,12 +131,14 @@ class Power(Expression):
     def evaluate_and_derive(self, variable) -> ValueAndPartial:
         x = (self.A.evaluate_and_derive(variable), self.B.evaluate_and_derive(variable))
         match x:
-            case (ValueAndPartial(value=A_val, partial=A_deriv), ValueAndPartial(value=B_val, partial=B_deriv)):
+            case (
+                ValueAndPartial(value=A_val, partial=A_deriv),
+                ValueAndPartial(value=B_val, partial=B_deriv),
+            ):
                 return ValueAndPartial(
-                    A_val ** B_val,
-                    B_val * A_val**(B_val - 1) * A_deriv
-                    +
-                    jnp.log(B_val) * A_val ** B_val * B_deriv
+                    A_val**B_val,
+                    B_val * A_val ** (B_val - 1) * A_deriv
+                    + jnp.log(B_val) * A_val**B_val * B_deriv,
                 )
             case _ as unreachable:
                 assert_never(unreachable)
@@ -135,17 +151,22 @@ class Power(Expression):
         self.A.generate_dot_repr(dot)
         self.B.generate_dot_repr(dot)
 
+
 x = Variable(2.0, "x")
 y = Variable(3.0, "y")
 
+
 def test(x, y):
-    return (x * y)**(x + y)
+    return (x * y) ** (x + y)
+
 
 def test2(x, y):
     return x * (x + y) + y * y
 
+
 def test3(x, y):
-    return (x + x + y)**(x + x + y)
+    return (x + x + y) ** (x + x + y)
+
 
 assert test2(x, y).evaluate_and_derive(x).partial == 7
 assert test2(x, y).evaluate_and_derive(y).partial == 8

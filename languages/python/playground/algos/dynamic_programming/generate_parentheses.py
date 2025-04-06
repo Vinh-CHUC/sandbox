@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from itertools import chain
 from typing import Dict, List
+
 VALID = ["((()))", "(()())", "(())()", "()(())", "()()()"]
 INVALID = ["())", ")", "((((", "(((())))))"]
 
@@ -40,10 +41,9 @@ class SolutionBackTrackingRecursive:
             case (_, _) if score > (2 * self.n - len(curr)):
                 return []
             case (_, _):
-                return (
-                    self.do_generateParenthesis(curr + "(", score + 1)
-                    + self.do_generateParenthesis(curr + ")", score - 1)
-                )
+                return self.do_generateParenthesis(
+                    curr + "(", score + 1
+                ) + self.do_generateParenthesis(curr + ")", score - 1)
 
     def generateParenthesis(self, n: int) -> List[str]:
         self.n = n
@@ -83,7 +83,8 @@ class SolutionBackTrackingIterative:
                         [NodeAndScore(string + "(", score + 1)]
                         + (
                             [NodeAndScore(string + ")", score - 1)]
-                            if score >= 1 else []
+                            if score >= 1
+                            else []
                         )
                     )
         return ret
@@ -103,10 +104,7 @@ class SolutionRecursive:
             return ["()"]
         else:
             subsolution = self.generateParenthesis(n - 1)
-            solutions = [
-                ["()" + s, "(" + s + ")", s + "()"]
-                for s in subsolution
-            ]
+            solutions = [["()" + s, "(" + s + ")", s + "()"] for s in subsolution]
             return [x for subl in solutions for x in subl]
 
 
@@ -125,10 +123,9 @@ class SolutionIterative:
             if size == 1:
                 solutions.append("()")
             else:
-                solutions = list(chain(*[
-                    ["()" + s, "(" + s + ")", s + "()"]
-                    for s in solutions
-                ]))
+                solutions = list(
+                    chain(*[["()" + s, "(" + s + ")", s + "()"] for s in solutions])
+                )
         return solutions
 
 

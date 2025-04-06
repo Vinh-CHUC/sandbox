@@ -37,10 +37,7 @@ def cell_valid_candidates(board: List[List[str]], c: COORD) -> List[str]:
     ]
 
     return list(
-        set(VALUES)
-        .difference(line_vals)
-        .difference(col_vals)
-        .difference(square_vals)
+        set(VALUES).difference(line_vals).difference(col_vals).difference(square_vals)
     )
 
 

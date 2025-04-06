@@ -1,7 +1,9 @@
 from pydantic import BaseModel
 
+
 class Response[T](BaseModel):
     data: T
+
 
 def test():
     r = Response[str](data=5)
