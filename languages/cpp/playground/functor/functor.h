@@ -2,7 +2,6 @@
 #define FUNCTOR_H
 
 #include <functional>
-#include <memory>
 
 template <class T> struct Identity {
   T val;
