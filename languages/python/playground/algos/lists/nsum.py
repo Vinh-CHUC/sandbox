@@ -26,3 +26,17 @@ def twoSum_no_loops(nums: List[int], target: int) -> List[int]:
         return loop(idx+1, stop_idx)
 
     return loop(0, len(nums)) or [-1, -1]
+
+def threeSum(nums: List[int]) -> List[List[int]]:
+    hash_m: dict[int, int] = {}
+
+    ret = []
+
+    for idx_i, val_i in enumerate(nums):
+        for val_j in nums[idx_i+1:]:
+            if (-val_i - val_j) in hash_m:
+                ret.append(tuple(sorted([-val_i - val_j, val_i, val_j])))
+
+        hash_m[val_i] = idx_i
+
+    return sorted(set(ret))

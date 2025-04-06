@@ -25,3 +25,15 @@ class TestTwoSum:
     )
     def test_noloop(self, arr, target ,expected):
         assert nsum.twoSum_no_loops(arr, target) == expected
+
+class TestThreeSum:
+    @pytest.mark.parametrize(
+        "arr,expected",
+        [
+            ([-1,0,1,2,-1,-4], [(-1,-1,2),(-1,0,1)]), 
+            ([0, 1, 1], []), 
+            ([0, 0, 0], [(0, 0, 0)]), 
+        ]
+    )
+    def test_basic(self, arr, expected):
+        assert nsum.threeSum(arr) == expected
