@@ -213,8 +213,6 @@ source = { editable = "." }
 dependencies = [
     { name = "pandas" },
     { name = "pydantic" },
-    { name = "pyright" },
-    { name = "ruff" },
     { name = "scipy" },
 ]
 
@@ -230,8 +228,6 @@ dev = [
 requires-dist = [
     { name = "pandas", specifier = ">=2.2.3" },
     { name = "pydantic", specifier = ">=2.11.2" },
-    { name = "pyright", specifier = ">=1.1.398" },
-    { name = "ruff", specifier = ">=0.11.4" },
     { name = "scipy", specifier = ">=1.15.2" },
 ]
 
