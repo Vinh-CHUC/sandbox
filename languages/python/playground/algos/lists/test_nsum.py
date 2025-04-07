@@ -38,3 +38,25 @@ class TestThreeSum:
     )
     def test_basic(self, arr, expected):
         assert nsum.threeSum(arr) == expected
+
+    @pytest.mark.parametrize(
+        "arr,expected",
+        [
+            ([-1, 0, 1, 2, -1, -4], [(-1, -1, 2), (-1, 0, 1)]),
+            ([0, 1, 1], []),
+            ([0, 0, 0], [(0, 0, 0)]),
+        ],
+    )
+    def test_two_idxs_in_hashmap(self, arr, expected):
+        assert nsum.threeSum_two_idxs_in_hashmap(arr) == expected
+
+    @pytest.mark.parametrize(
+        "arr,expected",
+        [
+            ([-1, 0, 1, 2, -1, -4], [(-1, -1, 2), (-1, 0, 1)]),
+            ([0, 1, 1], []),
+            ([0, 0, 0], [(0, 0, 0)]),
+        ],
+    )
+    def test_two_idxs_in_hashmap_one_pass(self, arr, expected):
+        assert nsum.threeSum_two_idxs_in_hashmap_one_pass(arr) == expected

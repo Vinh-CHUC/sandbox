@@ -43,3 +43,47 @@ def threeSum(nums: List[int]) -> List[List[int]]:
         hash_m[val_i] = idx_i
 
     return sorted(set(ret))
+
+
+def threeSum_two_idxs_in_hashmap(nums: List[int]) -> List[List[int]]:
+    """
+    In the hashmap keep **two indices**,two passes:
+        1. build the hashmap
+        2. find the indices
+    """
+    hash_m: dict[int, tuple[int, int]] = {}
+
+    ret = []
+
+    for idx_i, val_i in enumerate(nums):
+        for idx_j, val_j in zip(range(idx_i + 1, len(nums)), nums[idx_i + 1 :]):
+            hash_m[(val_i + val_j)] = (idx_i, idx_j)
+
+    for idx_i, val_i in enumerate(nums):
+        if (-val_i in hash_m) and (idx_i not in hash_m[-val_i]):
+            ret.append(
+                tuple(sorted([nums[hash_m[-val_i][0]], nums[hash_m[-val_i][1]], val_i]))
+            )
+
+    return sorted(set(ret))
+
+
+def threeSum_two_idxs_in_hashmap_one_pass(nums: List[int]) -> List[List[int]]:
+    """
+    A bit simpler than the variant above also as we don't store the indices but the values directly
+    """
+    hash_m: dict[int, tuple[int, int]] = {}
+
+    ret = []
+
+    for idx_i, val_i in enumerate(nums):
+        # Doing the check at the beginning of the loop guarantees no duplicate indices
+        if -val_i in hash_m:
+            ret.append(
+                tuple(sorted([*hash_m[-val_i], val_i]))
+            )
+
+        for val_j in nums[idx_i + 1 :]:
+            hash_m[(val_i + val_j)] = (val_i, val_j)
+
+    return sorted(set(ret))
