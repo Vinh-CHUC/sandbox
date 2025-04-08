@@ -51,12 +51,30 @@ class TestThreeSum:
         assert nsum.threeSum_two_idxs_in_hashmap(arr) == expected
 
     @pytest.mark.parametrize(
+        "arr,expected,passes",
+        [
+            ([-1, 0, 1, 2, -1, -4], [(-1, -1, 2), (-1, 0, 1)], True),
+            ([0, 1, 1], [], True),
+            ([0, 0, 0], [(0, 0, 0)], True),
+            # Fails because the code doesn't cater for duplicate indices in the 
+            # returned triplets
+            ([10, 50, -5], [], False),
+        ],
+    )
+    def test_two_idxs_in_hashmap_one_pass(self, arr, expected, passes):
+        if passes:
+            assert nsum.threeSum_two_idxs_in_hashmap_one_pass(arr) == expected
+        else:
+            assert nsum.threeSum_two_idxs_in_hashmap_one_pass(arr) != expected
+
+    @pytest.mark.parametrize(
         "arr,expected",
         [
             ([-1, 0, 1, 2, -1, -4], [(-1, -1, 2), (-1, 0, 1)]),
             ([0, 1, 1], []),
             ([0, 0, 0], [(0, 0, 0)]),
+            ([10, 50, -5], []),
         ],
     )
-    def test_two_idxs_in_hashmap_one_pass(self, arr, expected):
-        assert nsum.threeSum_two_idxs_in_hashmap_one_pass(arr) == expected
+    def test_two_idxs_in_hashmap_one_pass_2(self, arr, expected):
+        assert nsum.threeSum_two_idxs_in_hashmap_one_pass_2(arr) == expected

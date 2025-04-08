@@ -45,6 +45,13 @@ def threeSum(nums: List[int]) -> List[List[int]]:
     return sorted(set(ret))
 
 
+"""
+There is a flaw in all of these currently:
+    - the hashmap should containe a list of pairs, otherwise a more recent update might not be
+      usable as it conflicts (same idx_i or idx-j) as the target idx
+    - overlap management: it's really down to the fact that you can't quite walk the space 
+    and guaranteeing that the entries in the hashmap are valid candidates based on the value only
+"""
 def threeSum_two_idxs_in_hashmap(nums: List[int]) -> List[List[int]]:
     """
     In the hashmap keep **two indices**,two passes:
@@ -85,5 +92,23 @@ def threeSum_two_idxs_in_hashmap_one_pass(nums: List[int]) -> List[List[int]]:
 
         for val_j in nums[idx_i + 1 :]:
             hash_m[(val_i + val_j)] = (val_i, val_j)
+
+    return sorted(set(ret))
+
+def threeSum_two_idxs_in_hashmap_one_pass_2(nums: List[int]) -> List[List[int]]:
+    """
+    A bit simpler than the variant above also as we don't store the indices but the values directly
+    """
+    hash_m: dict[int, tuple[int, int]] = {}
+
+    ret = []
+
+    for idx_i, val_i in enumerate(nums):
+        if -val_i in hash_m and idx_i not in hash_m[-val_i]:
+            ret.append(
+                tuple(sorted([nums[hash_m[-val_i][0]], nums[hash_m[-val_i][1]], val_i]))
+            )
+        for idx_j, val_j in zip(range(idx_i+1, len(nums)), nums[idx_i + 1 :]):
+            hash_m[(val_i + val_j)] = (idx_i, idx_j)
 
     return sorted(set(ret))
