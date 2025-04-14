@@ -24,3 +24,11 @@ TEST(Monads, AndThen){
   );
   ASSERT_FALSE(bar.has_value());
 }
+
+TEST(Monads, ExpectedBuilder){
+  auto built = build_expected("one", "two", "three");
+  ASSERT_TRUE(built.has_value());
+  ASSERT_EQ(built.value().getD().value(), "one");
+  ASSERT_EQ(built.value().getE().value(), "two");
+  ASSERT_EQ(built.value().getF().value(), "three");
+}

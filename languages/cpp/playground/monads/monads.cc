@@ -18,25 +18,37 @@ EBuilder& EBuilder::setC(std::string str){
   return *this;
 }
 
-tl::expected<std::reference_wrapper<EBuilder>, std::string> EBuilder::setD(std::string str){
+const tl::optional<std::string>& EBuilder::getD(){
+  return d;
+}
+
+const tl::optional<std::string>& EBuilder::getE(){
+  return e;
+}
+
+const tl::optional<std::string>& EBuilder::getF(){
+  return f;
+}
+
+tl::expected<std::reference_wrapper<EBuilder>, std::string> EBuilder::setD(const std::string& str){
   d = tl::make_optional(std::move(str));
   return {std::ref(*this)};
 }
 
-tl::expected<std::reference_wrapper<EBuilder>, std::string> EBuilder::setE(std::string str){
+tl::expected<std::reference_wrapper<EBuilder>, std::string> EBuilder::setE(const std::string& str){
   e = tl::make_optional(std::move(str));
   return {std::ref(*this)};
 }
 
-tl::expected<std::reference_wrapper<EBuilder>, std::string> EBuilder::setF(std::string str){
+tl::expected<std::reference_wrapper<EBuilder>, std::string> EBuilder::setF(const std::string& str){
   f = tl::make_optional(std::move(str));
   return {std::ref(*this)};
 }
 
-tl::expected<std::reference_wrapper<EBuilder>, std::string> build_expected(
-    std::string d,
-    std::string e,
-    std::string f
+tl::expected<EBuilder, std::string> build_expected(
+    const std::string& d,
+    const std::string& e,
+    const std::string& f
 ){
   auto builder = EBuilder{};
   return builder.setD("hello").and_then(
@@ -45,11 +57,11 @@ tl::expected<std::reference_wrapper<EBuilder>, std::string> build_expected(
     }
   ).and_then(
     [&](auto b){
-      EBuilder& _b = b; return _b.setE(e);
+       return b.get().setE(e);
     }
   ).and_then(
     [&](auto b){
-      EBuilder& _b = b; return _b.setF(f);
+       return b.get().setF(f);
     }
   );
 }
