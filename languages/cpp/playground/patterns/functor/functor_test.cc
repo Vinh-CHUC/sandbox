@@ -1,4 +1,4 @@
-#include "functor/functor.h"
+#include "patterns/functor/functor.h"
 
 #include <gtest/gtest.h>
 #include <iostream>

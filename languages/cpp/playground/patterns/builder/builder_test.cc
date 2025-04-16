@@ -1,7 +1,6 @@
-#include "builder/builder.h"
+#include "patterns/builder/builder.h"
 
 #include <gtest/gtest.h>
-#include <iostream>
 
 TEST(BuilderTest, Basic) {
   ABuilder a_builder;
