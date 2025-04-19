@@ -18,7 +18,7 @@ struct ConstExprTester {
 };
 
 template <typename T, T(*F)()>
-struct ConstExprTester<T, F, std::void_t<std::integral_constant<T, F()>>> {
+struct ConstExprTester<T, F, std::void_t<std::integral_constant<T, F()>()>> {
     static constexpr bool is_valid = true;
 };
 
