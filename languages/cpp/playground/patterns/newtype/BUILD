@@ -4,6 +4,7 @@ cc_library(
     hdrs = ["newtype.h"],
     visibility = ["//visibility:public"],
     deps = [
+        "@boost//:serialization",
         "@tartanllama_expected//:expected",
         "@tartanllama_optional//:optional",
     ]

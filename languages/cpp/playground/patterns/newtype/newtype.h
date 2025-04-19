@@ -3,6 +3,8 @@
 
 #include <string>
 
+#include <boost/serialization/strong_typedef.hpp>
+
 enum class Tag {
   FOO,
   BAR
@@ -46,6 +48,30 @@ namespace Two {
     auto b = AT<Tag::BAR>{std::string{"yoo"}};
     fn1(b);
   }
+}
+
+namespace Three {
+  struct MyString{
+    std::string val;
+    std::string operator*(const MyString& other){return val + other.val;}
+    bool operator==(const MyString& other) const {return val == other.val;}
+    bool operator<(const MyString& other) const {return val == other.val;}
+  };
+  std::string operator+(const MyString& lhs, const MyString& rhs){return lhs.val + rhs.val;}
+  
+  BOOST_STRONG_TYPEDEF(MyString, MyString2);
+  BOOST_STRONG_TYPEDEF(MyString, MyString3);
+
+  void foo(MyString2 str){};
+  void bar(){
+    MyString2 str2{};
+    MyString3 str3{};
+    foo(str2);
+    /* foo(str3); */
+    str2 + str3;
+    str2.t * str3;
+  }
+
 }
 
 #endif
