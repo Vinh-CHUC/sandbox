@@ -8,6 +8,10 @@ struct X {
   std::string foo(){return "I am X";} 
 };
 
+struct Y {
+  std::string foo(){return "I am Y";} 
+};
+
 TEST(TypeErasure, Basic){
   // Not a great interface, these details are leaked:
   // - The fact that things are templated
@@ -15,4 +19,6 @@ TEST(TypeErasure, Basic){
   using namespace Basic;
   std::shared_ptr<A> p = std::make_shared<Derived<X>>(X{});
   ASSERT_EQ(p->foo(), "I am X");
+  p = std::make_shared<Derived<Y>>(Y{});
+  ASSERT_EQ(p->foo(), "I am Y");
 }
