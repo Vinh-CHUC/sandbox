@@ -5,10 +5,16 @@
 #include <string>
 #include <vector>
 
+struct A {
+  VString v;
+};
+
 void mutate_vec(std::vector<std::string>& vec);
 VString build_vstring();
 VString build_vstring2();
 VString pass_along();
 VString build_vstring3();
+
+A build_a();
 
 #endif // MYSTRING_H

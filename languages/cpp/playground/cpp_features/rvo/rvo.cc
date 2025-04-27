@@ -22,6 +22,12 @@ VString pass_along() {
   return str;
 }
 
+A build_a(){
+  return A{
+    .v = pass_along()
+  };
+}
+
 // NRVO doesn't apply
 VString build_vstring3() {
   VString str(std::string("hi"));
