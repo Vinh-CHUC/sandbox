@@ -1,3 +1,4 @@
+#include <functional>
 #include <range/v3/all.hpp>
 #include <vector>
 #include <string>
@@ -94,4 +95,28 @@ TEST(RangesV3Test, AnyView){
   /* for(const auto& s: getStringRanges()()){ */
   /*   ASSERT_EQ(s, "one"); */ 
   /* } */
+}
+
+TEST(RangesV3Test, AnyViewMut){
+  std::vector<std::string> vec = {"one", "two", "three"};
+  ranges::any_view<std::reference_wrapper<std::string>, ranges::category::forward> it = vec
+    | ranges::views::transform([](auto& s){return std::ref(s);});
+
+  for (auto ref: it){
+    ref.get() = "hi";
+  }
+  ASSERT_EQ(vec[0], "hi");
+}
+
+
+TEST(RangesV3Test, AnyViewMut2){
+  auto l = getMutableStringRanges();
+
+  for (auto ref: l()){
+    ref.get() = "hi";
+  }
+
+  for (auto ref: l()){
+    ASSERT_EQ(ref.get(), "hi");
+  }
 }
