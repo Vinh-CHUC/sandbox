@@ -25,11 +25,11 @@ mod tests {
         }
     }
 
-
     #[test]
     fn test() {
-        myfn(
-            MyStruct {a : Some(String::from("yo")), b: None}
-        )
+        myfn(MyStruct {
+            a: Some(String::from("yo")),
+            b: None,
+        })
     }
 }

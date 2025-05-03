@@ -16,8 +16,8 @@ impl Drop for CustomSmartPointer {
 #[cfg(test)]
 mod tests {
     use crate::pointers::CustomSmartPointer;
-    use std::rc::Rc;
     use std::ops::Deref;
+    use std::rc::Rc;
 
     enum List {
         Cons(i32, Box<List>),
