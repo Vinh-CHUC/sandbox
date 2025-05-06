@@ -19,5 +19,10 @@ TEST(InitConv, ExplicitConversion){
   auto a4 = A{b};
 }
 
+TEST(InitConv, AggregateInitialisation){
+  C c{"yo"};
+  C c2("yo");
+}
+
 // A makeB(){return {B{}};}
 // A makeB(){return B{};}

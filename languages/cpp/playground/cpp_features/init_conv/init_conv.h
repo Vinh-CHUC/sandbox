@@ -1,7 +1,14 @@
 #ifndef INIT_CONV_H
 #define INIT_CONV_H
 
+#include <cstdint>
 #include <string>
+
+struct C {
+  std::string val;
+  uint8_t idx;
+  std::string yo;
+};
 
 struct B {
   std::string val;
