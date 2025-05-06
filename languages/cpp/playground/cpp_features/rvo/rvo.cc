@@ -45,3 +45,7 @@ VString build_vstring3() {
     return str2;
   }
 }
+
+VString build_vstring_copyinit() {
+  return {std::string{"hello"}};
+}

@@ -15,6 +15,8 @@ VString build_vstring2();
 VString pass_along();
 VString build_vstring3();
 
+VString build_vstring_copyinit();
+
 A build_a();
 A build_then_assign();
 

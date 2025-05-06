@@ -5,7 +5,7 @@
 
 class VString {
 public:
-  explicit VString(const std::string &str);
+  VString(const std::string &str);
 
   VString(const VString &other);
   VString(VString &&other) noexcept;
