@@ -28,6 +28,12 @@ A build_a(){
   };
 }
 
+A build_then_assign(){
+  A a = {VString("hello")};
+  a.v = pass_along();
+  return a;
+}
+
 // NRVO doesn't apply
 VString build_vstring3() {
   VString str(std::string("hi"));

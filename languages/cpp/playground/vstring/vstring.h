@@ -27,7 +27,7 @@ public:
 private:
   int move_constructor_count;
   int copy_count;
-  std::string value;
+  std::string value{};
 };
 
 #endif // MYSTRING_H

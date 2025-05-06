@@ -26,6 +26,12 @@ TEST(RVO, RVOIntoFieldInit) {
   ASSERT_EQ(a.v.get_moves_count(), 0);
 }
 
+TEST(RVO, RVOIntoFieldAssignment) {
+  A a = build_then_assign();
+  ASSERT_EQ(a.v.get_copy_count(), 0);
+  ASSERT_EQ(a.v.get_moves_count(), 1);
+}
+
 TEST(RVO, RVODoesNotApply) {
   VString str = build_vstring3();
   ASSERT_EQ(str.get_copy_count(), 0);

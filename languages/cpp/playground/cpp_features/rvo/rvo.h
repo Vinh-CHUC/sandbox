@@ -16,5 +16,6 @@ VString pass_along();
 VString build_vstring3();
 
 A build_a();
+A build_then_assign();
 
 #endif // MYSTRING_H
