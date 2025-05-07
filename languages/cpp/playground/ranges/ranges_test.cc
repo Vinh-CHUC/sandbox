@@ -55,6 +55,19 @@ TEST(RangesTest, MoveIterator) {
   ASSERT_EQ(vec[0], "");
 }
 
+TEST(RangesTest, MoveIterator2) {
+  std::vector<std::string> vec = {"apple", "banana", "cherry"};
+
+  auto view = vec | std::views::as_rvalue;
+
+  std::vector<std::string> result;
+
+  std::ranges::copy(view.begin(), view.end(), std::back_inserter(result));
+
+  ASSERT_EQ(result[0], "apple");
+  ASSERT_EQ(vec[0], "");
+}
+
 TEST(RangesTest, ViewsTransformInputNotTouched) {
   std::vector<std::string> vec = {"apple", "banana", "cherry"};
   // iiuc views transform can either pass by value of reference
