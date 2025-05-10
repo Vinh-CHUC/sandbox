@@ -120,3 +120,17 @@ TEST(RangesV3Test, AnyViewMut2){
     ASSERT_EQ(ref.get(), "hi");
   }
 }
+
+TEST(RangesV3Test, Map){
+  auto m = std::unordered_map<std::string, int>{
+      {"hi", 1},
+      {"there", 2},
+      {"how", 3},
+      {"are", 4},
+      {"you", 5}
+  };
+
+  auto out = m | ranges::views::transform([](const auto& pair){
+    return pair;
+  });
+}

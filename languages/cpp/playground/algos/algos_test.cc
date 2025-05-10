@@ -73,3 +73,26 @@ TEST(Algos, ZippingTheOldWay){
   ASSERT_EQ(p[0], std::make_pair(1, 1));
   ASSERT_EQ(sum, 30);
 }
+
+TEST(Algos, Map){
+  auto m = std::unordered_map<std::string, int>{
+      {"hi", 1},
+      {"there", 2},
+      {"how", 3},
+      {"are", 4},
+      {"you", 5}
+  };
+
+  auto r = std::unordered_map<std::string, int>{};
+
+  std::transform(
+      m.begin(),
+      m.end(),
+      // result.begin(), this would segfault
+      std::inserter(r, r.end()),
+      [](const auto& p){
+        return std::make_pair(p.first, p.second * 2);
+      });
+
+  ASSERT_EQ(r["you"], 10);
+}

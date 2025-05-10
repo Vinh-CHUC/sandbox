@@ -2,6 +2,8 @@
 #include <gtest/gtest.h>
 #include <iterator>
 #include <ranges>
+#include <unistd.h>
+#include <unordered_map>
 #include <vector>
 
 
@@ -104,4 +106,28 @@ TEST(RangesTest, ViewsTransformInputMoved) {
       std::views::transform([](std::string &&s) { return std::move(s); });
   ASSERT_EQ(rng[0], "apple_moved");
   ASSERT_EQ(vec[0], "");
+}
+
+TEST(RangesTest, Map){
+  auto m = std::unordered_map<std::string, int>{
+      {"hi", 1},
+      {"there", 2},
+      {"how", 3},
+      {"are", 4},
+      {"you", 5}
+  };
+
+  std::vector<std::string> out = m | std::views::keys | std::views::transform([](const auto& k){
+        return k;
+  }) | std::ranges::to<std::vector>();
+
+  std::vector<int> out2 = m | std::views::values | std::views::transform([](const auto& v){
+        return v;
+  }) | std::ranges::to<std::vector>();
+
+  auto out3 = m | std::views::transform([](const auto& pair){
+    return std::make_pair(pair.first, pair.second * 2);
+  }) | std::ranges::to<std::unordered_map>();
+
+  ASSERT_EQ(out3["you"], 10);
 }
