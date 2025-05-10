@@ -32,12 +32,16 @@ class SolutionBackTrackingRecursive:
         Receives a curr that has a score >= 0
         """
         match (len(curr), score):
+            # Sequence necessarily incorrect as we close too many parentheses at this point
             case (_, _) if score < 0:
                 return []
+            # Correct!
             case (_, 0) if len(curr) == 2 * self.n:
                 return [curr]
+            # Didn't close enough or too many
             case (_, _) if len(curr) == 2 * self.n:
                 return []
+            # Too many open brackets, not enough characters left to close them
             case (_, _) if score > (2 * self.n - len(curr)):
                 return []
             case (_, _):
@@ -83,6 +87,8 @@ class SolutionBackTrackingIterative:
                         [NodeAndScore(string + "(", score + 1)]
                         + (
                             [NodeAndScore(string + ")", score - 1)]
+                            # Interesting choice: backtracking here as opposed to the pattern match
+                            # itself?
                             if score >= 1
                             else []
                         )

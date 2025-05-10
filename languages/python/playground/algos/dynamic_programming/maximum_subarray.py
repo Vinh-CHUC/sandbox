@@ -31,6 +31,7 @@ class SolutionN:
 
         DP: List[int] = []
 
+        # DP represents the max subarray finishing at a given idx
         for idx, n in enumerate(nums):
             if idx == 0:
                 DP.append(n)
@@ -79,6 +80,7 @@ assert Solution().maxSubArray([5, 4, -1, 7, 8]) == 23
 class SolutionN_C:
     def maxSubArray(self, nums: List[int]) -> int:
         max_sub_array = -inf
+        # Maximum array for the **current** subsequence
         max_sub_array_idx = -inf
 
         for n in nums:

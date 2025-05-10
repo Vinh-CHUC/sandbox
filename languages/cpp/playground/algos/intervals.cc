@@ -71,7 +71,6 @@ std::vector<Interval> merge_intervals(const std::vector<Interval>& intervals){
   return ret;
 }
 
-
 std::vector<Interval> do_merge_intervals_rec(
   std::vector<Interval> merged,
   std::vector<Interval> to_merge
