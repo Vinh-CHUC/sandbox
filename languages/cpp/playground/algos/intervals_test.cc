@@ -33,3 +33,20 @@ TEST(Intervals, Merge){
   auto actual = merge_intervals(input);
   ASSERT_EQ(actual, expected);
 };
+
+TEST(Intervals, MergeRec){
+  auto input = std::vector<Interval>{
+    Interval::make_interval(1, 3).value(),
+    Interval::make_interval(2, 6).value(),
+    Interval::make_interval(8, 10).value(),
+    Interval::make_interval(15, 18).value()
+  };
+  auto expected = std::vector<Interval>{
+      Interval::make_interval(1, 6).value(),
+      Interval::make_interval(8, 10).value(),
+      Interval::make_interval(15, 18).value()
+  };
+
+  auto actual = merge_intervals_rec(input);
+  ASSERT_EQ(actual, expected);
+};

@@ -27,3 +27,4 @@ bool operator==(const Interval&, const Interval&);
 Interval merge(const Interval&, const Interval&);
 
 std::vector<Interval> merge_intervals(const std::vector<Interval>& intervals);
+std::vector<Interval> merge_intervals_rec(const std::vector<Interval>& intervals);

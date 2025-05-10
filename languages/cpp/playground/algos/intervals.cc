@@ -70,3 +70,39 @@ std::vector<Interval> merge_intervals(const std::vector<Interval>& intervals){
 
   return ret;
 }
+
+
+std::vector<Interval> do_merge_intervals_rec(
+  std::vector<Interval> merged,
+  std::vector<Interval> to_merge
+){
+  if(to_merge.empty()){
+    return merged;
+  }
+
+  auto inter = to_merge.back();
+  to_merge.pop_back();
+
+  if(merged.empty() || !merged.back().intersects_with(inter)){
+    merged.push_back(inter);
+  } else {
+    merged.back() = merge(merged.back(), inter);
+  }
+
+  return do_merge_intervals_rec(std::move(merged), std::move(to_merge));
+}
+
+std::vector<Interval> merge_intervals_rec(const std::vector<Interval>& intervals){
+  auto ret = std::vector<Interval>{};
+
+  auto input = intervals;
+
+  std::sort(
+      input.begin(), input.end(),
+      [](const Interval& lhs, const Interval& rhs){
+        return lhs.getBegin() > rhs.getBegin();
+      }
+  );
+
+  return do_merge_intervals_rec(std::vector<Interval>{}, std::move(input));
+}
