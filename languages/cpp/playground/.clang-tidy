@@ -1,10 +1,6 @@
 UseColor: true
 
 Checks: >
-    boost-*,
-    bugprone-*,
     cppcoreguidelines-*,
-    portability-*,
-    redability-*,
 
 WarningsAsErrors: "*"

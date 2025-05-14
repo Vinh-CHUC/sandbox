@@ -1,1 +1,2 @@
 build --cxxopt='-std=c++23'
+build --action_env=CC='gcc-14'

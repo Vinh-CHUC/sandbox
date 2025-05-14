@@ -199,6 +199,7 @@ The diameter is the length of the path that goes through a node with longest "(l
 """
 
 
+# For a given node maximum paths that arrive to it on the left/right
 @dataclass
 class LeftRightLs:
     left: int

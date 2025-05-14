@@ -14,6 +14,14 @@ cc_library(
     visibility = ["//visibility:public"],
 )
 
+cc_library(
+    name = "linked_list",
+    srcs = ["linked_list.cc"],
+    hdrs = ["linked_list.h"],
+    deps = [],
+    visibility = ["//visibility:public"],
+)
+
 cc_test(
     name = "algos_test",
     srcs = ["algos_test.cc"],
@@ -31,6 +39,17 @@ cc_test(
         "@googletest//:gtest",
         "@googletest//:gtest_main",
     ]
+)
+
+cc_test(
+    name = "linked_list_test",
+    srcs = ["linked_list_test.cc"],
+    deps = [
+        ":linked_list",
+        "@googletest//:gtest",
+        "@googletest//:gtest_main",
+    ],
+    visibility = ["//visibility:public"],
 )
 
 cc_test(
