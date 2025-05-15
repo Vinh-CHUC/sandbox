@@ -22,6 +22,24 @@ cc_library(
     visibility = ["//visibility:public"],
 )
 
+cc_library(
+    name = "binary_tree",
+    srcs = ["binary_tree.cc"],
+    hdrs = ["binary_tree.h"],
+    deps = [],
+    visibility = ["//visibility:public"],
+)
+
+cc_test(
+    name = "binary_tree_test",
+    srcs = ["binary_tree_test.cc"],
+    deps = [
+        ":binary_tree",
+        "@googletest//:gtest",
+        "@googletest//:gtest_main",
+    ]
+)
+
 cc_test(
     name = "algos_test",
     srcs = ["algos_test.cc"],
