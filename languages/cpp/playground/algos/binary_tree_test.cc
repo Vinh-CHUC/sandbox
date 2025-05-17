@@ -13,3 +13,14 @@ TEST(BinaryTree, Basic){
     expected
   );
 }
+
+TEST(BinaryTree, LowestCommonAncestor){
+  auto t = TreeNode<int>::from_breadthfirst(
+    {3, 5, 1, 6, 2, 0, 8, std::nullopt, std::nullopt, 7, 4}
+  );
+
+  auto lca = lowestCommonAncestor(t, 5, 1);
+  ASSERT_TRUE(lca.has_value());
+  ASSERT_TRUE(lca.value() != nullptr);
+  ASSERT_EQ(lca.value()->val, 3);
+}
