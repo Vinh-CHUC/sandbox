@@ -50,6 +50,15 @@ cc_test(
 )
 
 cc_test(
+    name = "fibo_test",
+    srcs = ["fibo_test.cc"],
+    deps = [
+        "@googletest//:gtest",
+        "@googletest//:gtest_main",
+    ]
+)
+
+cc_test(
     name = "intervals_test",
     srcs = ["intervals_test.cc"],
     deps = [

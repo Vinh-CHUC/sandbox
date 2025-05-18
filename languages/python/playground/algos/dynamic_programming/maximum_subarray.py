@@ -25,6 +25,9 @@ assert Solution().maxSubArray([1]) == 1
 assert Solution().maxSubArray([5, 4, -1, 7, 8]) == 23
 
 
+# Equivalence between SolutionN and Solution N_B:
+# max(a + b, b) == b <=> a < 0
+
 class SolutionN:
     def maxSubArray(self, nums: List[int]) -> int:
         max_sub_array = -inf

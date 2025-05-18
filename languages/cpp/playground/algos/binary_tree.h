@@ -1,7 +1,6 @@
 #include <list>
 #include <memory>
 #include <optional>
-#include <iostream>
 
 template<typename T>
 struct TreeNode {
