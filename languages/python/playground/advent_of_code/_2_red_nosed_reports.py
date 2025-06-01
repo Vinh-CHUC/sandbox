@@ -6,21 +6,57 @@ class Order(Enum):
     INCR = auto()
     DECR = auto()
 
+# This doesn't work as it tolerates up to 1 pair of neighbours that don't match the criteria
+# But the ask is does it work if one **removes** one element
+#
+# 1 10 3  -> would require a tolerance of 2, but can work by only removing one element
+#
+# def is_safe_inner(report: list[int], o: Order, tolerance: int) -> bool:
+#     match report:
+#         case [el, ell, *rest] if abs(el - ell) >= 1 and abs(el - ell) <= 3:
+#             match o:
+#                 case Order.INCR if ell > el:
+#                     return is_safe_inner([ell, *rest], o, tolerance) 
+#                 case Order.DECR if ell < el:
+#                     return is_safe_inner([ell, *rest], o, tolerance) 
+#                 case _ if tolerance > 0:
+#                     return is_safe_inner([ell, *rest], o, tolerance - 1) 
+#                 case _:
+#                     return False
+#         case [el, ell, *rest]:
+#             if tolerance > 0:
+#                 return is_safe_inner([ell, *rest], o, tolerance - 1) 
+#             return False
+#         case [el]:
+#             return True
+#         case []:
+#             return True
+#         case _:
+#             assert_never(report)
+
+def within_bounds(el, ell):
+    return abs(el - ell) >= 1 and abs(el - ell) <= 3
+
+def order_respected(el, ell, o):
+    match o:
+        case Order.INCR if ell > el:
+            return True
+        case Order.DECR if ell < el:
+            return True
+        case _:
+            return False
+
 def is_safe_inner(report: list[int], o: Order, tolerance: int) -> bool:
     match report:
-        case [el, ell, *rest] if abs(el - ell) >= 1 and abs(el - ell) <= 3:
-            match o:
-                case Order.INCR if ell > el:
-                    return is_safe_inner([ell, *rest], o, tolerance) 
-                case Order.DECR if ell < el:
-                    return is_safe_inner([ell, *rest], o, tolerance) 
-                case _ if tolerance > 0:
-                    return is_safe_inner([ell, *rest], o, tolerance - 1) 
-                case _:
-                    return False
+        case [el, ell, *rest] if within_bounds(el, ell) and order_respected(el, ell, o):
+            return is_safe_inner([ell, *rest], o, tolerance)
+        case [el, _, ell, *rest] if within_bounds(el, ell) and order_respected(el, ell, o) and tolerance > 0:
+            return is_safe_inner([ell, *rest], o, tolerance - 1)
+        case [_, el ,ell, *rest] if within_bounds(el, ell) and order_respected(el, ell, o) and tolerance > 0:
+            return is_safe_inner([ell, *rest], o, tolerance - 1)
+        case [el ,ell, _, *rest] if within_bounds(el, ell) and order_respected(el, ell, o) and tolerance > 0:
+            return is_safe_inner([ell, *rest], o, tolerance - 1)
         case [el, ell, *rest]:
-            if tolerance > 0:
-                return is_safe_inner([ell, *rest], o, tolerance - 1) 
             return False
         case [el]:
             return True
