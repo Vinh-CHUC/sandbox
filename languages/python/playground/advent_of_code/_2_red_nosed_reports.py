@@ -46,16 +46,37 @@ def order_respected(el, ell, o):
         case _:
             return False
 
-def is_safe_inner(report: list[int], o: Order, tolerance: int) -> bool:
+def get_data():
+    data = []
+    for line in (Path(__file__).parent / "_2_red_nosed_reports.dat").open().readlines():
+        data.append([int(i) for i in line.strip().split(" ")])
+    return data
+
+# The tolerance here doesn't really work:
+# if (el, ell) is fine as pair, it might still be the case that ell is the element to remove!!!
+# def is_safe_inner(report: list[int], o: Order, tolerance: int) -> bool:
+#     match report:
+#         case [el, ell, elll, *rest] if within_bounds(el, ell) and order_respected(el, ell, o) and tolerance > 0:
+#             return is_safe_inner([ell, *rest], o, tolerance - 1)
+#         case [_, el ,ell, *rest] if within_bounds(el, ell) and order_respected(el, ell, o) and tolerance > 0:
+#             return is_safe_inner([ell, *rest], o, tolerance - 1)
+#         case [el ,ell, _, *rest] if within_bounds(el, ell) and order_respected(el, ell, o) and tolerance > 0:
+#             return is_safe_inner([ell, *rest], o, tolerance - 1)
+#         case [el, ell, *rest]:
+#             return False
+#         case [el, ell] if within_bounds(el, ell) and order_respected(el, ell, o):
+#             return True
+#         case [el]:
+#             return True
+#         case []:
+#             return True
+#         case _:
+#             assert_never(report)
+
+def is_safe_inner(report: list[int], o: Order) -> bool:
     match report:
         case [el, ell, *rest] if within_bounds(el, ell) and order_respected(el, ell, o):
-            return is_safe_inner([ell, *rest], o, tolerance)
-        case [el, _, ell, *rest] if within_bounds(el, ell) and order_respected(el, ell, o) and tolerance > 0:
-            return is_safe_inner([ell, *rest], o, tolerance - 1)
-        case [_, el ,ell, *rest] if within_bounds(el, ell) and order_respected(el, ell, o) and tolerance > 0:
-            return is_safe_inner([ell, *rest], o, tolerance - 1)
-        case [el ,ell, _, *rest] if within_bounds(el, ell) and order_respected(el, ell, o) and tolerance > 0:
-            return is_safe_inner([ell, *rest], o, tolerance - 1)
+            return is_safe_inner([ell, *rest], o)
         case [el, ell, *rest]:
             return False
         case [el]:
@@ -66,20 +87,20 @@ def is_safe_inner(report: list[int], o: Order, tolerance: int) -> bool:
             assert_never(report)
 
 
-def is_safe(report: list[int], tolerance: int = 0) -> bool:
-    return is_safe_inner(report, Order.INCR, tolerance) or is_safe_inner(report, Order.DECR, tolerance)
+def is_safe(report: list[int]) -> bool:
+    return is_safe_inner(report, Order.INCR) or is_safe_inner(report, Order.DECR)
 
-def get_data():
-    data = []
-    for line in (Path(__file__).parent / "_2_red_nosed_reports.dat").open().readlines():
-        data.append([int(i) for i in line.strip().split(" ")])
-    return data
-
-
-def main():  # 314
+def part1():
     reports = get_data()
     return sum(1 if is_safe(r) else 0 for r in reports)
 
-def main_part2():
+def part2_brute_force():
     reports = get_data()
-    return sum(1 if is_safe(r, tolerance=1) else 0 for r in reports)
+    ret = 0
+    for r in reports:
+        for idx in range(len(r)):
+            if is_safe(r[:idx] + r[idx+1:]):
+                ret = ret + 1
+                break
+
+    return ret
