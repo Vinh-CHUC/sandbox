@@ -90,9 +90,19 @@ def is_safe_inner(report: list[int], o: Order) -> bool:
 def is_safe(report: list[int]) -> bool:
     return is_safe_inner(report, Order.INCR) or is_safe_inner(report, Order.DECR)
 
+def is_safe_it(report: list[int], o: Order) -> bool:
+    for i, j in zip(report[:-1], report[1:]):
+        if not(within_bounds(i, j) and order_respected(i, j, o)):
+            return False
+    return True
+
 def part1():
     reports = get_data()
     return sum(1 if is_safe(r) else 0 for r in reports)
+
+def part1_it():
+    reports = get_data()
+    return sum(1 if is_safe_it(r, Order.INCR) or is_safe_it(r, Order.DECR) else 0 for r in reports)
 
 def part2_brute_force():
     reports = get_data()
@@ -104,3 +114,29 @@ def part2_brute_force():
                 break
 
     return ret
+
+def is_safe_inner_2(report: list[int], o: Order, previous: int | None, skip_budget: int = 0) -> bool:
+    match report:
+        case [el, ell, *rest]:
+            return (
+                (
+                    within_bounds(el, ell) and order_respected(el ,ell, o)
+                    and is_safe_inner_2([ell, *rest], o, el)
+                )
+                or
+                (
+                    previous is not None and skip_budget > 0 and
+                    within_bounds(previous, ell) and order_respected(previous ,ell, o)
+                    and is_safe_inner_2([ell, *rest], o, el)
+                )
+            )
+            return is_safe_inner([ell, *rest], o)
+        case [el]:
+            return True
+        case []:
+            return True
+        case _:
+            assert_never(report)
+
+def is_safe_2(report: list[int]) -> bool:
+    return is_safe_inner(report, Order.INCR) or is_safe_inner(report, Order.DECR)
