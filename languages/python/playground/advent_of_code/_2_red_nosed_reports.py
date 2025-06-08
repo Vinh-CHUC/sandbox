@@ -1,3 +1,14 @@
+"""
+Key takeways:
+    1. The whole problem is about checking that a property holds for every pair made of consecutive
+    elements in the input array
+    2. That the property holds for every pair for the input array, while potentially removing one
+    element:
+        - The recursive approach is not trivial, skipping some element should not presume that this
+          element meets any property, like already being part of a valid pair!
+        - The problem is about skipping an element, not skipping a pair,
+            e.g. 1 10 3, would require skipping two pairs but only one element
+"""
 from enum import auto, Enum
 from pathlib import Path
 from typing import assert_never
@@ -5,34 +16,6 @@ from typing import assert_never
 class Order(Enum):
     INCR = auto()
     DECR = auto()
-
-# This doesn't work as it tolerates up to 1 pair of neighbours that don't match the criteria
-# But the ask is does it work if one **removes** one element
-#
-# 1 10 3  -> would require a tolerance of 2, but can work by only removing one element
-#
-# def is_safe_inner(report: list[int], o: Order, tolerance: int) -> bool:
-#     match report:
-#         case [el, ell, *rest] if abs(el - ell) >= 1 and abs(el - ell) <= 3:
-#             match o:
-#                 case Order.INCR if ell > el:
-#                     return is_safe_inner([ell, *rest], o, tolerance) 
-#                 case Order.DECR if ell < el:
-#                     return is_safe_inner([ell, *rest], o, tolerance) 
-#                 case _ if tolerance > 0:
-#                     return is_safe_inner([ell, *rest], o, tolerance - 1) 
-#                 case _:
-#                     return False
-#         case [el, ell, *rest]:
-#             if tolerance > 0:
-#                 return is_safe_inner([ell, *rest], o, tolerance - 1) 
-#             return False
-#         case [el]:
-#             return True
-#         case []:
-#             return True
-#         case _:
-#             assert_never(report)
 
 def within_bounds(el, ell):
     return abs(el - ell) >= 1 and abs(el - ell) <= 3
@@ -51,27 +34,6 @@ def get_data():
     for line in (Path(__file__).parent / "_2_red_nosed_reports.dat").open().readlines():
         data.append([int(i) for i in line.strip().split(" ")])
     return data
-
-# The tolerance here doesn't really work:
-# if (el, ell) is fine as pair, it might still be the case that ell is the element to remove!!!
-# def is_safe_inner(report: list[int], o: Order, tolerance: int) -> bool:
-#     match report:
-#         case [el, ell, elll, *rest] if within_bounds(el, ell) and order_respected(el, ell, o) and tolerance > 0:
-#             return is_safe_inner([ell, *rest], o, tolerance - 1)
-#         case [_, el ,ell, *rest] if within_bounds(el, ell) and order_respected(el, ell, o) and tolerance > 0:
-#             return is_safe_inner([ell, *rest], o, tolerance - 1)
-#         case [el ,ell, _, *rest] if within_bounds(el, ell) and order_respected(el, ell, o) and tolerance > 0:
-#             return is_safe_inner([ell, *rest], o, tolerance - 1)
-#         case [el, ell, *rest]:
-#             return False
-#         case [el, ell] if within_bounds(el, ell) and order_respected(el, ell, o):
-#             return True
-#         case [el]:
-#             return True
-#         case []:
-#             return True
-#         case _:
-#             assert_never(report)
 
 def is_safe_inner(report: list[int], o: Order) -> bool:
     match report:
@@ -107,30 +69,42 @@ def part1_it():
 def part2_brute_force():
     reports = get_data()
     ret = 0
+    # Complexity: n**2
     for r in reports:
         for idx in range(len(r)):
             if is_safe(r[:idx] + r[idx+1:]):
                 ret = ret + 1
+                if not is_safe_2(r):
+                    print(r)
                 break
 
     return ret
 
-def is_safe_inner_2(report: list[int], o: Order, previous: int | None, skip_budget: int = 0) -> bool:
+# An unfinished attempt art part2 which uses recursion
+def is_safe_inner_2(report: list[int], o: Order, previous: int | None, skip_budget: int) -> bool:
+    # Complexity: n**2 / 2: as we skip an elemet further down, the beginning of the list work is
+    # shared. No sharing past the skipping point though...
+    # Would need full dynamic programming or memoisation
     match report:
         case [el, ell, *rest]:
             return (
+                # Happy path
                 (
                     within_bounds(el, ell) and order_respected(el ,ell, o)
-                    and is_safe_inner_2([ell, *rest], o, el)
+                    and is_safe_inner_2([ell, *rest], o, el, skip_budget)
                 )
                 or
+                # Skip el for the case of the very first element in the list
                 (
-                    previous is not None and skip_budget > 0 and
-                    within_bounds(previous, ell) and order_respected(previous ,ell, o)
-                    and is_safe_inner_2([ell, *rest], o, el)
+                    previous is None and skip_budget > 0 and
+                    is_safe_inner_2([ell, *rest], o, previous, skip_budget - 1)
+                )
+                # Skip ell
+                or (
+                    skip_budget > 0 and
+                    is_safe_inner_2([el, *rest], o, el, skip_budget - 1)
                 )
             )
-            return is_safe_inner([ell, *rest], o)
         case [el]:
             return True
         case []:
@@ -139,4 +113,9 @@ def is_safe_inner_2(report: list[int], o: Order, previous: int | None, skip_budg
             assert_never(report)
 
 def is_safe_2(report: list[int]) -> bool:
-    return is_safe_inner(report, Order.INCR) or is_safe_inner(report, Order.DECR)
+    return is_safe_inner_2(report, Order.INCR, None, 1) or is_safe_inner_2(report, Order.DECR,
+                                                                           None, 1)
+
+def part2_rec():
+    reports = get_data()
+    return sum(1 if is_safe_2(r) else 0 for r in reports)
