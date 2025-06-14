@@ -4,13 +4,15 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Generator, assert_never
 
+
 def get_data() -> str:
     s = (Path(__file__).parent / "_3_mull_it_over.dat").read_text()
     return s
 
+
 def part1():
-    matches = re.findall(r'mul *\( *(\d+) *, *(\d+) *\)', get_data(), flags=0)
-    return sum(int(a)*int(b) for a,b in matches)
+    matches = re.findall(r"mul *\( *(\d+) *, *(\d+) *\)", get_data(), flags=0)
+    return sum(int(a) * int(b) for a, b in matches)
 
 
 @dataclass
@@ -21,15 +23,19 @@ class Mul:
     def __repr__(self) -> str:
         return f"Mul({self.a}, {self.b})"
 
+
 class Do:
     def __repr__(self) -> str:
         return "Do"
+
 
 class Dont:
     def __repr__(self) -> str:
         return "Dont"
 
+
 type ParseResult = Mul | Do | Dont
+
 
 def parse(matches: list) -> Generator[ParseResult]:
     for m in matches:
@@ -41,18 +47,17 @@ def parse(matches: list) -> Generator[ParseResult]:
             case [_, _, _, x] if x:
                 yield Do()
 
+
 def part2():
     matches = re.findall(
-        r'mul *\( *(\d+) *, *(\d+) *\)|(don\'t\(\))|(do\(\))',
-        get_data(),
-        flags=0
+        r"mul *\( *(\d+) *, *(\d+) *\)|(don\'t\(\))|(do\(\))", get_data(), flags=0
     )
     total = 0
     do = True
     for m in parse(matches):
         match m:
             case Mul(a, b) if do:
-                total += (a * b)
+                total += a * b
             case Mul(a, b):
                 pass
             case Dont():
