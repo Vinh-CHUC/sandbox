@@ -26,6 +26,7 @@ class Direction(Enum):
             case _:
                 assert_never(self)
 
+
 @dataclass
 class Position:
     x: int
@@ -136,6 +137,12 @@ def explore(map: Map) -> ExploreOutcome:
             cycle_detected = map.mark_visited(position, direction)
             if cycle_detected:
                 return ExploreOutcome.LOOP
+
+
+# TODO: Improvement
+# When exploring the possibilities with the new obstacles:
+# - one could remember some partial itinerary? up until blocked by the candidate obstacle?
+
 
 def part2():
     map = Map.get_data()

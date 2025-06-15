@@ -56,7 +56,7 @@ class TestThreeSum:
             ([-1, 0, 1, 2, -1, -4], [(-1, -1, 2), (-1, 0, 1)], True),
             ([0, 1, 1], [], True),
             ([0, 0, 0], [(0, 0, 0)], True),
-            # Fails because the code doesn't cater for duplicate indices in the 
+            # Fails because the code doesn't cater for duplicate indices in the
             # returned triplets
             ([10, 50, -5], [], False),
         ],
