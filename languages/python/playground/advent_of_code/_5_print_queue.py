@@ -62,15 +62,17 @@ def valid(update: Update, rules_by_val: dict[int, list[OrderingRule]]) -> bool:
     return True
 
 
-def insert_rule(existing_rules: list[OrderingRule], new_rule: OrderingRule):
-    for idx, ordered_r in enumerate(existing_rules):
-        if new_rule.a == ordered_r.b:
-            existing_rules.insert(idx + 1, new_rule)
-            return True
-        if new_rule.b == ordered_r.a:
-            existing_rules.insert(idx, new_rule)
-            return True
-    return False
+def part1(test_data: bool = False):
+    rules, updates = get_data(test_data)
+
+    rules_by_values = defaultdict(list)
+    for r in rules:
+        rules_by_values[r.a].append(r)
+        rules_by_values[r.b].append(r)
+
+    valid_updates = [up for up in updates if valid(up, rules_by_values)]
+
+    return sum(up.pages[floor(len(up.pages) / 2)] for up in valid_updates)
 
 
 def cmp(a, b, rules: list[OrderingRule]):
@@ -87,19 +89,6 @@ def fix_update(update: Update, all_rules: list[OrderingRule]):
         r for r in all_rules if r.a in update.pages and r.b in update.pages
     ]
     update.pages.sort(key=cmp_to_key(lambda a, b: cmp(a, b, relevant_rules)))
-
-
-def part1(test_data: bool = False):
-    rules, updates = get_data(test_data)
-
-    rules_by_values = defaultdict(list)
-    for r in rules:
-        rules_by_values[r.a].append(r)
-        rules_by_values[r.b].append(r)
-
-    valid_updates = [up for up in updates if valid(up, rules_by_values)]
-
-    return sum(up.pages[floor(len(up.pages) / 2)] for up in valid_updates)
 
 
 def part2(test_data: bool = False):
