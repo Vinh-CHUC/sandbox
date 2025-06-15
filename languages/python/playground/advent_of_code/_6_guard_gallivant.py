@@ -26,7 +26,6 @@ class Direction(Enum):
             case _:
                 assert_never(self)
 
-
 @dataclass
 class Position:
     x: int
@@ -52,7 +51,7 @@ class Position:
 @dataclass
 class Map:
     data: list[list[str]]
-    itinerary: list[tuple[Position, Direction]] = field(default_factory=list)
+    itinerary: set[tuple[Position, Direction]] = field(default_factory=set)
 
     @staticmethod
     def get_data() -> "Map":
@@ -73,8 +72,12 @@ class Map:
             return True
         return False
 
-    def mark_visited(self, p: Position, d: Direction):
-        self.itinerary.append((p, d))
+    def mark_visited(self, p: Position, d: Direction) -> bool:
+        cycle = False
+        if (p, d) in self.itinerary:
+            cycle = True
+        self.itinerary.add((p, d))
+        return cycle
 
     def count_visited(self) -> int:
         return len({iti[0] for iti in self.itinerary})
@@ -115,9 +118,24 @@ class ExploreOutcome(Enum):
     EXITED = auto()
 
 
-def explore(m: Map) -> ExploreOutcome:
-    pass
+def explore(map: Map) -> ExploreOutcome:
+    direction = Direction.NORTH
+    position = map.initial_position()
+    map.mark_visited(position, direction)
 
+    while True:
+        next_p = position.advance(direction)
+
+        if map.is_oob(next_p):
+            return ExploreOutcome.EXITED
+        elif map.data[next_p.x][next_p.y] == OBSTACLE:
+            direction = direction.rotate()
+            continue
+        else:
+            position = next_p
+            cycle_detected = map.mark_visited(position, direction)
+            if cycle_detected:
+                return ExploreOutcome.LOOP
 
 def part2():
     map = Map.get_data()
@@ -140,8 +158,24 @@ def part2():
             position = next_p
             map.mark_visited(position, direction)
 
-    obstacle_candidates = [
+    obstacle_candidates = {
         iti[0] for iti in map.itinerary if iti[0] != initial_position
-    ]
+    }
 
-    pass
+    print("Candidates: ", len(obstacle_candidates))
+
+    ret = 0
+
+    for idx, obstacle in enumerate(obstacle_candidates):
+        if idx % 400 == 0:
+            print(idx)
+        map = Map(map.data)
+        map.mark_obstacle(obstacle)
+        match explore(map):
+            case ExploreOutcome.LOOP:
+                ret += 1
+            case _:
+                pass
+        map.unmark_obstacle(obstacle)
+
+    return ret
