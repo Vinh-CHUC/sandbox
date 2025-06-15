@@ -4,8 +4,8 @@ from pathlib import Path
 from typing import assert_never
 
 FREE = "."
-GUARD = "#"
-VISITED = "X"
+OBSTACLE = "#"
+
 
 class Direction(Enum):
     NORTH = auto()
@@ -28,7 +28,7 @@ class Direction(Enum):
 
 
 @dataclass
-class Position():
+class Position:
     x: int
     y: int
 
@@ -48,6 +48,7 @@ class Position():
     def __hash__(self) -> int:
         return hash((self.x, self.y))
 
+
 @dataclass
 class Map:
     data: list[list[str]]
@@ -56,9 +57,7 @@ class Map:
     @staticmethod
     def get_data() -> "Map":
         lines = (Path(__file__).parent / "_6_guard_gallivant.dat").open().readlines()
-        return Map([
-            list(l.strip()) for l in lines
-        ])
+        return Map([list(l.strip()) for l in lines])
 
     def initial_position(self) -> Position:
         for row_idx in range(len(self.data)):
@@ -80,6 +79,15 @@ class Map:
     def count_visited(self) -> int:
         return len({iti[0] for iti in self.itinerary})
 
+    def mark_obstacle(self, p: Position):
+        assert self.data[p.x][p.y] != OBSTACLE
+        self.data[p.x][p.y] = OBSTACLE
+
+    def unmark_obstacle(self, p: Position):
+        assert self.data[p.x][p.y] == OBSTACLE
+        self.data[p.x][p.y] = FREE
+
+
 def part1():
     map = Map.get_data()
 
@@ -87,13 +95,12 @@ def part1():
     position = map.initial_position()
     map.mark_visited(position, direction)
 
-
     while True:
         next_p = position.advance(direction)
 
         if map.is_oob(next_p):
             break
-        elif map.data[next_p.x][next_p.y] == GUARD:
+        elif map.data[next_p.x][next_p.y] == OBSTACLE:
             direction = direction.rotate()
             continue
         else:
@@ -102,6 +109,39 @@ def part1():
 
     return map.count_visited()
 
+
+class ExploreOutcome(Enum):
+    LOOP = auto()
+    EXITED = auto()
+
+
+def explore(m: Map) -> ExploreOutcome:
+    pass
+
+
 def part2():
     map = Map.get_data()
+
+    ### Part 1 basically
+    direction = Direction.NORTH
+    position = map.initial_position()
+    initial_position = position
+    map.mark_visited(position, direction)
+
+    while True:
+        next_p = position.advance(direction)
+
+        if map.is_oob(next_p):
+            break
+        elif map.data[next_p.x][next_p.y] == OBSTACLE:
+            direction = direction.rotate()
+            continue
+        else:
+            position = next_p
+            map.mark_visited(position, direction)
+
+    obstacle_candidates = [
+        iti[0] for iti in map.itinerary if iti[0] != initial_position
+    ]
+
     pass
