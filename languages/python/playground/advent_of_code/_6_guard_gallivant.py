@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import auto, Enum
 from pathlib import Path
 from typing import assert_never
@@ -7,93 +7,101 @@ FREE = "."
 GUARD = "#"
 VISITED = "X"
 
-@dataclass
-class Position():
-    x: int
-    y: int
-
 class Direction(Enum):
     NORTH = auto()
     EAST = auto()
     SOUTH = auto()
     WEST = auto()
 
-def rotate(d: Direction) -> Direction:
-    match d:
-        case Direction.NORTH:
-            return Direction.EAST
-        case Direction.EAST:
-            return Direction.SOUTH
-        case Direction.SOUTH:
-            return Direction.WEST
-        case Direction.WEST:
-            return Direction.NORTH
-        case _:
-            assert_never(d)
-
-def next_position(pos: Position, d: Direction) -> Position:
-    match d:
-        case Direction.NORTH:
-            return Position(pos.x - 1, pos.y)
-        case Direction.EAST:
-            return Position(pos.x, pos.y + 1)
-        case Direction.SOUTH:
-            return Position(pos.x + 1, pos.y)
-        case Direction.WEST:
-            return Position(pos.x, pos.y - 1)
-        case _:
-            assert_never(d)
+    def rotate(self) -> "Direction":
+        match self:
+            case Direction.NORTH:
+                return Direction.EAST
+            case Direction.EAST:
+                return Direction.SOUTH
+            case Direction.SOUTH:
+                return Direction.WEST
+            case Direction.WEST:
+                return Direction.NORTH
+            case _:
+                assert_never(self)
 
 
-def get_data() -> list[list[str]]:
-    lines = (Path(__file__).parent / "_6_guard_gallivant.dat").open().readlines()
-    return [
-        list(l.strip()) for l in lines
-    ]
+@dataclass
+class Position():
+    x: int
+    y: int
 
+    def advance(self, d: Direction) -> "Position":
+        match d:
+            case Direction.NORTH:
+                return Position(self.x - 1, self.y)
+            case Direction.EAST:
+                return Position(self.x, self.y + 1)
+            case Direction.SOUTH:
+                return Position(self.x + 1, self.y)
+            case Direction.WEST:
+                return Position(self.x, self.y - 1)
+            case _:
+                assert_never(d)
 
-def initial_position(data: list[list[str]]) -> Position:
-    for row_idx in range(len(data)):
-        for col_idx in range(len(data[row_idx])):
-            if data[row_idx][col_idx] == "^":
-                return Position(row_idx, col_idx)
+    def __hash__(self) -> int:
+        return hash((self.x, self.y))
 
-    raise RuntimeError
+@dataclass
+class Map:
+    data: list[list[str]]
+    itinerary: list[tuple[Position, Direction]] = field(default_factory=list)
 
-def oob(p: Position, data: list[list[str]]) -> bool:
-    if p.x < 0 or p.x >= len(data):
-        return True
-    if p.y < 0 or p.y >= len(data[0]):
-        return True
-    return False
+    @staticmethod
+    def get_data() -> "Map":
+        lines = (Path(__file__).parent / "_6_guard_gallivant.dat").open().readlines()
+        return Map([
+            list(l.strip()) for l in lines
+        ])
 
+    def initial_position(self) -> Position:
+        for row_idx in range(len(self.data)):
+            for col_idx in range(len(self.data[row_idx])):
+                if self.data[row_idx][col_idx] == "^":
+                    return Position(row_idx, col_idx)
+        raise RuntimeError
+
+    def is_oob(self, p: Position) -> bool:
+        if p.x < 0 or p.x >= len(self.data):
+            return True
+        if p.y < 0 or p.y >= len(self.data[0]):
+            return True
+        return False
+
+    def mark_visited(self, p: Position, d: Direction):
+        self.itinerary.append((p, d))
+
+    def count_visited(self) -> int:
+        return len({iti[0] for iti in self.itinerary})
 
 def part1():
-    data = get_data()
+    map = Map.get_data()
 
     direction = Direction.NORTH
-    position = initial_position(data)
-    data[position.x][position.y] = VISITED
+    position = map.initial_position()
+    map.mark_visited(position, direction)
+
 
     while True:
-        next_p = next_position(position, direction)
+        next_p = position.advance(direction)
 
-        if oob(next_p, data):
+        if map.is_oob(next_p):
             break
-        elif data[next_p.x][next_p.y] == GUARD:
-            direction = rotate(direction)
+        elif map.data[next_p.x][next_p.y] == GUARD:
+            direction = direction.rotate()
             continue
         else:
             position = next_p
-            data[next_p.x][next_p.y] = VISITED
+            map.mark_visited(position, direction)
 
-    visited_count = 0
-    for row_idx in range(len(data)):
-        for col_idx in range(len(data[row_idx])):
-            if data[row_idx][col_idx] == VISITED:
-                visited_count += 1
-
-    return visited_count
+    return map.count_visited()
 
 def part2():
+    map = Map.get_data()
     pass
