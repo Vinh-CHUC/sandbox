@@ -94,3 +94,6 @@ def part1():
                 visited_count += 1
 
     return visited_count
+
+def part2():
+    pass
