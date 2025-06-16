@@ -2,7 +2,7 @@ from collections import deque
 from copy import deepcopy
 from dataclasses import dataclass
 from itertools import chain
-from typing import Deque
+from typing import Deque, Sequence
 
 @dataclass
 class TreeNode:
@@ -11,7 +11,7 @@ class TreeNode:
     right: "TreeNode | None" = None
 
     @staticmethod
-    def from_breadthfirst(arr: list[int| None]) -> "TreeNode":
+    def from_breadthfirst(arr: Sequence[int| None]) -> "TreeNode":
         if not arr:
             raise AssertionError
 
@@ -169,6 +169,17 @@ class TreeNode:
 
         return ret
 
+    """
+    Postorder recursive, when popping:
+        postorder(node.left)
+            #A Are we here?
+        postorder(node.right)
+            #B Or here?
+        visit(self)
+
+        for B/ note that we can pop_back from node.right without having visited anything in it,
+        e.g. if node.right is null
+    """
     def postorder_iter(self) -> list[int]:
         ret = []
 
@@ -211,6 +222,60 @@ class TreeNode:
             else:
                 ret.append(peek.val)
                 last_visited = q.pop()
+
+        return ret
+
+    # TODO: Not sure this actually works as the tree currently used in tests are always "full from the
+    # left"
+    def postorder_iter3(self) -> list[int]:
+        ret = []
+
+        q: list[TreeNode] = []
+        node = self
+
+        last_visited: TreeNode | None = None
+
+        while q or node:
+            while node is not None:
+                q.append(node)
+                node = node.left
+
+            peek = q[-1]
+
+            # TODO: The "or peek.left is None" is quite important
+            if peek.right and (last_visited == peek.left or peek.left is None):
+                node = peek.right
+            else:
+                ret.append(peek.val)
+                last_visited = q.pop()
+
+        return ret
+
+    def postorder_iter4(self) -> list[int]:
+        ret = []
+
+        q: list[TreeNode] = []
+        node = self
+
+        last_visited: TreeNode | None = None
+
+        while q or node:
+            while node is not None:
+                q.append(node)
+                node = node.left
+
+            peek = q[-1]
+
+            if last_visited == peek.right or not peek.right:
+                """
+                That doesn't work
+                # if last_visited == peek.right:
+                As we'd be omitting popping back from postorder(node.right) if node.right is null
+                """
+                ret.append(peek.val)
+                last_visited = q.pop()
+            else:
+                node = peek.right
 
         return ret
 

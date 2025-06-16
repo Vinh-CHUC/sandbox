@@ -1,11 +1,13 @@
 import random
 
 from algos.data_structures.tree import TreeNode
+from typing import Sequence
 
 
 random.seed(42)
 
-def sample() -> list[int]:
+# TODO: Add Nones in there
+def sample() -> Sequence[int]:
     return list(set(random.choices(
         list(range(1000)),
         k=random.choice(list(range(1, 250)))
@@ -27,3 +29,5 @@ def test_postorder():
         t = TreeNode.from_breadthfirst(sample())
         assert t.postorder() == t.postorder_iter()
         assert t.postorder() == t.postorder_iter2()
+        assert t.postorder() == t.postorder_iter3()
+        assert t.postorder() == t.postorder_iter4()
