@@ -105,6 +105,20 @@ class TreeNode:
                 # Type checker is not good enough so I have to add this
                 raise AssertionError
 
+    def postorder(self) -> list[int]:
+        match self:
+            case TreeNode(val=val, left=None, right=None):
+                return [val]
+            case TreeNode(val=val, left=None, right=TreeNode() as right):
+                return right.postorder() + [val]
+            case TreeNode(val=val, left=TreeNode() as left, right=None):
+                return left.postorder() + [val]
+            case TreeNode(val=val, left=TreeNode() as left, right=TreeNode() as right):
+                return left.postorder() + right.postorder() + [val]
+            case _:
+                # Type checker is not good enough so I have to add this
+                raise AssertionError
+
     def preorder_iter(self) -> list[int]:
         ret = []
 
@@ -125,20 +139,83 @@ class TreeNode:
         ret = []
 
         q: list[TreeNode] = []
-        q.append(self)
+        node = self
 
-        while q:
-            while node.left is not None:
-                node = node.left
+        while q or node:
+            while node is not None:
                 q.append(node)
+                node = node.left
 
             node = q.pop()
             ret.append(node.val)
+            node = node.right
 
-            if node.right is not None:
-                q.append(node.right)
+        return ret
+
+    def inorder_iter_2(self) -> list[int]:
+        ret = []
+
+        q: list[TreeNode] = []
+        node = self
+
+        while q or node:
+            if node is not None:
+                q.append(node)
+                node = node.left
+            else:
+                node = q.pop()
+                ret.append(node.val)
+                node = node.right
+
+        return ret
+
+    def postorder_iter(self) -> list[int]:
+        ret = []
+
+        q: list[TreeNode] = []
+        node = self
+
+        last_visited: TreeNode | None = None
+
+        while q or node:
+            if node is not None:
+                q.append(node)
+                node = node.left
+            else:
+                peek = q[-1]
+                if peek.right and last_visited != peek.right:
+                    node = peek.right
+                else:
+                    ret.append(peek.val)
+                    last_visited = q.pop()
+
+        return ret
+
+    def postorder_iter2(self) -> list[int]:
+        ret = []
+
+        q: list[TreeNode] = []
+        node = self
+
+        last_visited: TreeNode | None = None
+
+        while q or node:
+            while node is not None:
+                q.append(node)
+                node = node.left
+
+            peek = q[-1]
+
+            if peek.right and last_visited != peek.right:
+                node = peek.right
+            else:
+                ret.append(peek.val)
+                last_visited = q.pop()
 
         return ret
 
     def __repr__(self) -> str:
+        return ",".join([str(i) for i in self.bf_traversal()])
+
+    def __str__(self) -> str:
         return ",".join([str(i) for i in self.bf_traversal()])
