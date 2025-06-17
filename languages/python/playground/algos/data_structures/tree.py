@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from itertools import chain
 from typing import Deque, Sequence
 
+
 @dataclass
 class TreeNode:
     val: int
@@ -11,7 +12,7 @@ class TreeNode:
     right: "TreeNode | None" = None
 
     @staticmethod
-    def from_breadthfirst(arr: Sequence[int| None]) -> "TreeNode":
+    def from_breadthfirst(arr: Sequence[int | None]) -> "TreeNode":
         if not arr:
             raise AssertionError
 
@@ -180,6 +181,7 @@ class TreeNode:
         for B/ note that we can pop_back from node.right without having visited anything in it,
         e.g. if node.right is null
     """
+
     def postorder_iter(self) -> list[int]:
         ret = []
 
