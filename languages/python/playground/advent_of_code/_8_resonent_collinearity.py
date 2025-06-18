@@ -9,10 +9,16 @@ NA = "."
 @dataclass
 class Vector:
     x: int
-    y: int
+    y: int | float
 
     def __mul__(self, i: int) -> "Vector":
         return Vector(self.x * i, self.y * i)
+
+    def normalise_x(self) -> "Vector":
+        if self.x == 0:
+            return Vector(1, 0)
+        else:
+            return Vector(1, float(self.y) / float(self.x))
 
 @dataclass
 class Coord:
@@ -20,6 +26,8 @@ class Coord:
     y: int
 
     def __add__(self, v: Vector) -> "Coord":
+        if isinstance(v.y, float):
+            raise AssertionError
         return Coord(self.x + v.x, self.y + v.y)
 
     def __sub__(self, other: "Coord") -> "Vector":
@@ -57,7 +65,12 @@ class AntennaMap:
         return antinodes
 
     def antinodes_line(self, freq: str) -> list[Coord]:
-        return []
+        antinodes = []
+        for ant_a, ant_b in combinations(self.antennas(freq), 2):
+            norm = (ant_b - ant_a)
+            for i in range(len(self(self.data))):
+                pass 
+        return antinodes
 
     @cached_property
     def frequencies(self):
