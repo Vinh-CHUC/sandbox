@@ -49,15 +49,15 @@ class AntennaMap:
     def antinodes(self, freq: str) -> list[Coord]:
         antinodes = []
         for ant_a, ant_b in combinations(self.antennas(freq), 2):
-            print("Begin")
-            print(ant_a, ant_b)
-            print(ant_b - ant_a)
             a = ant_a + (ant_b - ant_a) * 2
             b = ant_b + (ant_a - ant_b) * 2
             antinodes.extend([
                 n for n in [a, b] if n.is_within_bounds(len(self.data), len(self.data[0]))
             ])
         return antinodes
+
+    def antinodes_line(self, freq: str) -> list[Coord]:
+        return []
 
     @cached_property
     def frequencies(self):
