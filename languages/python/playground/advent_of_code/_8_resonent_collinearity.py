@@ -1,5 +1,6 @@
 from enum import auto, Enum
 from dataclasses import dataclass, field
+from fractions import Fraction
 from functools import cached_property, reduce, lru_cache
 from itertools import chain, combinations, product, zip_longest
 from pathlib import Path
@@ -9,7 +10,7 @@ NA = "."
 @dataclass
 class Vector:
     x: int
-    y: int | float
+    y: int | Fraction
 
     def __mul__(self, i: int) -> "Vector":
         return Vector(self.x * i, self.y * i)
@@ -18,7 +19,7 @@ class Vector:
         if self.x == 0:
             return Vector(1, 0)
         else:
-            return Vector(1, float(self.y) / float(self.x))
+            return Vector(1, Fraction(self.y, self.x))
 
 @dataclass
 class Coord:
@@ -26,7 +27,7 @@ class Coord:
     y: int
 
     def __add__(self, v: Vector) -> "Coord":
-        if isinstance(v.y, float):
+        if isinstance(v.y, Fraction):
             raise AssertionError
         return Coord(self.x + v.x, self.y + v.y)
 
@@ -67,9 +68,18 @@ class AntennaMap:
     def antinodes_line(self, freq: str) -> list[Coord]:
         antinodes = []
         for ant_a, ant_b in combinations(self.antennas(freq), 2):
-            norm = (ant_b - ant_a)
-            for i in range(len(self(self.data))):
-                pass 
+            norm = (ant_b - ant_a).normalise_x()
+            assert isinstance(norm.y, Fraction)
+            for i in range(len(self.data)):
+                dx = i - ant_a.x
+                y = ant_a.y + dx * norm.y
+                if (
+                    y.denominator == 1
+                    and (antinode := Coord(i, int(y))).is_within_bounds(
+                        len(self.data), len(self.data[0])
+                    )):
+                        antinodes.append(antinode)
+
         return antinodes
 
     @cached_property
@@ -77,6 +87,10 @@ class AntennaMap:
         return sorted(set(chain(
             *self.data
         )) - {NA, '#'})
+
+    def mark_antinodes(self, antinodes: list[Coord]):
+        for an in antinodes:
+            self.data[an.x][an.y] = '#'
 
     def __repr__(self):
         s = ""
@@ -103,3 +117,11 @@ def part1(test: bool = False):
         antinodes.extend(antenna_map.antinodes(f))
     return len(set(antinodes))
 
+def part2(test: bool = False):
+    antenna_map = get_data(test)
+    antinodes = []
+    for f in antenna_map.frequencies:
+        antinodes.extend(antenna_map.antinodes_line(f))
+    antenna_map.mark_antinodes(list(set(antinodes)))
+    print(antenna_map)
+    return len(set(antinodes))
