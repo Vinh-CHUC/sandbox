@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 from pathlib import Path
-from typing import NewType
 
 FREE_SPACE = "."
 
@@ -63,15 +62,13 @@ class SparseFS:
         return idx
 
     def defragment(self):
-        free_space_idx = 0
-        file_block_idx = len(self.data) - 1
+        free_space_idx = self.seek_next_free_space(0)
+        file_block_idx = self.seek_prev_file_block(len(self.data) - 1)
         while free_space_idx < file_block_idx:
-            free_space_idx = self.seek_next_free_space(free_space_idx)
-            file_block_idx = self.seek_prev_file_block(file_block_idx)
             self.data[free_space_idx] = self.data[file_block_idx]
             self.data[file_block_idx] = FREE_SPACE
-            free_space_idx += 1
-            file_block_idx -= 1
+            free_space_idx = self.seek_next_free_space(free_space_idx + 1)
+            file_block_idx = self.seek_prev_file_block(file_block_idx - 1)
 
     def checksum(self):
         return sum(
