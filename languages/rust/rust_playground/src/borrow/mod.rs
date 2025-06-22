@@ -12,6 +12,7 @@
 //! a += 1;  // Can't have modification throught the original owner
 //! // One way to think about his is that the += fn has to borrow (mutably in this instance)
 //! *b += 1;
+//! // In other words while b is "active" (NLL), a is shadowed
 //! ```
 //! mut_and_mut
 //! ```compile_fail
@@ -19,6 +20,20 @@
 //! let b = &mut a;
 //! println!("{:?}", a);  // Nor an immutable borrow
 //! *b += 1;
+//! ```
+//! mut_and_two_muts
+//! ```compile_fail
+//! let mut a = 5;
+//! // While a is immutably borrowed (as b):
+//! // - a itself can't be used
+//! // - no other borrows can happen (immutable or not)
+//! let b = &mut a;
+//! let c = &mut a;
+//! *c += 1;
+//! println!("{:?}", c);
+//! *b += 1;
+//! println!("{:?}", b);
+//! println!("{:?}", a);
 //! ```
 
 #[cfg(test)]
@@ -52,4 +67,5 @@ mod tests {
         println!("{:?}", c);
         println!("{:?}", a);
     }
+
 }

@@ -7,6 +7,7 @@ from pathlib import Path
 
 NA = "."
 
+
 @dataclass
 class Vector:
     x: int
@@ -20,6 +21,7 @@ class Vector:
             return Vector(1, 0)
         else:
             return Vector(1, Fraction(self.y, self.x))
+
 
 @dataclass
 class Coord:
@@ -35,13 +37,11 @@ class Coord:
         return Vector(self.x - other.x, self.y - other.y)
 
     def is_within_bounds(self, x, y) -> bool:
-        return (
-            self.x >= 0 and self.x < x
-            and self.y >= 0 and self.y < y
-        )
+        return self.x >= 0 and self.x < x and self.y >= 0 and self.y < y
 
     def __hash__(self):
         return hash((self.x, self.y))
+
 
 @dataclass
 class AntennaMap:
@@ -60,9 +60,13 @@ class AntennaMap:
         for ant_a, ant_b in combinations(self.antennas(freq), 2):
             a = ant_a + (ant_b - ant_a) * 2
             b = ant_b + (ant_a - ant_b) * 2
-            antinodes.extend([
-                n for n in [a, b] if n.is_within_bounds(len(self.data), len(self.data[0]))
-            ])
+            antinodes.extend(
+                [
+                    n
+                    for n in [a, b]
+                    if n.is_within_bounds(len(self.data), len(self.data[0]))
+                ]
+            )
         return antinodes
 
     def antinodes_line(self, freq: str) -> list[Coord]:
@@ -73,24 +77,20 @@ class AntennaMap:
             for i in range(len(self.data)):
                 dx = i - ant_a.x
                 y = ant_a.y + dx * norm.y
-                if (
-                    y.denominator == 1
-                    and (antinode := Coord(i, int(y))).is_within_bounds(
-                        len(self.data), len(self.data[0])
-                    )):
-                        antinodes.append(antinode)
+                if y.denominator == 1 and (
+                    antinode := Coord(i, int(y))
+                ).is_within_bounds(len(self.data), len(self.data[0])):
+                    antinodes.append(antinode)
 
         return antinodes
 
     @cached_property
     def frequencies(self):
-        return sorted(set(chain(
-            *self.data
-        )) - {NA, '#'})
+        return sorted(set(chain(*self.data)) - {NA, "#"})
 
     def mark_antinodes(self, antinodes: list[Coord]):
         for an in antinodes:
-            self.data[an.x][an.y] = '#'
+            self.data[an.x][an.y] = "#"
 
     def __repr__(self):
         s = ""
@@ -110,12 +110,14 @@ def get_data(test: bool = False) -> AntennaMap:
         with (Path(__file__).parent / "_8_resonent_collinearity.dat").open() as f:
             return AntennaMap([list(l.strip()) for l in f.readlines()])
 
+
 def part1(test: bool = False):
     antenna_map = get_data(test)
     antinodes = []
     for f in antenna_map.frequencies:
         antinodes.extend(antenna_map.antinodes(f))
     return len(set(antinodes))
+
 
 def part2(test: bool = False):
     antenna_map = get_data(test)
