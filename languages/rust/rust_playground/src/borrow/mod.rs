@@ -5,6 +5,8 @@
 //! a += 1;  // A mutation that cuts through the lifetime of b
 //! println!("{:?}", b);
 //! ```
+//!
+//!
 //! mut_and_mut
 //! ```compile_fail
 //! let mut a = 5;
@@ -14,6 +16,8 @@
 //! *b += 1;
 //! // In other words while b is "active" (NLL), a is shadowed
 //! ```
+//!
+//!
 //! mut_and_mut
 //! ```compile_fail
 //! let mut a = 5;
@@ -21,6 +25,8 @@
 //! println!("{:?}", a);  // Nor an immutable borrow
 //! *b += 1;
 //! ```
+//!
+//!
 //! mut_and_two_muts
 //! ```compile_fail
 //! let mut a = 5;
@@ -35,6 +41,27 @@
 //! println!("{:?}", b);
 //! println!("{:?}", a);
 //! ```
+//!
+//! Misuse of borrow for RefCell
+//! ```should_panic
+//! use std::cell::RefCell;
+//! let a = RefCell::new(42);
+//! let mut mut_ref = a.borrow_mut();
+//! let ref2 = a.borrow();
+//! println!("{:?}", mut_ref);
+//! ```
+//!
+//!
+//! Cannot fool the RefCell by having more than one mutable borrows
+//! from a given borrow_mut();
+//! ```compile_fail
+//! use std::cell::RefCell;
+//! let a = RefCell::new(42);
+//! let mut mut_ref = a.borrow_mut();
+//! let mut b =  &mut *mut_ref;
+//! let mut c =  &mut *mut_ref;
+//! println!("{:?}", b);
+//! ```
 
 #[cfg(test)]
 mod tests {
@@ -45,7 +72,7 @@ mod tests {
 
         // The immutable borrow isn't intersecting in any way with mutable operations
         let b = &a;
-        println!("{:?}", a);  // Immutable that cuts through: ok
+        println!("{:?}", a); // Immutable that cuts through: ok
         println!("{:?}", b);
 
         // This is allowed while b is still in scope: Non-lexical lifetime!!
@@ -67,5 +94,4 @@ mod tests {
         println!("{:?}", c);
         println!("{:?}", a);
     }
-
 }
