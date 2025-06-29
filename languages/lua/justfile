@@ -1,0 +1,9 @@
+# Run with sudo
+sync:
+    luarocks install busted
+
+run:
+    lua main.lua
+
+test:
+    busted -v .

@@ -1,0 +1,10 @@
+{
+    "runtime.version": "Lua 5.4",
+    "workspace.library": [
+        "./",
+        "/usr/local/share/lua/5.4",
+        "/usr/local/lib/lua/5.4"
+    ],
+    "workspace.checkThirdParty": false,
+    "diagnostics.globals": ["describe", "it", "assert"]
+}
