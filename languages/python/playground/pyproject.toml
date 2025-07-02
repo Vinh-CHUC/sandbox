@@ -19,6 +19,7 @@ build-backend = "hatchling.build"
 [dependency-groups]
 dev = [
     "ipython>=8.34.0",
+    "hypothesis>=6.135.23",
     "pyright>=1.1.398",
     "pytest>=8.3.5",
     "ruff>=0.11.4",
