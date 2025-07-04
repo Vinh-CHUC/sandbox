@@ -9,6 +9,7 @@ dependencies = [
     "black>=25.1.0",
     "pandas>=2.2.3",
     "pydantic>=2.11.2",
+    "pytest-xdist>=3.8.0",
     "scipy>=1.15.2",
 ]
 

@@ -34,7 +34,7 @@ def test_part1():
 def test_defragmentwhole():
     fs = SparseFS(list("00...111...2...333.44.5555.6666.777.888899"))
     fs.defragment_whole()
-    assert "".join(fs.data) == "022111222......"
+    assert "".join(fs.data) == "00992111777.44.333....5555.6666.....8888.."
 
 
 # Slow
