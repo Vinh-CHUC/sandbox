@@ -3,7 +3,7 @@ import pandas as pd
 from hypothesis import given, settings, strategies as st
 
 from maths.proba_stats import mixture_models
-from maths.proba_stats.utils import Dist
+from maths.proba_stats.utils import distribution, Dist
 
 
 @given(
@@ -70,7 +70,7 @@ class TestBinaryVectorMixtures:
         """
         RNG = np.random.default_rng(seed=seed)
         dist = RNG.random((n_mixtures, dim))
-        mixture_weights = np.array([0.5, 0.5])
+        mixture_weights = distribution(n_mixtures, RNG)
 
         samples = mixture_models.binary_vector_mixtures(
             Dist(dist),
@@ -78,3 +78,9 @@ class TestBinaryVectorMixtures:
             rng=np.random.default_rng(seed=seed),
             size=size,
         )
+
+        corrs = np.corrcoef(samples, rowvar=False)
+        corrs = (corrs - (corrs.diagonal() * np.eye(corrs.shape[0]))).flatten()
+
+        # At least a decent of number of correlations are relatively high
+        assert (np.abs(corrs) > 0.1).sum() > ((corrs.shape[0] ** 2) / 2)

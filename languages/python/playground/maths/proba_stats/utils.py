@@ -9,8 +9,8 @@ RNG = np.random.default_rng(seed=42)
 Dist = NewType("Dist", npt.NDArray)
 
 
-def distribution(size: int, rng: Generator = RNG) -> Dist:
-    return Dist(rng.dirichlet(rng.integers(1, 20, size=size)))
+def distribution(dim: int, size: int, rng: Generator = RNG) -> Dist:
+    return Dist(rng.dirichlet(rng.integers(1, 20, size=dim), size=size))
 
 
 def one_hot(dist: Dist, size, rng: Generator = RNG):
