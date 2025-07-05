@@ -13,7 +13,7 @@ from maths.proba_stats.utils import distribution, one_hot
 def test_one_hot(seed, dist_size, size):
     RNG = np.random.default_rng(seed=seed)
 
-    dist = distribution(dist_size)
+    dist = distribution(dist_size, 1).reshape(dist_size)
     one_hot_s = one_hot(dist, size, rng=RNG)
 
     # Mindblown!!!

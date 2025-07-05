@@ -39,7 +39,7 @@ def binary_vector_mixtures(
 
     # 1-Dimensional simply the samples of "cluster id"
     cluster_selections = rng.choice(
-        mixture_weights.shape[0], size=size, p=mixture_weights
+        mixture_weights.shape[0], size=size, p=mixture_weights.flatten()
     )
 
     # Interestingly here we draw only one sample, the sampling is done just before really
