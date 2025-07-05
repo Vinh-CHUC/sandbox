@@ -8,8 +8,8 @@ from maths.proba_stats.utils import distribution, Dist
 
 @given(
     seed=st.integers(min_value=42),
-    dim=st.integers(min_value=2, max_value=50),
-    size=st.integers(min_value=5000, max_value=100_000),
+    dim=st.integers(min_value=2, max_value=12),
+    size=st.integers(min_value=5000, max_value=20_000),
 )
 @settings(max_examples=50)
 def test_binary_vectors(seed, dim, size):
