@@ -10,7 +10,10 @@ Dist = NewType("Dist", npt.NDArray)
 
 
 def distribution(dim: int, size: int, rng: Generator = RNG) -> Dist:
-    return Dist(rng.dirichlet(rng.integers(1, 20, size=dim), size=size))
+    d = rng.dirichlet(rng.integers(1, 20, size=dim), size=size)
+    if size == 1:
+        d = d.reshape(-1)
+    return Dist(d)
 
 
 def one_hot(dist: Dist, size, rng: Generator = RNG):
