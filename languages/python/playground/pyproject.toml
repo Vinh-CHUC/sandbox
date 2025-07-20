@@ -8,6 +8,7 @@ readme = "README.md"
 dependencies = [
     "altair>=5.5.0",
     "black>=25.1.0",
+    "debugpy>=1.8.15",
     "pandas>=2.2.3",
     "pydantic>=2.11.2",
     "pytest-xdist>=3.8.0",

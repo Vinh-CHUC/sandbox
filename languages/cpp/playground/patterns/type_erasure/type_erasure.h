@@ -1,4 +1,5 @@
 #include <string>
+#include <memory>
 // Intent of the pattern
 // Structural subtyping + dynamic polymorphism
 // Similar to Rust's dyn trait, combined with blanket implementations
@@ -20,5 +21,43 @@ struct Derived: A {
 
   std::string foo() override {return t.foo();}
 };
+
+}
+
+namespace Better {
+
+class Entity {
+  struct EntityConcept {
+    virtual std::string speak() = 0;
+    virtual int id() = 0;
+  };
+
+  template <typename T>
+  struct EntityImpl<T>: EntityConcept {
+    T t;
+
+    std::string speak() final{
+      return t.speak();
+    }
+
+    virtual int id(){
+      return t.id();
+    }
+
+    EntityImpl<T>(T t): t(t);
+  };
+
+  std::unique_ptr<EntityConcept> ptr;
+
+  public:
+
+  template <typename T>
+  Entity(const T t): ptr(std::make_unique<EntityImpl<T>>(t
+
+
+};
+
+
+
 
 }
