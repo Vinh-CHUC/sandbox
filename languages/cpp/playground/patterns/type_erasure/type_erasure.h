@@ -33,7 +33,7 @@ class Entity {
   };
 
   template <typename T>
-  struct EntityImpl<T>: EntityConcept {
+  struct EntityImpl: EntityConcept {
     T t;
 
     std::string speak() final{
@@ -44,7 +44,7 @@ class Entity {
       return t.id();
     }
 
-    EntityImpl<T>(T t): t(t);
+    EntityImpl(T t): t(t){}
   };
 
   std::unique_ptr<EntityConcept> ptr;
@@ -52,12 +52,7 @@ class Entity {
   public:
 
   template <typename T>
-  Entity(const T t): ptr(std::make_unique<EntityImpl<T>>(t
-
-
+  Entity(const T t): ptr(std::make_unique<EntityImpl<T>>(t)){}
 };
-
-
-
 
 }
