@@ -30,6 +30,7 @@ class Entity {
   struct EntityConcept {
     virtual std::string speak() = 0;
     virtual int id() = 0;
+    virtual ~EntityConcept() = default;
   };
 
   template <typename T>
@@ -40,11 +41,11 @@ class Entity {
       return t.speak();
     }
 
-    virtual int id(){
+    int id() final {
       return t.id();
     }
 
-    EntityImpl(T t): t(t){}
+    EntityImpl(const T& t): t(t){}
   };
 
   std::unique_ptr<EntityConcept> ptr;
@@ -52,7 +53,15 @@ class Entity {
   public:
 
   template <typename T>
-  Entity(const T t): ptr(std::make_unique<EntityImpl<T>>(t)){}
+  Entity(const T& t): ptr(std::make_unique<EntityImpl<T>>(t)){}
+
+  std::string speak() {
+    return ptr->speak();
+  }
+
+  int id() {
+    return ptr->id();
+  }
 };
 
 }
