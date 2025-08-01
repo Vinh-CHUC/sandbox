@@ -4,4 +4,8 @@ version = 4
 
 [[package]]
 name = "rust_playground"
-version = "0.0.0"
+version = "0.1.0"
+
+[[package]]
+name = "tapl"
+version = "0.1.0"

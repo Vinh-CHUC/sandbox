@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["rust_playground"]
+members = ["rust_playground", "tapl"]
 
 [workspace.package]
 edition = "2024"
