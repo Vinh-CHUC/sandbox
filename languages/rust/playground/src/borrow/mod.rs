@@ -48,10 +48,9 @@
 //! let a = RefCell::new(42);
 //! let mut mut_ref = a.borrow_mut();
 //! let ref2 = a.borrow();
-//! println!("{:?}", mut_ref);
+//! // Interestingly this is so similar to NLL, but rather mut_ref as still "alive" as of the line
+//! // above
 //! ```
-//!
-//!
 //! Cannot fool the RefCell by having more than one mutable borrows
 //! from a given borrow_mut();
 //! ```compile_fail
@@ -65,6 +64,15 @@
 
 #[cfg(test)]
 mod tests {
+    use std::cell::RefCell;
+
+    #[test]
+    fn test_refcell() {
+        let a = RefCell::new(42); // This is not mut!
+        *(a.borrow_mut()) = 50;
+        assert_eq!(*a.borrow(), 50);
+    }
+
     #[test]
     fn mut_and_immut() {
         // OK immutable borrow that is within a mutable lifetime
