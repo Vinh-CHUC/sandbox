@@ -1,7 +1,7 @@
 mod borrow;
 mod concurrency;
 mod iterators;
-mod lifetimes;
+pub mod lifetimes;
 mod oo;
 mod patterns;
 mod pointers;
