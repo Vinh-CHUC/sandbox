@@ -20,6 +20,17 @@
 //! }
 //! println!("{:?}", ts); 
 //! ```
+//!
+//! ```compile_fail
+//! use playground::lifetimes::*;
+//! let whoo: IndependentStruct;
+//! let s = String::from("foo");
+//! {
+//!     let t = String::from("bar");
+//!     whoo = IndependentStruct{x: &s, y: &t};
+//! }
+//! println!("{:?}", whoo.x);
+//! ```
 
 pub fn tied_lifetimes<'a>(cond: bool, x: &'a str, y: &'a str) -> &'a str {
     match cond {
@@ -40,9 +51,9 @@ pub struct TiedStruct<'a, 'b> {
 }
 
 #[derive(Debug)]
-struct IndependentStruct<'a> {
-    x: &'a String,
-    y: &'a String,
+pub struct IndependentStruct<'a> {
+    pub x: &'a String,
+    pub y: &'a String,
 }
 
 
@@ -50,6 +61,7 @@ struct IndependentStruct<'a> {
 mod tests {
     use super::tied_lifetimes;
     use super::independent_lifetimes;
+    use super::IndependentStruct;
     use super::TiedStruct;
 
     #[test]
@@ -78,6 +90,16 @@ mod tests {
         {
             let t = String::from("bar");
             TiedStruct{x: &s, y: &t};
+        }
+    }
+
+    #[test]
+    fn test_independent_lifetimes_struct() {
+        let whoo: IndependentStruct;
+        let s = String::from("foo");
+        {
+            let t = String::from("bar");
+            whoo = IndependentStruct{x: &s, y: &t};
         }
     }
 }
