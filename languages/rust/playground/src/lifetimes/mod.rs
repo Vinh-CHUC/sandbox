@@ -31,6 +31,15 @@
 //! }
 //! println!("{:?}", whoo.x);
 //! ```
+//! ```compile_fail
+//! pub fn independent_lifetimes<'a, 'b, 'c>(x: &'a str, y: &'b str) -> &'c str
+//! where
+//!     'c: 'a,
+//! {
+//!     println!("{:?}", y);
+//!     x  // x is a 'a, but 'a does not "implement" 'c !!
+//! }
+//! ```
 
 pub fn tied_lifetimes<'a>(cond: bool, x: &'a str, y: &'a str) -> &'a str {
     match cond {
@@ -39,7 +48,10 @@ pub fn tied_lifetimes<'a>(cond: bool, x: &'a str, y: &'a str) -> &'a str {
     }
 }
 
-pub fn independent_lifetimes<'a, 'b>(x: &'a str, y: &'b str) -> &'a str {
+pub fn independent_lifetimes<'a, 'b, 'c>(x: &'a str, y: &'b str) -> &'c str
+where
+    'a: 'c,
+{
     println!("{:?}", y);
     x
 }
