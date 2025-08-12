@@ -68,6 +68,28 @@ pub struct IndependentStruct<'a> {
     pub y: &'a String,
 }
 
+#[derive(Debug)]
+// We implicitly have
+// 'a: Self
+// 'b: 'a
+// 'c: 'a
+pub struct ComplexStruct<'a, 'b, 'c>
+where
+    'b: 'a,
+    'c: 'a
+    // Try 'a: 'b that would force the lifetimes to be perfectly equal?
+{
+    pub x: &'a TiedStruct<'b, 'c>,
+}
+
+// The `where T: 'a` is optional
+// https://rust-lang.github.io/rfcs/2093-infer-outlives.html
+#[derive(Debug)]
+pub struct Foo<'a, T> where T: 'a {
+    // If T itself contains references, then they have to outlive the &'a
+    // If T dost not contain any references then `T: 'a` is always fulfilled
+    myref: &'a T
+}
 
 #[cfg(test)]
 mod tests {
