@@ -1,0 +1,32 @@
+[project]
+name = "dagster_playground"
+requires-python = ">=3.9,<3.14"
+version = "0.1.0"
+dependencies = [
+    "dagster==1.11.6",
+    "geopandas>=1.0.1",
+    "pandas>=2.3.1",
+    "pyarrow>=21.0.0",
+]
+
+[dependency-groups]
+dev = [
+    "dagster-webserver",
+    "dagster-dg-cli",
+    "pyright>=1.1.403",
+    "ipython>=8.18.1",
+    "ruff>=0.12.9",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.dg]
+directory_type = "project"
+
+[tool.dg.project]
+root_module = "dagster_playground"
+registry_modules = [
+    "dagster_playground.components.*",
+]
