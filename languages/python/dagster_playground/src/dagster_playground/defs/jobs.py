@@ -7,6 +7,7 @@ DAGSTER_DEFAULT_OUTPUT_FOLDER = Path(__file__).parent.parent.parent.parent / "jo
 
 my_job = dg.define_asset_job(
     name="my_job",
+    selection=dg.AssetSelection.keys("write_to_csv").upstream(),
     config={
         "resources": {
             "csv_io_manager": {
@@ -25,5 +26,6 @@ my_job = dg.define_asset_job(
                 "config": {"count": 10_000}
             }
         }
-    }
+    },
+    executor_def=dg.in_process_executor
 )
