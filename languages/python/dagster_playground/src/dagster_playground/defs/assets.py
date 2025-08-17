@@ -19,3 +19,7 @@ def processed_data(config: DataGenConfig):
     )
 
     return df
+
+@dg.asset(io_manager_key="csv_io_manager")
+def write_to_csv(processed_data: pd.DataFrame):
+    return processed_data
