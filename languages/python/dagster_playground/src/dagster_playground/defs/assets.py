@@ -3,12 +3,18 @@ import pandas as pd
 
 import dagster as dg
 
-@dg.asset
-def processed_data():
+from dagster_playground.defs.config import DataGenConfig
+
+"""
+Only one configuration object per asset that has to be named config
+"""
+
+@dg.asset(io_manager_key="parquet_io_manager")
+def processed_data(config: DataGenConfig):
     df = pd.DataFrame(
         {
-            "dummy_int": np.arange(100000),
-            "dummy_str": [f"Hello {x}" for x in np.arange(100000)],
+            "dummy_int": np.arange(config.count),
+            "dummy_str": [f"Hello {x}" for x in np.arange(config.count)],
         }
     )
 

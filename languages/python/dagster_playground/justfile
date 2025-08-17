@@ -1,2 +1,5 @@
 dev:
     dg dev
+
+job:
+    dg launch --job my_job
