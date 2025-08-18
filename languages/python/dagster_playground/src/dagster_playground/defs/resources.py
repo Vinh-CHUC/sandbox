@@ -11,15 +11,31 @@ def mkdir(p: Path):
 
 def _get_path(
     context: dg.OutputContext | dg.InputContext,
-    base_path: str,
+    base_path_str: str,
     file_ext: str
 ) -> Path:
-    mkdir(Path(base_path))
-    p = Path(base_path) / Path(*context.asset_key.path)
+    mkdir(Path(base_path_str))
+
+    base_path = Path(base_path_str)
+
     partition_suffix = (
         context.has_partition_key and ("_part" + (context.partition_key or ""))
     ) or ""
-    return Path(f"{p}{partition_suffix}.{file_ext}")
+
+    match context:
+        case dg.OutputContext() as out_context if out_context.mapping_key is not None:
+            p = base_path / out_context.mapping_key
+            ret = Path(f"{p}{partition_suffix}.{file_ext}")
+            import pdb; pdb.set_trace()
+        case _ if context.has_asset_key:
+            p = base_path / Path(*context.asset_key.path)
+            ret = Path(f"{p}{partition_suffix}.{file_ext}")
+            import pdb; pdb.set_trace()
+        case _:
+            import pdb; pdb.set_trace()
+            raise NotImplementedError()
+
+    return ret
 
 
 class PandasCSVIOManager(dg.ConfigurableIOManager):
