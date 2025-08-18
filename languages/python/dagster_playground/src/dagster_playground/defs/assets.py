@@ -24,7 +24,7 @@ def processed_data(config: DataGenConfig):
 
     return df
 
-@dg.op(out=dg.DynamicOut())
+@dg.op(out=dg.DynamicOut(io_manager_key="parquet_io_manager"))
 def splitter(df: pd.DataFrame):
     chunk_size = 3_000
     number_of_parts = len(df.index) // chunk_size
@@ -33,7 +33,6 @@ def splitter(df: pd.DataFrame):
         yield dg.DynamicOutput(c, mapping_key=str(idx))
 
 @dg.op(out=dg.Out(io_manager_key="parquet_io_manager"))
-# @dg.op
 def process_chunk(df: pd.DataFrame) -> pd.DataFrame:
     df = df.assign(another_dummy_str=df.dummy_str + "yoo")
     return df

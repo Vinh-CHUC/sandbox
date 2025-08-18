@@ -26,6 +26,6 @@ my_job = dg.define_asset_job(
                 "config": {"count": 10_000}
             }
         }
-    },
-    executor_def=dg.in_process_executor
+    }
+    # executor_def=dg.in_process_executor
 )

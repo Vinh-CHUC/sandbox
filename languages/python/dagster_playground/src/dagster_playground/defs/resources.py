@@ -23,16 +23,46 @@ def _get_path(
     ) or ""
 
     match context:
-        case dg.OutputContext() as out_context if out_context.mapping_key is not None:
-            p = base_path / out_context.mapping_key
-            ret = Path(f"{p}{partition_suffix}.{file_ext}")
-            import pdb; pdb.set_trace()
         case _ if context.has_asset_key:
+            """
+            Simple case: a plain asset is output/is input
+            """
             p = base_path / Path(*context.asset_key.path)
             ret = Path(f"{p}{partition_suffix}.{file_ext}")
-            import pdb; pdb.set_trace()
+        case dg.OutputContext() as out_context if out_context.mapping_key is not None:
+            """
+            A/ output of an @op with DynamicOut()
+
+            step_key: "asset_name.op_name"
+            """
+            p = base_path / f"{out_context.step_key}[{out_context.mapping_key}]"
+            ret = Path(f"{p}{partition_suffix}.{file_ext}")
+        case dg.OutputContext() as out_context:
+            """
+            B/ output of an @op that is mapped over DynamicOut
+
+            step_key: typically: "asset_name.op_name[mapping_key]"
+            """
+            p = base_path / out_context.step_key
+            ret = Path(f"{p}{partition_suffix}.{file_ext}")
+        case dg.InputContext() if len(identifier := context.get_identifier()) == 3:
+            """
+            input counterpart of B/
+
+            identifier[1]: "asset_name.op_name[mapping_key]"
+            """
+            p = base_path / identifier[1]
+            ret = Path(f"{p}{partition_suffix}.{file_ext}")
+        case dg.InputContext() if len(identifier := context.get_identifier()) == 4:
+            """
+            input counterpart of A/
+
+            identifier[1]: "asset_name.op_name[mapping_key]"
+            identifier[3]: mapping_key
+            """
+            p = base_path / f"{identifier[1]}[{identifier[3]}]"
+            ret = Path(f"{p}{partition_suffix}.{file_ext}")
         case _:
-            import pdb; pdb.set_trace()
             raise NotImplementedError()
 
     return ret
