@@ -10,9 +10,7 @@ def mkdir(p: Path):
 
 
 def _get_path(
-    context: dg.OutputContext | dg.InputContext,
-    base_path_str: str,
-    file_ext: str
+    context: dg.OutputContext | dg.InputContext, base_path_str: str, file_ext: str
 ) -> Path:
     mkdir(Path(base_path_str))
 
@@ -64,7 +62,6 @@ def _get_path(
             ret = Path(f"{p}{partition_suffix}.{file_ext}")
         case _:
             raise NotImplementedError()
-
     return ret
 
 
@@ -78,6 +75,7 @@ class PandasCSVIOManager(dg.ConfigurableIOManager):
     def load_input(self, context: dg.InputContext):
         return pd.read_csv(_get_path(context, self.base_path, "csv"))
 
+
 class PandasParquetIOManager(dg.ConfigurableIOManager):
     base_path: str = ""
 
@@ -88,11 +86,18 @@ class PandasParquetIOManager(dg.ConfigurableIOManager):
         p = _get_path(context, self.base_path, "parquet")
         return pd.read_parquet(p)
 
-DAGSTER_DEFAULT_OUTPUT_FOLDER = Path(__file__).parent.parent.parent.parent / "assets_output"
+
+DAGSTER_DEFAULT_OUTPUT_FOLDER = (
+    Path(__file__).parent.parent.parent.parent / "assets_output"
+)
 
 defs = dg.Definitions(
     resources={
-        "csv_io_manager": PandasCSVIOManager(base_path=str(DAGSTER_DEFAULT_OUTPUT_FOLDER)),
-        "parquet_io_manager": PandasParquetIOManager(base_path=str(DAGSTER_DEFAULT_OUTPUT_FOLDER)),
+        "csv_io_manager": PandasCSVIOManager(
+            base_path=str(DAGSTER_DEFAULT_OUTPUT_FOLDER)
+        ),
+        "parquet_io_manager": PandasParquetIOManager(
+            base_path=str(DAGSTER_DEFAULT_OUTPUT_FOLDER)
+        ),
     }
 )

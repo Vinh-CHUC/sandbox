@@ -3,7 +3,9 @@ from pathlib import Path
 import dagster as dg
 
 
-DAGSTER_DEFAULT_OUTPUT_FOLDER = Path(__file__).parent.parent.parent.parent / "jobs_output"
+DAGSTER_DEFAULT_OUTPUT_FOLDER = (
+    Path(__file__).parent.parent.parent.parent / "jobs_output"
+)
 
 my_job = dg.define_asset_job(
     name="my_job",
@@ -21,11 +23,6 @@ my_job = dg.define_asset_job(
                 }
             },
         },
-        "ops": {
-            "processed_data": {
-                "config": {"count": 1_000}
-            }
-        }
-    }
-    # executor_def=dg.in_process_executor
+        "ops": {"processed_data": {"config": {"count": 1_000}}},
+    },
 )

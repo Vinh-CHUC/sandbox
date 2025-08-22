@@ -31,3 +31,6 @@ root_module = "dagster_playground"
 registry_modules = [
     "dagster_playground.components.*",
 ]
+
+[tool.ruff]
+target-version = "py313"
