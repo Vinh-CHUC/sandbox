@@ -30,6 +30,7 @@ def test_jobA():
         f"The following expected files were not found: {', '.join(missing_files)}"
     )
 
+
 def test_jobB():
     # Define the output directory
     shutil.rmtree(DAGSTER_DEFAULT_OUTPUT_FOLDER, ignore_errors=True)

@@ -29,6 +29,7 @@ def processed_data(config: DataGenConfig):
 
     return df
 
+
 @dg.op(out=dg.DynamicOut(io_manager_key="parquet_io_manager"))
 def splitter(df: pd.DataFrame):
     chunk_size = 300
@@ -49,6 +50,7 @@ def process_chunk(context: dg.AssetExecutionContext, df: pd.DataFrame) -> pd.Dat
 def concat_chunks(chunks: list[pd.DataFrame]) -> pd.DataFrame:
     return pd.concat(chunks, ignore_index=True)
 
+
 @dg.op
 def save_chunk_to_csv(context: dg.OpExecutionContext, df: pd.DataFrame) -> str:
     if (mk := context.get_mapping_key()) is None:
@@ -59,6 +61,7 @@ def save_chunk_to_csv(context: dg.OpExecutionContext, df: pd.DataFrame) -> str:
     p = f"{str(DAGSTER_DEFAULT_OUTPUT_FOLDER / key)}.csv"
     df.to_csv(p, index=False, chunksize=100 * 1024 * 1024)
     return p
+
 
 @dg.op
 def concat_csv(context: dg.OpExecutionContext, paths: list[str]) -> None:
@@ -71,13 +74,16 @@ def concat_csv(context: dg.OpExecutionContext, paths: list[str]) -> None:
                     next(fin)  # skip header
                 shutil.copyfileobj(fin, fout, length=100 * 1024 * 1024)
 
+
 """
 It seems that the io_manager assigned to the graph_asset is that of the op that it returns
 """
 
+
 @dg.graph_asset
 def assetA(processed_data: pd.DataFrame):
     return concat_chunks(splitter(processed_data).map(process_chunk).collect())
+
 
 @dg.graph_asset
 def assetB(processed_data: pd.DataFrame):
