@@ -23,7 +23,7 @@ my_job = dg.define_asset_job(
         },
         "ops": {
             "processed_data": {
-                "config": {"count": 10_000}
+                "config": {"count": 1_000}
             }
         }
     }

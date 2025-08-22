@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import pandas as pd
 
@@ -26,14 +27,17 @@ def processed_data(config: DataGenConfig):
 
 @dg.op(out=dg.DynamicOut(io_manager_key="parquet_io_manager"))
 def splitter(df: pd.DataFrame):
-    chunk_size = 3_000
+    chunk_size = 300
     number_of_parts = len(df.index) // chunk_size
     df_chunks = np.array_split(df, number_of_parts)
     for idx, c in enumerate(df_chunks):
         yield dg.DynamicOutput(c, mapping_key=str(idx))
 
 @dg.op(out=dg.Out(io_manager_key="parquet_io_manager"))
-def process_chunk(df: pd.DataFrame) -> pd.DataFrame:
+def process_chunk(
+    context: dg.AssetExecutionContext,
+    df: pd.DataFrame) -> pd.DataFrame:
+    context.log.info(f"PID: {os.getpid()}")
     df = df.assign(another_dummy_str=df.dummy_str + "yoo")
     return df
 
