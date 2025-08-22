@@ -1,10 +1,13 @@
 import os
 import numpy as np
 import pandas as pd
+import shutil
+from pathlib import Path
 
 import dagster as dg
 
 from dagster_playground.defs.config import DataGenConfig
+from dagster_playground.defs.jobs import DAGSTER_DEFAULT_OUTPUT_FOLDER
 
 """
 Only one configuration object per asset that has to be named config
@@ -26,7 +29,6 @@ def processed_data(config: DataGenConfig):
 
     return df
 
-
 @dg.op(out=dg.DynamicOut(io_manager_key="parquet_io_manager"))
 def splitter(df: pd.DataFrame):
     chunk_size = 300
@@ -47,12 +49,36 @@ def process_chunk(context: dg.AssetExecutionContext, df: pd.DataFrame) -> pd.Dat
 def concat_chunks(chunks: list[pd.DataFrame]) -> pd.DataFrame:
     return pd.concat(chunks, ignore_index=True)
 
+@dg.op
+def save_chunk_to_csv(context: dg.OpExecutionContext, df: pd.DataFrame) -> str:
+    if (mk := context.get_mapping_key()) is None:
+        raise RuntimeError()
+
+    key = ".".join(context.node_handle.path)
+    key = f"{key}[{mk}]"
+    p = f"{str(DAGSTER_DEFAULT_OUTPUT_FOLDER / key)}.csv"
+    df.to_csv(p, index=False, chunksize=100 * 1024 * 1024)
+    return p
+
+@dg.op
+def concat_csv(context: dg.OpExecutionContext, paths: list[str]) -> None:
+    key = ".".join(context.asset_key.path)
+    p = f"{str(DAGSTER_DEFAULT_OUTPUT_FOLDER / key)}.csv"
+    with Path(p).open("w") as fout:
+        for i, file in enumerate(paths):
+            with Path(file).open("r") as fin:
+                if i != 0:
+                    next(fin)  # skip header
+                shutil.copyfileobj(fin, fout, length=100 * 1024 * 1024)
 
 """
 It seems that the io_manager assigned to the graph_asset is that of the op that it returns
 """
 
+@dg.graph_asset
+def assetA(processed_data: pd.DataFrame):
+    return concat_chunks(splitter(processed_data).map(process_chunk).collect())
 
 @dg.graph_asset
-def write_to_csv(processed_data: pd.DataFrame):
-    return concat_chunks(splitter(processed_data).map(process_chunk).collect())
+def assetB(processed_data: pd.DataFrame):
+    return concat_csv(splitter(processed_data).map(save_chunk_to_csv).collect())
