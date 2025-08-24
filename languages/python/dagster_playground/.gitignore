@@ -1,2 +1,3 @@
 assets_output
 jobs_output
+.dagster_storage
