@@ -107,7 +107,7 @@ mod tests {
         // But one can call the standard drop() function whenever
         let myvec = vec![1, 2, 3];
         drop(myvec); // Of course it has to move...
-                     // println!("{:?}", myvec);
+        // println!("{:?}", myvec);
     }
 
     #[test]

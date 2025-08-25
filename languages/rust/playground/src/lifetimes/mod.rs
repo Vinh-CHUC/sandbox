@@ -6,7 +6,7 @@
 //!     let t = String::from("bar");
 //!     u = tied_lifetimes(true, &s, &t);
 //! }
-//! println!("{:?}", u); 
+//! println!("{:?}", u);
 //! // Even though we're returning a ref to s here, the lifetime annotation
 //! // is tied to both x and y. So u's lifetime cannot exceed any of x or y
 //! ```
@@ -18,7 +18,7 @@
 //!     let t = String::from("bar");
 //!     ts = TiedStruct{x: &s, y: &t};
 //! }
-//! println!("{:?}", ts); 
+//! println!("{:?}", ts);
 //! ```
 //!
 //! ```compile_fail
@@ -44,7 +44,7 @@
 pub fn tied_lifetimes<'a>(cond: bool, x: &'a str, y: &'a str) -> &'a str {
     match cond {
         true => x,
-        false => y
+        false => y,
     }
 }
 
@@ -76,8 +76,7 @@ pub struct IndependentStruct<'a> {
 pub struct ComplexStruct<'a, 'b, 'c>
 where
     'b: 'a,
-    'c: 'a
-    // Try 'a: 'b that would force the lifetimes to be perfectly equal?
+    'c: 'a, // Try 'a: 'b that would force the lifetimes to be perfectly equal?
 {
     pub x: &'a TiedStruct<'b, 'c>,
 }
@@ -85,18 +84,21 @@ where
 // The `where T: 'a` is optional
 // https://rust-lang.github.io/rfcs/2093-infer-outlives.html
 #[derive(Debug)]
-pub struct Foo<'a, T> where T: 'a {
+pub struct Foo<'a, T>
+where
+    T: 'a,
+{
     // If T itself contains references, then they have to outlive the &'a
     // If T dost not contain any references then `T: 'a` is always fulfilled
-    myref: &'a T
+    myref: &'a T,
 }
 
 #[cfg(test)]
 mod tests {
-    use super::tied_lifetimes;
-    use super::independent_lifetimes;
     use super::IndependentStruct;
     use super::TiedStruct;
+    use super::independent_lifetimes;
+    use super::tied_lifetimes;
 
     #[test]
     fn test_tied_lifetime_can_refer_to_different_lifetimes() {
@@ -115,7 +117,7 @@ mod tests {
             let t = String::from("bar");
             u = independent_lifetimes(&s, &t);
         }
-        println!("{:?}", u); 
+        println!("{:?}", u);
     }
 
     #[test]
@@ -123,7 +125,7 @@ mod tests {
         let s = String::from("foo");
         {
             let t = String::from("bar");
-            TiedStruct{x: &s, y: &t};
+            TiedStruct { x: &s, y: &t };
         }
     }
 
@@ -133,7 +135,7 @@ mod tests {
         let s = String::from("foo");
         {
             let t = String::from("bar");
-            whoo = IndependentStruct{x: &s, y: &t};
+            whoo = IndependentStruct { x: &s, y: &t };
         }
     }
 }

@@ -9,10 +9,9 @@ pub fn another_parser<'src>() -> impl Parser<'src, &'src str, ()> {
 }
 
 pub fn flat_arithmetic_expression<'src>() -> impl Parser<'src, &'src str, u32> {
-    let int = text::int(10)
-        .from_str()
-        .unwrapped();
-    int.clone().foldl(just('+').ignore_then(int).repeated(), |a, b| a + b)
+    let int = text::int(10).from_str().unwrapped();
+    int.clone()
+        .foldl(just('+').ignore_then(int).repeated(), |a, b| a + b)
 }
 
 mod tests {
@@ -37,8 +36,14 @@ mod tests {
 
     #[test]
     fn test_flat_arithmetic_expresssions() {
-        assert_eq!(flat_arithmetic_expression().parse("10").into_result(), Ok(10));
-        assert_eq!(flat_arithmetic_expression().parse("10+10").into_result(), Ok(20));
+        assert_eq!(
+            flat_arithmetic_expression().parse("10").into_result(),
+            Ok(10)
+        );
+        assert_eq!(
+            flat_arithmetic_expression().parse("10+10").into_result(),
+            Ok(20)
+        );
 
         // Does not cope with white spaces
         assert!(flat_arithmetic_expression().parse("10+ 10").has_errors());

@@ -85,14 +85,14 @@ mod tests {
             let mut list = vec![1, 2, 3];
             let mut borrows_mut = || list.push(5);
             borrows_mut(); // Note that the lifetimes of list and the closure capture do overlap
-                           // Another access to "list" here would have been forbidden
+            // Another access to "list" here would have been forbidden
         }
         // Move
         {
             let list = vec![1, 2, 3];
             let moves = move || println!("{:?}", list);
             moves(); // Note that the lifetimes of list and the closure capture do overlap
-                     // Cant access list here
+            // Cant access list here
         }
     }
 
