@@ -12,9 +12,9 @@
 /- #check String.append ["hello", ""] "yo" -/
 
 /- 1.3 Functions and Definitions -/
-def hello := "hello"
+def hellothere := "hello"
 def lean: String := "Lean"
-#eval String.append hello (String.append " " lean)
+#eval String.append hellothere (String.append " " lean)
 
 def add1 (n: Nat) : Nat := n + 1
 #eval add1 5
@@ -37,7 +37,7 @@ def joinStringsWith (a: String) (b: String) (c: String) : String :=
 def Ten: Nat := 10
 def NN: Type := Nat
 /- Will attempt to coerce from Nat to NN ?-/
-def Ten2: NN := 10
+/- def Ten2: NN := 10 -/
 /- Works as there is no cercion needed -/
 def Ten3: NN := (10: Nat)
 #eval Ten3
@@ -50,7 +50,9 @@ abbrev NatN := Nat
 def Ten4: NatN := 10
 #eval Ten4
 
+/- ------------------------------------------------ -/
 /- 1.4 Structures, can't be reduced to another type -/
+/- ------------------------------------------------ -/
 structure Point where
   x: Float
   y: Float
@@ -74,3 +76,50 @@ def p2: Point := {x := 5, y := -1}
 def zeroX(p: Point): Point :=
   {p with x := 0}
 #eval (zeroX {x := 1, y:= 2})
+
+/- 1.4.2 Behind the scenes -/
+#eval p1.x == (Point.x p1)
+#eval "one string".append "and another"
+
+/- 1.4.3 Exercises -/
+structure RectangularPrism where
+  height: Float
+  width: Float
+  depth: Float
+deriving Repr
+
+def volume (p: RectangularPrism) : Float :=
+  p.height * p.width * p.depth
+
+#check RectangularPrism
+#eval volume {height := 2, width := 2, depth := 2}
+
+/- -------------------------- -/
+/- 1.5 Datatypes and Patterns -/
+/- -------------------------- -/
+
+/- In a way constructors in Lean4 are more like -/ 
+/- discriminated unions or variants -/
+/- rather than constructors in the OO sense -/
+def isZero(n: Nat): Bool :=
+  match n with
+  | Nat.zero => true
+  | Nat.succ k => false
+def xy_prod(p: Point): Float :=
+  match p with
+  | { x := a, y:= b} => a * b
+#eval xy_prod {x := 6, y := 7}
+
+/- 1.5.2 Recursive functions -/
+/- Simple case of plus => Lean can show that it terminates -/
+/- As the recursive call takes a constructor arg (after pattern -/ 
+/- matching) so there is strictly decreasing term size, -/
+/- with base case -/
+
+/- ---------------- -/
+/- 1.6 Polymorphism -/
+/- ---------------- -/
+structure PPoint (α: Type) where
+  x: α
+  y: α
+deriving Repr
