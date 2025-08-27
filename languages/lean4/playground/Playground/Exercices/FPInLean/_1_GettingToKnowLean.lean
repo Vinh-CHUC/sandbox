@@ -193,3 +193,24 @@ def animals: List PetName :=
     Sum.inl "Spot", Sum.inr "Tiger"
   ]
 #eval animals
+
+/- 1.6.5 Exercises -/
+
+def myTail {α: Type} (l: List α): Option α :=
+  match l with
+  | List.nil => none
+  | List.cons el List.nil => el
+  | List.cons _ rest => myTail rest
+#eval myTail primesUnder10
+#eval myTail [] (α := Int)
+
+def List.findFirst? {α: Type} (l: List α) (predicate: α -> Bool): Option α :=
+  match l with
+  | List.nil => none
+  | List.cons el rest => if predicate el then el else rest.findFirst? predicate
+#check List.findFirst?
+#eval List.findFirst? primesUnder10 (fun x => x == 7)
+
+def switch {α β: Type} (pair: α × β): β × α :=
+  (pair.snd, pair.fst)
+#check (switch)
