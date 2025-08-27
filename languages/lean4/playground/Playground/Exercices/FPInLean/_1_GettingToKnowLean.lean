@@ -151,3 +151,45 @@ def posOrNegThree (s: Sign):
 #eval posOrNegThree Sign.neg
 
 /- 1.6.1 LinkedLists -/
+inductive MyList (α: Type) where
+  | nil: MyList α
+  | cons: α → MyList α → MyList α
+deriving Repr
+
+def mySize (α: Type) (l: MyList α) :=
+  match l with
+  | MyList.nil => 0
+  | MyList.cons _ rest => Nat.succ (mySize α rest)
+
+def mylist := MyList.cons 1 (MyList.cons 2 MyList.nil)
+#check MyList
+#eval mylist
+#eval mySize Nat mylist
+
+/- 1.6.2 Implicit Arguments -/
+def replaceXV2 {α: Type} (point: PPoint α) (newX: α) : PPoint α :=
+  {point with x := newX}
+#eval replaceXV2 natOrigin 5
+def primesUnder10 := [1, 3, 5, 7]
+/- returns an option -/
+#eval primesUnder10.head?
+/- will crash -/
+#eval primesUnder10.head!
+/- #eval [].head! -/
+#eval [].head? (α := Int)
+#eval ([]: List Int).head?
+
+/- 1.6.3.2 Product -/
+def fives : String × Int := { fst := "five", snd := 5}
+def sixes : String × Int := ("six", 6)
+#eval fives
+#eval sixes
+/- Products are right associative (a, b, c) = (a, (b, c)) -/
+
+/- 1.6.3.2 Sum -/
+def PetName: Type := String ⊕ String
+def animals: List PetName :=
+  [
+    Sum.inl "Spot", Sum.inr "Tiger"
+  ]
+#eval animals
