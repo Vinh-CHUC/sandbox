@@ -123,3 +123,31 @@ structure PPoint (α: Type) where
   x: α
   y: α
 deriving Repr
+
+def natOrigin: PPoint Nat := {x := 0, y:= 0}
+def floatOrigin: PPoint Float := {x := 0, y:= 0}
+#eval natOrigin
+
+def replaceX (α: Type) (point: PPoint α) (newX: α) : PPoint α :=
+  {point with x := newX}
+def replaceXNat := replaceX Nat
+#eval replaceX Nat natOrigin 1
+#eval replaceXNat natOrigin 1
+/- #eval natOrigin == floatOrigin -/
+
+
+/- Magic!The type depends on the runtime argument value -/
+inductive Sign where
+  | pos
+  | neg
+def posOrNegThree (s: Sign):
+    match s with | Sign.pos => Nat | Sign.neg => Int :=
+  match s with
+  | Sign.pos => (3: Nat)
+  | Sign.neg => (-3: Int)
+#check posOrNegThree
+#check (posOrNegThree)
+#eval posOrNegThree Sign.pos
+#eval posOrNegThree Sign.neg
+
+/- 1.6.1 LinkedLists -/
