@@ -213,4 +213,27 @@ def List.findFirst? {α: Type} (l: List α) (predicate: α -> Bool): Option α :
 
 def switch {α β: Type} (pair: α × β): β × α :=
   (pair.snd, pair.fst)
-#check (switch)
+#check switch
+#eval switch (1, 2)
+
+def zip  {α β: Type} (xs: List α) (ys: List β): List (α × β) :=
+  match xs, ys with
+  | [], _ => []
+  | _ , [] => []
+  | (List.cons x xss), (List.cons y yss) => List.cons (x, y) (zip xss yss)
+#eval zip [1, 2, 3] ["yo", "ca", "va"]
+
+def take {α: Type} (n: Nat) (l: List α) : List α :=
+  match l, n with
+  | _, 0 => []
+  | [], _ => []
+  | (List.cons x xs), Nat.succ pred => List.cons x (take pred xs)
+#eval take 2 [1, 2, 3]
+
+def distribute {α β y: Type} (x: α × (β ⊕ y)): (α × β) ⊕ (α × y) :=
+  match x.snd with
+  | Sum.inl l => Sum.inl (x.fst, l)
+  | Sum.inr r => Sum.inr (x.fst, r)
+
+def mulType {α: Type} (x: Bool × α): α ⊕ α :=
+  if x.fst then Sum.inl x.snd else Sum.inr x.snd
