@@ -237,3 +237,44 @@ def distribute {α β y: Type} (x: α × (β ⊕ y)): (α × β) ⊕ (α × y) :
 
 def mulType {α: Type} (x: Bool × α): α ⊕ α :=
   if x.fst then Sum.inl x.snd else Sum.inr x.snd
+#check (switch)
+
+/- -------- -/
+/- 1.7 Misc -/
+/- -------- -/
+
+/- 1.7.1 Automatic Implicit Parameters -/
+def myLength (xs: List α) : Nat :=
+  match xs with
+  | [] => 0
+  | y :: ys => Nat.succ (myLength ys)
+
+/- 1.7.2 Pattern-Matchin Definitions -/
+/- The return type has to be a function type -/
+def drop : Nat -> List α -> List α
+  | Nat.zero, xs => xs
+  | _, [] => []
+  | Nat.succ n, x :: xs => drop n xs
+
+/- Can mix the two approaches -/
+def fromOption (default: α) : Option α → α
+  | none => default
+  | some x => x
+
+/- 1.7.3 Local definitions -/
+
+/- This is obviously too slow as we call the recursive function twice -/
+def unzip : List (α × β) → List α × List β
+  | [] => ([], [])
+  | (x, y) :: xys =>
+    (x :: (unzip xys).fst, y :: (unzip xys).snd)
+
+def unzip2 : List (α × β) → List α × List β
+  | [] => ([], [])
+  | (x, y) :: xys =>
+    let unzipped : List α × List β := unzip xys
+    (x :: unzipped.fst, y :: unzipped.snd)
+    /- On one line -/
+    /- let unzipped : List α × List β := unzip xys: (x :: unzipped.fst, y :: unzipped.snd) -/
+#check (unzip2)
+#eval unzip2 [(1, "hi"), (2, "there"), (3, "folkds")]
