@@ -41,6 +41,21 @@
 //! }
 //! ```
 
+// This means?:
+// - there exists some lifetime that both the input references must be valid for
+// - the return value will be valid for that duration
+//
+// They are effectively coerced to a shorter lifetime when assigned to the parameters?
+//
+// From a certain persepctive, the coercion to shorter is irrelevant as they are only valid for the
+// scope of the function. BUT one of them is returned that's the key!!!
+//
+// If one takes the simple example of the identity fn:
+// - some outer ref is coerced to some shorter lifetime 'a, the named parameter
+// - the returned ref lifetime will be 'a
+// The compiler solves this "equation system"
+//
+// Initial <= Coerced
 pub fn tied_lifetimes<'a>(cond: bool, x: &'a str, y: &'a str) -> &'a str {
     match cond {
         true => x,
@@ -106,7 +121,9 @@ mod tests {
         {
             let t = String::from("bar");
             tied_lifetimes(true, &s, &t);
+            println!("{:?}", t);
         }
+        println!("{:?}", s);
     }
 
     #[test]
