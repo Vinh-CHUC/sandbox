@@ -41,21 +41,13 @@
 //! }
 //! ```
 
-// This means?:
-// - there exists some lifetime that both the input references must be valid for
-// - the return value will be valid for that duration
+// 1. 'a represents a single, common lifetime that both &x and &y must be valid for
+//   - Rust would infer the shortest lifetime possible that fits those constraints + the constraints
+//   induced by the return type
+// 2. we return a reference tied to 'a (forced to as we can't statically say which one). So that is
+//    the 3rd constraint for 'a
 //
-// They are effectively coerced to a shorter lifetime when assigned to the parameters?
-//
-// From a certain persepctive, the coercion to shorter is irrelevant as they are only valid for the
-// scope of the function. BUT one of them is returned that's the key!!!
-//
-// If one takes the simple example of the identity fn:
-// - some outer ref is coerced to some shorter lifetime 'a, the named parameter
-// - the returned ref lifetime will be 'a
-// The compiler solves this "equation system"
-//
-// Initial <= Coerced
+// The returned reference is guaranteed to be valid for 'a by definition of a lifetime
 pub fn tied_lifetimes<'a>(cond: bool, x: &'a str, y: &'a str) -> &'a str {
     match cond {
         true => x,
