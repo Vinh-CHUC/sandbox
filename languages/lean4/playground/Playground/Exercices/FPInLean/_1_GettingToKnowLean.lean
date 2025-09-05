@@ -276,5 +276,66 @@ def unzip2 : List (α × β) → List α × List β
     (x :: unzipped.fst, y :: unzipped.snd)
     /- On one line -/
     /- let unzipped : List α × List β := unzip xys: (x :: unzipped.fst, y :: unzipped.snd) -/
+
 #check (unzip2)
 #eval unzip2 [(1, "hi"), (2, "there"), (3, "folkds")]
+
+/- with pattern matching -/
+def unzip3 : List (α × β) → List α × List β
+  | [] => ([], [])
+  | (x, y) :: xys =>
+    let (xs, ys) : List α × List β := unzip xys
+    (x :: xs, y :: ys)
+    /- On one line -/
+    /- let unzipped : List α × List β := unzip xys: (x :: unzipped.fst, y :: unzipped.snd) -/
+
+/- let rec for recursive definitions -/
+def reverse (xs: List α): List α :=
+  let rec helper: List α -> List α -> List α
+    | [], soFar => soFar
+    | y :: ys, soFar => helper ys (y :: soFar)
+  helper xs []
+
+/- 1.7.4 Type Inference -/
+
+/- 1.7.5 Simultaneous matching -/
+def mydrop (n : Nat) (xs : List α) : List α :=
+  /- important to not wrap in a pair otherwise Lean won't attempt to check termination/constructors -/
+  /- etc. through the pair -/
+  match n, xs with
+  | Nat.zero, ys => ys
+  | _, [] => []
+  | Nat.succ n, y :: ys => mydrop n ys
+
+/- 1.7.6 NN Patterns -/
+def halve: Nat → Nat
+  | 0 => 0
+  | 1 => 0
+  | n + 2 => halve n + 1
+
+/- 1.7.7 Anonymous functions -/
+#check fun x => x + 1
+#check (., .)
+#eval (. + 3, . +2) 10 20
+
+/- 1.7.8 Namespaces -/
+
+namespace Vinh
+def triple (x: Nat): Nat := 3 * x
+end Vinh
+#check Vinh.triple
+
+def timesNine (x: Nat) :=
+  open Vinh in
+    triple (triple x)
+
+/- 1.7.9 if let -/
+
+/- 1.7.10 Positional Structure Arguments -/
+#eval Point.mk 1 2
+def p: Point := {x := 1, y := 2}
+#eval p
+#eval (⟨1, 2⟩ : Point)
+
+/- 1.7.11 String Interpolation -/
+#eval s!"Three is {3}"
