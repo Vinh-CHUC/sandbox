@@ -1,0 +1,126 @@
+set shell := ["bash", "-eu", "-o", "pipefail", "-c"]
+
+cluster_name := "vinh-cluster"
+k8s := "k3d"
+
+
+save_kube_config k8s=k8s cluster_name=cluster_name:
+    kubectl config view --minify --flatten --context=$(kubectl config current-context) > ~/.kube/{{k8s}}-{{cluster_name}}.config
+
+kill_port_forwards:
+    pkill -f "kubectl port-forward"
+
+init_cluster:
+    helm repo add bitnami https://charts.bitnami.com/bitnami
+    helm repo update
+    helm install my-nginx bitnami/nginx
+
+test_cluster:
+    kubectl rollout status deployment/my-nginx --timeout=20s
+    kubectl port-forward svc/my-nginx 8080:80 & \
+    pf_pid=$!; \
+    sleep 1; \
+    status=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080); \
+    kill $pf_pid; \
+    if [ "$status" -eq 200 ]; then \
+        echo "✅ Helm deploy test passed (HTTP 200)"; \
+    else \
+        echo "❌ Helm deploy test failed (status $status)"; \
+        exit 1; \
+    fi
+
+create_cluster k8s=k8s cluster_name=cluster_name:
+    if [ "{{k8s}}" = "minikube" ]; then \
+        just mk_create_cluster {{cluster_name}}; \
+    elif [ "{{k8s}}" = "k3d" ]; then \
+        just k3d_create_cluster {{cluster_name}}; \
+    elif [ "{{k8s}}" = "kind" ]; then \
+        just kind_create_cluster {{cluster_name}}; \
+    else \
+        echo "Unsupported local k8s: {{k8s}}"; \
+    fi
+
+delete_cluster k8s=k8s cluster_name=cluster_name:
+    if [ "{{k8s}}" = "minikube" ]; then \
+        just mk_delete_cluster {{cluster_name}}; \
+    elif [ "{{k8s}}" = "k3d" ]; then \
+        just k3d_delete_cluster {{cluster_name}}; \
+    elif [ "{{k8s}}" = "kind" ]; then \
+        just kind_delete_cluster {{cluster_name}}; \
+    else \
+        echo "Unsupported local k8s: {{k8s}}"; \
+    fi
+
+status:
+    just mk_status || true; \
+    just kind_status || true; \
+    just k3d_status
+
+###################
+# Troubleshooting #
+###################
+docker-prune:
+    docker system prune --volumes
+
+docker-prune-all:
+    docker system prune -a --volumes
+
+docker-kill-containers:
+    docker kill $(docker ps -q)
+
+inotify:
+    sudo sysctl fs.inotify.max_user_watches=1638400
+    sudo sysctl fs.inotify.max_user_instances=1638400
+
+
+############
+# Minikube #
+############
+install_minikube:
+    curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube_latest_amd64.deb
+    sudo dpkg -i minikube_latest_amd64.deb
+
+mk_create_cluster cluster_name=cluster_name:
+    minikube -p {{cluster_name}} start
+
+mk_delete_cluster cluster_name=cluster_name:
+    minikube -p {{cluster_name}} delete
+
+mk_status cluster_name=cluster_name:
+    minikube -p {{cluster_name}} status
+
+###########
+# k3d/k3s #
+###########
+install_k3d:
+    brew install k3d
+
+k3d_delete_cluster cluster_name=cluster_name:
+    k3d cluster delete {{cluster_name}}
+
+k3d_create_cluster cluster_name=cluster_name:
+    k3d cluster create {{cluster_name}} \
+        --servers 1 --agents 0 --no-lb \
+        --k3s-arg "--disable=traefik,servicelb,metrics-server@server:0" \
+        --k3s-arg "--disable-network-policy@server:0" \
+        --no-rollback \
+        --verbose \
+        --wait --timeout=240s
+
+k3d_status:
+    k3d cluster list
+
+########
+# Kind #
+########
+install_kind:
+    go install sigs.k8s.io/kind@v0.30.0
+
+kind_create_cluster cluster_name=cluster_name:
+    kind create cluster -n {{cluster_name}} --wait 20s
+
+kind_delete_cluster cluster_name=cluster_name:
+    kind delete cluster -n {{cluster_name}}
+
+kind_status:
+    kind get clusters
