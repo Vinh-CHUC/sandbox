@@ -65,11 +65,12 @@ def origin : Point := {x := 0, y:= 0}
 
 def addPoints (p1: Point) (p2: Point) : Point :=
   {x := p1.x + p2.x, y:= p1.y + p2.y}
-def distance (p1: Point) (p2: Point): Float :=
+def Point.distance (p1: Point) (p2: Point): Float :=
   Float.sqrt (((p2.x - p1.x)^2) + ((p2.y - p1.y)^2))
 def p1: Point := {x := 1, y := 2}
 def p2: Point := {x := 5, y := -1}
-#eval distance p1 p2
+#eval Point.distance p1 p2
+#eval p1.distance p2
 
 /- Have to specify the type -/
 #check ({x := 0, y:= 0}: Point)
