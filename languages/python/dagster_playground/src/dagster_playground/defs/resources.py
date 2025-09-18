@@ -55,7 +55,7 @@ def _get_path(
             """
             input counterpart of A/
 
-            identifier[1]: "asset_name.op_name[mapping_key]"
+            identifier[1]: "asset_name.op_name"
             identifier[3]: mapping_key
             """
             p = base_path / f"{identifier[1]}[{identifier[3]}]"
