@@ -2,15 +2,19 @@
 
 #include <gtest/gtest.h>
 
-
 TEST(MoveSemantics, OnlyCopying){
   VString str("hello");
   VString str2 = fn(str);
+
   // Copy into, move back
   ASSERT_EQ(str2.get_copy_count(), 1);
   // Returning a non-const produces an r-value
   // Note that here RVO does not apply as fn returns one of its parameters
   ASSERT_EQ(str2.get_moves_count(), 1);
+
+  // Interestingly...
+  VString&& str3 = fn(str);
+  ASSERT_EQ(str3.get(), "hello");
 }
 
 
