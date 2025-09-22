@@ -1,3 +1,4 @@
+#include <expected>
 #include <generator>
 #include <memory>
 
@@ -47,6 +48,32 @@ template <typename T> struct DoublyLinkedList {
       tail->prev = tmp;
       tmp->next = tail;
     }
+  }
+
+  std::expected<void, const char *> remove(std::shared_ptr<DLLEl<T>> el) {
+    if (el == nullptr){
+      return std::unexpected("Trying to remove nullptr");
+    }
+
+    auto try_prev = el->prev.lock();
+
+    if (el == head){
+      // Only one element
+      if (head == tail){
+        head = nullptr;
+        tail = nullptr;
+      } else {
+        head = head->next;
+      }
+    } else if(try_prev){
+      try_prev->next = el->next;
+      if (el->next){
+        el->next->prev = try_prev;
+      }
+    } else {
+      return std::unexpected("Unexpected error");
+    }
+    return {};
   }
 
   std::generator<T> getGenerator() {
