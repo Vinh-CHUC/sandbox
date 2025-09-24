@@ -1,6 +1,5 @@
 use std::rc::Rc;
 
-
 pub struct DLLEl<T> {
     pub val: T,
     pub prev: Option<Rc<DLLEl<T>>>,
@@ -9,7 +8,11 @@ pub struct DLLEl<T> {
 
 impl<T> DLLEl<T> {
     pub fn new(val: T) -> DLLEl<T> {
-        DLLEl{val, prev: None, next: None}
+        DLLEl {
+            val,
+            prev: None,
+            next: None,
+        }
     }
 }
 
