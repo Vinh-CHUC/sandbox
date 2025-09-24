@@ -8,3 +8,7 @@ mod rust_features {
     mod pointers;
     mod types;
 }
+
+pub mod exercises {
+    pub mod lru_cache;
+}
