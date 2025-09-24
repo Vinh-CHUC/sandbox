@@ -15,7 +15,7 @@ impl Drop for CustomSmartPointer {
 
 #[cfg(test)]
 mod tests {
-    use crate::pointers::CustomSmartPointer;
+    use super::CustomSmartPointer;
     use std::ops::Deref;
     use std::rc::Rc;
 
