@@ -2,7 +2,7 @@
 
 #include "algos/intervals.h"
 
-TEST(Intervals, Intersection){
+TEST(Intervals, Intersection) {
   auto int1_opt = Interval::make_interval(1, 3);
   auto int2_opt = Interval::make_interval(2, 4);
   auto int3 = Interval::make_interval(10, 15).value();
@@ -17,35 +17,29 @@ TEST(Intervals, Intersection){
   ASSERT_FALSE(int3.intersects_with(int2));
 }
 
-TEST(Intervals, Merge){
-  auto input = std::vector<Interval>{
-    Interval::make_interval(1, 3).value(),
-    Interval::make_interval(2, 6).value(),
-    Interval::make_interval(8, 10).value(),
-    Interval::make_interval(15, 18).value()
-  };
-  auto expected = std::vector<Interval>{
-      Interval::make_interval(1, 6).value(),
-      Interval::make_interval(8, 10).value(),
-      Interval::make_interval(15, 18).value()
-  };
+TEST(Intervals, Merge) {
+  auto input = std::vector<Interval>{Interval::make_interval(1, 3).value(),
+                                     Interval::make_interval(2, 6).value(),
+                                     Interval::make_interval(8, 10).value(),
+                                     Interval::make_interval(15, 18).value()};
+  auto expected =
+      std::vector<Interval>{Interval::make_interval(1, 6).value(),
+                            Interval::make_interval(8, 10).value(),
+                            Interval::make_interval(15, 18).value()};
 
   auto actual = merge_intervals(input);
   ASSERT_EQ(actual, expected);
 };
 
-TEST(Intervals, MergeRec){
-  auto input = std::vector<Interval>{
-    Interval::make_interval(1, 3).value(),
-    Interval::make_interval(2, 6).value(),
-    Interval::make_interval(8, 10).value(),
-    Interval::make_interval(15, 18).value()
-  };
-  auto expected = std::vector<Interval>{
-      Interval::make_interval(1, 6).value(),
-      Interval::make_interval(8, 10).value(),
-      Interval::make_interval(15, 18).value()
-  };
+TEST(Intervals, MergeRec) {
+  auto input = std::vector<Interval>{Interval::make_interval(1, 3).value(),
+                                     Interval::make_interval(2, 6).value(),
+                                     Interval::make_interval(8, 10).value(),
+                                     Interval::make_interval(15, 18).value()};
+  auto expected =
+      std::vector<Interval>{Interval::make_interval(1, 6).value(),
+                            Interval::make_interval(8, 10).value(),
+                            Interval::make_interval(15, 18).value()};
 
   auto actual = merge_intervals_rec(input);
   ASSERT_EQ(actual, expected);

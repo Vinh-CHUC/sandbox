@@ -43,7 +43,8 @@ TEST(DoublyLinkedList, Deletion) {
   auto ret = dll.remove(el);
   ASSERT_TRUE(ret.has_value());
 
-  std::vector<int> els = dll.getGenerator() | std::ranges::to<std::vector<int>>();
+  std::vector<int> els =
+      dll.getGenerator() | std::ranges::to<std::vector<int>>();
   ASSERT_EQ(els.size(), 3);
   ASSERT_EQ(els, std::vector<int>({3, 2, 3}));
 }
@@ -54,7 +55,8 @@ TEST(DoublyLinkedList, Deletion2) {
 
   auto ret = dll.remove(dll.head);
   ASSERT_TRUE(ret.has_value());
-  std::vector<int> els = dll.getGenerator() | std::ranges::to<std::vector<int>>();
+  std::vector<int> els =
+      dll.getGenerator() | std::ranges::to<std::vector<int>>();
   ASSERT_EQ(els.size(), 1);
 
   ret = dll.remove(dll.head);

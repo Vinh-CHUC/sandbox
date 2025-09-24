@@ -4,12 +4,12 @@
 
 VString::VString(const std::string &str)
     : move_constructor_count(0), copy_count(0), value(str) {
-  std::cout << "Normal constructor" << std::endl;
+  std::cout << "Copy Ctor from string" << std::endl;
 }
 
 VString::VString(const VString &other)
     : move_constructor_count(0), copy_count(other.copy_count + 1), value(other.value) {
-  std::cout << "Normal constructor" << std::endl;
+  std::cout << "Copy ctor from VString" << std::endl;
 }
 
 VString& VString::operator=(const VString &other){

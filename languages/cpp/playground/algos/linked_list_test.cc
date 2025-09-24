@@ -2,7 +2,7 @@
 
 #include "algos/linked_list.h"
 
-TEST(LinkedList, Basics){
+TEST(LinkedList, Basics) {
   auto v = std::vector<int>{1, 2, 3, 4, 5};
 
   std::unique_ptr<ListNode<int>> l = ListNode<int>::from_it(v.begin(), v.end());
@@ -13,7 +13,7 @@ TEST(LinkedList, Basics){
   ASSERT_EQ(values, expected);
 }
 
-TEST(LinkedList, Reverse){
+TEST(LinkedList, Reverse) {
   auto v = std::vector<int>{1, 2, 3, 4, 5};
 
   std::unique_ptr<ListNode<int>> l = ListNode<int>::from_it(v.begin(), v.end());

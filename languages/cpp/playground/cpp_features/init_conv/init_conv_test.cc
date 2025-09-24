@@ -2,8 +2,8 @@
 
 #include <gtest/gtest.h>
 
-TEST(InitConv, ExplicitConversion){
-  B b {std::string{"hello"}};
+TEST(InitConv, ExplicitConversion) {
+  B b{std::string{"hello"}};
 
   // Cannot use explicit conversion
   /* A a = b; */
@@ -19,7 +19,7 @@ TEST(InitConv, ExplicitConversion){
   auto a4 = A{b};
 }
 
-TEST(InitConv, AggregateInitialisation){
+TEST(InitConv, AggregateInitialisation) {
   C c{"yo"};
   C c2("yo");
 }
