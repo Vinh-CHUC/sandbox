@@ -3,11 +3,13 @@
 
 #include <string>
 
-#include <range/v3/all.hpp>
 #include <functional>
+#include <range/v3/all.hpp>
 
 std::function<ranges::any_view<std::string>()> getStringRanges();
 
-std::function<ranges::any_view<std::reference_wrapper<std::string>, ranges::category::forward>()> getMutableStringRanges();
+std::function<ranges::any_view<std::reference_wrapper<std::string>,
+                               ranges::category::forward>()>
+getMutableStringRanges();
 
 #endif

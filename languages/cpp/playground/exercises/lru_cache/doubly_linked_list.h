@@ -14,7 +14,7 @@ template <typename T> struct DoublyLinkedList {
   std::shared_ptr<DLLEl<T>> head;
   std::shared_ptr<DLLEl<T>> tail;
 
-  DoublyLinkedList(T val): head(std::make_shared<DLLEl<T>>(val)), tail(head) {
+  DoublyLinkedList(T val) : head(std::make_shared<DLLEl<T>>(val)), tail(head) {
     // Why not have them point to each other?
     // An invariant that we want is that we never want prev/next to point to
     // oneself Or more generally we never want following prev/next to lead to
@@ -33,7 +33,7 @@ template <typename T> struct DoublyLinkedList {
   std::generator<T> getGenerator();
 };
 
-template<typename T> void DoublyLinkedList<T>::prepend(T val){
+template <typename T> void DoublyLinkedList<T>::prepend(T val) {
   auto el = std::make_shared<DLLEl<T>>(val);
   if (tail == nullptr && head == nullptr) {
     head = el;
@@ -46,7 +46,7 @@ template<typename T> void DoublyLinkedList<T>::prepend(T val){
   }
 }
 
-template<typename T> void DoublyLinkedList<T>::append(T val) {
+template <typename T> void DoublyLinkedList<T>::append(T val) {
   auto el = std::make_shared<DLLEl<T>>(val);
   if (tail == nullptr && head == nullptr) {
     head = el;
@@ -59,24 +59,26 @@ template<typename T> void DoublyLinkedList<T>::append(T val) {
   }
 }
 
-template<typename T>  std::expected<void, const char *> DoublyLinkedList<T>::remove(std::shared_ptr<DLLEl<T>> el) {
-  if (el == nullptr){
+template <typename T>
+std::expected<void, const char *>
+DoublyLinkedList<T>::remove(std::shared_ptr<DLLEl<T>> el) {
+  if (el == nullptr) {
     return std::unexpected("Trying to remove nullptr");
   }
 
   auto try_prev = el->prev.lock();
 
-  if (el == head){
+  if (el == head) {
     // Only one element
-    if (head == tail){
+    if (head == tail) {
       head = nullptr;
       tail = nullptr;
     } else {
       head = head->next;
     }
-  } else if(try_prev){
+  } else if (try_prev) {
     try_prev->next = el->next;
-    if (el->next){
+    if (el->next) {
       el->next->prev = try_prev;
     }
   } else {
@@ -85,7 +87,7 @@ template<typename T>  std::expected<void, const char *> DoublyLinkedList<T>::rem
   return {};
 }
 
-template<typename T> std::generator<T> DoublyLinkedList<T>::getGenerator() {
+template <typename T> std::generator<T> DoublyLinkedList<T>::getGenerator() {
   std::shared_ptr<DLLEl<T>> ptr = head;
   while (ptr != nullptr) {
     co_yield ptr->val;

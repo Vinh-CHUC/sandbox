@@ -8,12 +8,12 @@ VString fn(VString vstr);
 // - as well as fn above leveraging VString move constructor
 // VString fn(VString&& vstr);
 
-VString fn2(VString&& vstr);
+VString fn2(VString &&vstr);
 
-VString&& fn3(VString&& vstr);
+VString &&fn3(VString &&vstr);
 
-VString fn4(VString&& vstr);
-VString fn5(VString&& vstr);
-VString fn6(VString&& vstr);
+VString fn4(VString &&vstr);
+VString fn5(VString &&vstr);
+VString fn6(VString &&vstr);
 
 #endif

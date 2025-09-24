@@ -9,7 +9,7 @@ struct A {
   VString v;
 };
 
-void mutate_vec(std::vector<std::string>& vec);
+void mutate_vec(std::vector<std::string> &vec);
 VString build_vstring();
 VString build_vstring2();
 VString pass_along();
