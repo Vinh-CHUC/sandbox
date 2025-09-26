@@ -41,12 +41,16 @@ pub struct DoublyLinkedListIter<T> {
 impl<T: Clone> Iterator for DoublyLinkedListIter<T> {
     type Item = T;
     fn next(&mut self) -> Option<Self::Item> {
-        // take() moves into this unnamed temporary
-        // Then the Option map() moves the contained value into the lambda
+        // take() moves The Option<Rc> into this unnamed temporary
+        // Then the Option map() moves the Rc into the lambda
         // It's dropped at the end of the lambda (just after having cloned its val)
         self.current.take().map(|node| {
+            // Clone is the safer choice here (compared to RefCell?)
+            // As there might be other holders of Rc's to the same node
+            // Basically it's *forbiden* to move/modify what the RC holds
             self.current = node.next.clone();
             node.val.clone()
+            // The Rc is dropped here (decrement ref count)
         })
     }
 }
@@ -60,7 +64,17 @@ mod tests {
         let mut dll = DoublyLinkedList::new();
         dll.prepend(2);
         dll.prepend(3);
+
+        let head = dll.head.clone();
+
         let values: Vec<_> = dll.into_iter().collect();
+
+        // Below this point dll has been moved out and all **its** Rc have been dropped
         assert_eq!(values, vec![3, 2]);
+
+        // But I still have another Rc to head :)
+        // So the list is still here
+        assert_eq!(head.clone().unwrap().val, 3);
+        assert!(head.unwrap().next.is_some());
     }
 }
