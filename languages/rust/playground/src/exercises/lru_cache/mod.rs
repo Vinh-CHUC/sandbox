@@ -1,14 +1,15 @@
-use std::rc::{Rc, Weak};
+use std::cell::RefCell;
+use std::rc::{Rc};
 
 pub struct DLLEl<T> {
     pub val: T,
-    pub prev: Option<Rc<DLLEl<T>>>,
-    pub next: Option<Rc<DLLEl<T>>>,
+    pub prev: Option<Rc<RefCell<DLLEl<T>>>>,
+    pub next: Option<Rc<RefCell<DLLEl<T>>>>,
 }
 
 pub struct DoublyLinkedList<T> {
-    pub head: Option<Rc<DLLEl<T>>>,
-    pub tail: Option<Rc<DLLEl<T>>>,
+    pub head: Option<Rc<RefCell<DLLEl<T>>>>,
+    pub tail: Option<Rc<RefCell<DLLEl<T>>>>,
 }
 
 impl<T> DoublyLinkedList<T> {
@@ -26,16 +27,35 @@ impl<T> DoublyLinkedList<T> {
 
     pub fn prepend(&mut self, val: T) {
         if let Some(head) = self.head.take() {
-            let el = Rc::new(DLLEl { val, prev: None, next: Some(head)});
-            self.head = Some(el);
+            head.borrow_mut().prev = Some(
+                Rc::new(RefCell::new(
+                        DLLEl { val, prev: None, next: Some(head.clone())}
+                ))
+            );
+            self.head = head.borrow().prev.clone();
         } else {
-            self.head = Some(Rc::new(DLLEl { val, prev: None, next: None}));
+            self.head = Some(Rc::new(RefCell::new(DLLEl { val, prev: None, next: None})));
+            self.tail = self.head.clone();
+        }
+    }
+
+    pub fn append(&mut self, val: T) {
+        if let Some(tail) = self.tail.take() {
+            tail.borrow_mut().next = Some(
+                Rc::new(RefCell::new(
+                        DLLEl { val, prev: Some(tail.clone()), next: None}
+                ))
+            );
+            self.tail = tail.borrow().next.clone();
+        } else {
+            self.tail = Some(Rc::new(RefCell::new(DLLEl { val, prev: None, next: None})));
+            self.head = self.tail.clone();
         }
     }
 }
 
 pub struct DoublyLinkedListIter<T> {
-    pub current: Option<Rc<DLLEl<T>>>,
+    pub current: Option<Rc<RefCell<DLLEl<T>>>>,
 }
 
 impl<T: Clone> Iterator for DoublyLinkedListIter<T> {
@@ -48,8 +68,8 @@ impl<T: Clone> Iterator for DoublyLinkedListIter<T> {
             // Clone is the safer choice here (compared to RefCell?)
             // As there might be other holders of Rc's to the same node
             // Basically it's *forbiden* to move/modify what the RC holds
-            self.current = node.next.clone();
-            node.val.clone()
+            self.current = node.borrow().next.clone();
+            node.borrow().val.clone()
             // The Rc is dropped here (decrement ref count)
         })
     }
@@ -74,7 +94,20 @@ mod tests {
 
         // But I still have another Rc to head :)
         // So the list is still here
-        assert_eq!(head.clone().unwrap().val, 3);
-        assert!(head.unwrap().next.is_some());
+        assert_eq!(head.clone().unwrap().borrow().val, 3);
+        assert!(head.unwrap().borrow().next.is_some());
+    }
+
+    #[test]
+    fn test_dll_basics_2() {
+        let mut dll = DoublyLinkedList::new();
+        dll.append(2);
+        dll.append(3);
+        dll.prepend(1);
+        dll.prepend(0);
+
+        let values: Vec<_> = dll.into_iter().collect();
+
+        assert_eq!(values, vec![0, 1, 2, 3]);
     }
 }
