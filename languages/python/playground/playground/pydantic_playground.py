@@ -1,12 +1,20 @@
 from pydantic import BaseModel
 
 
-class Response[T](BaseModel):
-    data: T
+class A(BaseModel):
+    data: str = "foo"
 
+class B(BaseModel):
+    data: str = "bar"
 
-def test():
-    r = Response[str](data=5)
-    r.model_dump_json()
-    s = Response(data=5)
-    s.model_dump_json()
+class C(BaseModel):
+    underlying: A | B = B()
+
+class D(BaseModel):
+    data: str = "foo"
+
+class E(BaseModel):
+    val: str = "bar"
+
+class F(BaseModel):
+    underlying: D | E = E()
