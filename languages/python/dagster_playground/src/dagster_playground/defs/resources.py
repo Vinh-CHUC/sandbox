@@ -86,6 +86,18 @@ class PandasParquetIOManager(dg.ConfigurableIOManager):
         p = _get_path(context, self.base_path, "parquet")
         return pd.read_parquet(p)
 
+class TeeIOManager(dg.ConfigurableIOManager):
+    csv:dg.ResourceDependency[PandasCSVIOManager]
+    parquet: dg.ResourceDependency[PandasParquetIOManager]
+
+    def handle_output(self, context: dg.OutputContext, obj: pd.DataFrame):
+        import pdb; pdb.set_trace()
+        self.csv.handle_output(context, obj)
+        self.parquet.handle_output(context, obj)
+
+    def load_input(self, context: dg.InputContext):
+        return self.parquet.load_input(context)
+
 
 DAGSTER_DEFAULT_OUTPUT_FOLDER = (
     Path(__file__).parent.parent.parent.parent / "assets_output"
@@ -98,6 +110,12 @@ defs = dg.Definitions(
         ),
         "parquet_io_manager": PandasParquetIOManager(
             base_path=str(DAGSTER_DEFAULT_OUTPUT_FOLDER)
+        ),
+        "csv_and_parquet_io_manager": TeeIOManager(
+            csv=PandasCSVIOManager(base_path=str(DAGSTER_DEFAULT_OUTPUT_FOLDER)),
+            parquet=PandasParquetIOManager(
+                base_path=str(DAGSTER_DEFAULT_OUTPUT_FOLDER)
+            ),
         ),
     }
 )
