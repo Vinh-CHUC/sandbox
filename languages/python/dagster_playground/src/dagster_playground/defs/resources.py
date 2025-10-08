@@ -91,7 +91,6 @@ class TeeIOManager(dg.ConfigurableIOManager):
     parquet: dg.ResourceDependency[PandasParquetIOManager]
 
     def handle_output(self, context: dg.OutputContext, obj: pd.DataFrame):
-        import pdb; pdb.set_trace()
         self.csv.handle_output(context, obj)
         self.parquet.handle_output(context, obj)
 
@@ -105,17 +104,11 @@ DAGSTER_DEFAULT_OUTPUT_FOLDER = (
 
 defs = dg.Definitions(
     resources={
-        "csv_io_manager": PandasCSVIOManager(
-            base_path=str(DAGSTER_DEFAULT_OUTPUT_FOLDER)
-        ),
-        "parquet_io_manager": PandasParquetIOManager(
-            base_path=str(DAGSTER_DEFAULT_OUTPUT_FOLDER)
-        ),
+        "csv_io_manager": (csv := PandasCSVIOManager.configure_at_launch()),
+        "parquet_io_manager": (parquet := PandasParquetIOManager.configure_at_launch()),
         "csv_and_parquet_io_manager": TeeIOManager(
-            csv=PandasCSVIOManager(base_path=str(DAGSTER_DEFAULT_OUTPUT_FOLDER)),
-            parquet=PandasParquetIOManager(
-                base_path=str(DAGSTER_DEFAULT_OUTPUT_FOLDER)
-            ),
+            csv=csv,
+            parquet=parquet,
         ),
     }
 )

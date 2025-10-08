@@ -1,6 +1,8 @@
+"""
+Migrate to run request? Have each job take a temp folder?
+"""
 import shutil
 import subprocess
-from pathlib import Path
 
 from dagster_playground.defs.jobs import DAGSTER_DEFAULT_OUTPUT_FOLDER
 
@@ -17,6 +19,7 @@ def test_jobA():
         *[f"assetA.splitter[{i}].parquet" for i in range(3)],
         *[f"assetA.process_chunk[{i}].parquet" for i in range(3)],
         "assetA.csv",
+        "assetA.parquet",
     ]
 
     # Check for the presence of each expected file

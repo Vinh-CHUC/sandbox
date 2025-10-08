@@ -39,14 +39,14 @@ def splitter(df: pd.DataFrame):
         yield dg.DynamicOutput(c, mapping_key=str(idx))
 
 
-@dg.op(out=dg.Out(io_manager_key="csv_and_parquet_io_manager"))
+@dg.op(out=dg.Out(io_manager_key="parquet_io_manager"))
 def process_chunk(context: dg.AssetExecutionContext, df: pd.DataFrame) -> pd.DataFrame:
     context.log.info(f"PID: {os.getpid()}")
     df = df.assign(another_dummy_str=df.dummy_str + "yoo")
     return df
 
 
-@dg.op(out=dg.Out(io_manager_key="csv_io_manager"))
+@dg.op(out=dg.Out(io_manager_key="csv_and_parquet_io_manager"))
 def concat_chunks(chunks: list[pd.DataFrame]) -> pd.DataFrame:
     return pd.concat(chunks, ignore_index=True)
 
