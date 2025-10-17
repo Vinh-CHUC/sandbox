@@ -9,6 +9,8 @@ VString fn2(VString &&vstr) { return vstr; }
 
 VString &&fn3(VString &&vstr) { return vstr; }
 
+// Use case:
+// - Only allows move, more explicit signal: consuming only
 VString fn4(VString &&vstr) {
   // The std::move is absolutely necessary!!
   return VString(std::move(vstr));

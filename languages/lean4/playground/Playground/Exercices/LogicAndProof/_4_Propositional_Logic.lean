@@ -35,3 +35,65 @@ variable (h4: B)
 /- ----------------- -/
 /- 4.2 More commands -/
 /- ----------------- -/
+
+/- example -/
+
+example : A ∧ ¬ B → ¬ B ∧ A :=
+  fun h : A ∧ ¬ B ↦ And.intro (And.right h) (And.left h)
+
+/- Type can be inferred -/
+example : A ∧ ¬ B → ¬ B ∧ A :=
+  fun h  ↦ And.intro (And.right h) (And.left h)
+
+/- Even more explicit with show -/
+example : A ∧ ¬ B → ¬ B ∧ A :=
+  fun h : A ∧ ¬ B ↦ show ¬ B ∧ A from And.intro (And.right h) (And.left h)
+
+/- Even more explicit with show -/
+example : A ∧ ¬ B → ¬ B ∧ A :=
+  fun h : A ∧ ¬ B ↦
+    show ¬ B ∧ A from And.intro (show ¬ B from And.right h) (show A from And.left h)
+
+/- sorry -/
+/- acts as a placeholder -/
+
+example: A ∧ B → ¬ B ∧ A :=
+  fun h ↦ sorry
+
+/- _ -/
+/- type hole -/
+
+example : A ∧ B → ¬ B ∧ A :=
+  fun h : A ∧ B ↦ And.intro _ _
+
+/- ------------------------------------- -/
+/- 4.3 Building Natural Deduction Proofs -/
+/- ------------------------------------- -/
+
+/- 4.3.1 Implication -/
+section
+  variable (A B: Prop)
+
+  example: A → B:=
+  fun h : A ↦
+  show B from sorry
+
+  section
+    variable (h1: A → B) (h2 : A)
+
+    example: B := h1 h2
+  end
+end
+
+/- 4.3.2 Conjunction -/
+section 
+  variable (h1: A) (h2: B)
+  example :A ∧ B := And.intro h1 h2
+end
+
+section
+  variable (h: A ∧ B)
+
+  example : A := And.left h
+  example : B := And.right h
+end
