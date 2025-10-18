@@ -97,3 +97,68 @@ section
   example : A := And.left h
   example : B := And.right h
 end
+
+/- 4.3.3 Disjunction -/
+section
+  variable (h: A)
+  variable (i: B)
+  
+  example : A ∨ B := Or.inl h
+  example : A ∨ B := Or.inr i
+end
+
+section
+  variable (h: A ∨ B) (ha: A → C) (hb: B → C)
+  example : C :=
+  Or.elim h
+    (ha)
+    (hb)
+
+  example : C :=
+  Or.elim h
+    (fun h1: A ↦ show C from ha h1)
+    (fun h2: B ↦ show C from hb h2)
+end
+
+/- 4.3.4 Negation -/
+section
+  example: ¬ A := fun h : A ↦ show False from sorry
+end
+
+section
+  variable (h1: ¬ A) (h2 : A)
+  example : False := h1 h2
+end
+
+/- 4.3.5 Truth and falsity -/
+variable (h: False)
+example : A := False.elim h
+example : True := trivial
+
+/- 4.3.6 Bi-Implication -/
+example: A ↔ B :=
+  Iff.intro
+    (fun h: A ↦ show B from sorry)
+    (fun h: B ↦ show A from sorry)
+
+section
+  variable (h1: A ↔ B)
+  variable (h2: A)
+
+  example : B := Iff.mp h1 h2
+end 
+
+section
+  variable (h1: A ↔ B)
+  variable (h2: B)
+
+  example : A := Iff.mpr h1 h2
+end 
+
+/- 4.3.7 Reductio ad absurdum (proof by contradiction) -/
+section
+  open Classical
+
+  example: A :=
+  byContradiction (fun h: ¬ A ↦ show False from sorry)
+end 
