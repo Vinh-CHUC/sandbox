@@ -162,3 +162,57 @@ section
   example: A :=
   byContradiction (fun h: ¬ A ↦ show False from sorry)
 end 
+
+/- 4.3.8 Examples -/
+section
+  variable (h1 : A → B)
+  variable (h2 : B → C)
+
+  example : A → C :=
+  fun h : A ↦
+    show C from h2 (h1 h)
+end
+
+example (A B C: Prop) : (A → (B → C)) → (A ∧ B → C) :=
+  fun h1 : A → (B → C) ↦
+    fun h2 : A ∧ B ↦
+
+example (A B C: Prop) : A ∧ (B ∨ C) → (A ∧ B) ∨ (A ∧ C) :=
+  fun h1 : A ∧ (B ∨ C) ↦
+    Or.elim (And.right h1)
+      /- Note the slightly different API between Or.intro_left and Or.inl -/
+      (fun h2 : B ↦ show (A ∧ B) ∨ (A ∧ C) from Or.intro_left (A ∧ C) (And.intro (And.left h1) h2))
+      (fun h2 : C ↦ show (A ∧ B) ∨ (A ∧ C) from Or.inr (And.intro (And.left h1) h2))
+
+#check Or.intro_left
+#check Or.inl
+
+/- A more concise version of the above -/
+example (A B C: Prop) : A ∧ (B ∨ C) → (A ∧ B) ∨ (A ∧ C) :=
+  λ h1 ↦ Or.elim (And.right h1)
+      (λ h2 ↦ Or.inl  (And.intro (And.left h1) h2))
+      (λ h2 ↦ Or.inr (And.intro (And.left h1) h2))
+
+/- OO Notation -/
+example (A B C: Prop) : A ∧ (B ∨ C) → (A ∧ B) ∨ (A ∧ C) :=
+  λ h1 ↦ Or.elim h1.right
+      (λ h2 ↦ Or.inl  (And.intro (And.left h1) h2))
+      (λ h2 ↦ Or.inr (And.intro (And.left h1) h2))
+    
+/- --------------- -/
+/- 4.4 Tactic Mode -/
+/- --------------- -/
+example (A B C: Prop) : A ∧ (B ∨ C) → (A ∧ B) ∨ (A ∧ C) := by
+  intro (h1 : A ∧ (B ∨ C))
+  cases h1 with
+  | intro h1 h2 => cases h2 with
+    | inl h2 =>
+      apply Or.inl
+      apply And.intro
+      exact h1
+      exact h2
+    | inr h2 =>
+      apply Or.inr
+      apply And.intro
+      exact h1
+      exact h2
