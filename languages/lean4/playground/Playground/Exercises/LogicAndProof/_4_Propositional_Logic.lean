@@ -396,3 +396,81 @@ theorem my_theorem {A B C: Prop} : A ∧ (B ∨ C) → (A ∧ B) ∨ (A ∧ C) :
 example (A B : Prop) : A ∧ B → B ∧ A :=
   fun h : A ∧ B ↦
   show B ∧ A from ⟨ h.right, h.left ⟩
+
+example (A B : Prop) : A ∧ B → B ∧ A :=
+  fun ⟨ h₁, h₂ ⟩ ↦ ⟨ h₂, h₁⟩
+
+example (A B: Prop) : A ∧ B ↔ B ∧ A :=
+  ⟨fun ⟨h₁, h₂⟩ ↦ ⟨h₂, h₁⟩, fun ⟨h₁, h₂⟩ ↦ ⟨h₂, h₁⟩⟩
+
+/- ------------- -/
+/- 4.8 Exercises -/
+/- ------------- -/
+
+-------
+-- A --
+-------
+
+-- Term
+example : A ∧ (A → B) → B :=
+  fun ⟨a, ab⟩ ↦ show B from ab a
+
+-- Tactic
+example : A ∧ (A → B) → B := by
+  intro ⟨a, ab⟩
+  exact ab a
+
+-------
+-- B --
+-------
+
+-- Term
+example : A → ¬ (¬ A ∧ B) :=
+  fun a ↦
+    show ¬ (¬ A ∧ B) from
+      fun ⟨na, _⟩ ↦ show False from na a
+
+-- Tactic
+example : A → ¬ (¬ A ∧ B) := by
+  intro
+  show ¬ (¬ A ∧ B)
+  intro ⟨na, b⟩
+  show False
+  apply na
+  assumption
+
+-------
+-- C --
+-------
+  
+-- Term
+example : ¬ (A ∧ B) → (A → ¬ B) :=
+sorry
+
+-- Tactic
+example : ¬ (A ∧ B) → (A → ¬ B) := by
+sorry
+
+-- Term
+example (h₁ : A ∨ B) (h₂ : A → C) (h₃ : B → D) : C ∨ D :=
+sorry
+
+-- Tactic
+example (h₁ : A ∨ B) (h₂ : A → C) (h₃ : B → D) : C ∨ D := by
+sorry
+
+-- Term
+example (h : ¬ A ∧ ¬ B) : ¬ (A ∨ B) :=
+sorry
+
+-- Tactic
+example (h : ¬ A ∧ ¬ B) : ¬ (A ∨ B) := by
+sorry
+
+-- Term
+example : ¬ (A ↔ ¬ A) :=
+sorry
+
+-- Tactic
+example : ¬ (A ↔ ¬ A) := by
+sorry
