@@ -445,27 +445,60 @@ example : A → ¬ (¬ A ∧ B) := by
   
 -- Term
 example : ¬ (A ∧ B) → (A → ¬ B) :=
-sorry
+  fun nab ↦
+    fun a ↦
+      show ¬ B from
+        fun b ↦ nab (And.intro a b)
 
 -- Tactic
 example : ¬ (A ∧ B) → (A → ¬ B) := by
-sorry
+  intro nab a b
+  exact nab ⟨a, b⟩
+
+-------
+-- D --
+-------
 
 -- Term
 example (h₁ : A ∨ B) (h₂ : A → C) (h₃ : B → D) : C ∨ D :=
-sorry
+  show C ∨ D from
+  Or.elim h₁
+    (fun a ↦ Or.inl (h₂ a))
+    (fun b ↦ Or.inr (h₃ b))
 
 -- Tactic
 example (h₁ : A ∨ B) (h₂ : A → C) (h₃ : B → D) : C ∨ D := by
-sorry
+  show C ∨ D
+  apply Or.elim h₁
+    (fun a ↦ Or.inl (h₂ a))
+    (fun b ↦ Or.inr (h₃ b))
+
+-------
+-- E --
+-------
 
 -- Term
 example (h : ¬ A ∧ ¬ B) : ¬ (A ∨ B) :=
-sorry
+  show ¬ (A ∨ B) from
+  fun aorb ↦ Or.elim aorb
+    (fun a ↦ (h.left a))
+    (fun b ↦ (h.right b))
 
 -- Tactic
 example (h : ¬ A ∧ ¬ B) : ¬ (A ∨ B) := by
-sorry
+  show ¬ (A ∨ B)
+  intro ab
+  apply Or.elim ab
+  . intro
+    apply h.left
+    assumption
+  . intro
+    apply h.right
+    assumption
+
+-------
+-- F --
+-------
 
 -- Term
 example : ¬ (A ↔ ¬ A) :=
