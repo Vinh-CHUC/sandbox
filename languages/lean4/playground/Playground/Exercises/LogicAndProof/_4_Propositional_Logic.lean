@@ -502,8 +502,21 @@ example (h : ¬ A ∧ ¬ B) : ¬ (A ∨ B) := by
 
 -- Term
 example : ¬ (A ↔ ¬ A) :=
-sorry
+  fun ana ↦ 
+    have na := show ¬ A from
+      fun a ↦ (ana.mp a) a
+    show False from
+      na (ana.mpr na)
 
 -- Tactic
 example : ¬ (A ↔ ¬ A) := by
-sorry
+  intro ana
+  show False
+  have na : ¬ A := by
+    intro a
+    exact (ana.mp a) a
+  have A := by
+    apply ana.mpr
+    assumption
+  apply na
+  assumption
