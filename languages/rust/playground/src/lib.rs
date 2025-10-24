@@ -1,4 +1,4 @@
-mod rust_features {
+pub mod rust_features {
     mod borrow;
     mod concurrency;
     mod iterators;

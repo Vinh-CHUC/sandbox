@@ -1,5 +1,5 @@
 //! ```compile_fail
-//! use playground::lifetimes::*;
+//! use playground::rust_features::lifetimes::*;
 //! let s = String::from("foo");
 //! let u: &str;
 //! {
@@ -10,19 +10,22 @@
 //! // Even though we're returning a ref to s here, the lifetime annotation
 //! // is tied to both x and y. So u's lifetime cannot exceed any of x or y
 //! ```
+//!
 //! ```compile_fail
-//! use playground::lifetimes::*;
+//! use playground::rust_features::lifetimes::*;
 //! let s = String::from("foo");
-//! let ts: TiedStruct;
+//! let u: &str;
 //! {
 //!     let t = String::from("bar");
-//!     ts = TiedStruct{x: &s, y: &t};
+//!     let mystruct = TiedStruct { x: &s, y: &t };
+//!     u = mystruct.x;
 //! }
-//! println!("{:?}", ts);
+//! // The fact that u's lifetime is actually s's is lost here
+//! println!("{:?}", u);
 //! ```
 //!
 //! ```compile_fail
-//! use playground::lifetimes::*;
+//! use playground::rust_features::lifetimes::*;
 //! let whoo: IndependentStruct;
 //! let s = String::from("foo");
 //! {
@@ -64,13 +67,13 @@ where
 }
 
 #[derive(Debug)]
-pub struct TiedStruct<'a, 'b> {
+pub struct IndependentStruct<'a, 'b> {
     pub x: &'a String,
     pub y: &'b String,
 }
 
 #[derive(Debug)]
-pub struct IndependentStruct<'a> {
+pub struct TiedStruct<'a> {
     pub x: &'a String,
     pub y: &'a String,
 }
@@ -85,7 +88,7 @@ where
     'b: 'a,
     'c: 'a, // Try 'a: 'b that would force the lifetimes to be perfectly equal?
 {
-    pub x: &'a TiedStruct<'b, 'c>,
+    pub x: &'a IndependentStruct<'b, 'c>,
 }
 
 // The `where T: 'a` is optional
@@ -102,8 +105,8 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::IndependentStruct;
     use super::TiedStruct;
+    use super::IndependentStruct;
     use super::independent_lifetimes;
     use super::tied_lifetimes;
 
@@ -130,21 +133,25 @@ mod tests {
     }
 
     #[test]
-    fn test_tied_struct_can_refer_to_different_lifetimes() {
+    fn test_independent_struct_can_refer_to_different_lifetimes() {
+        let s = String::from("foo");
+        let u: &str;
+        {
+            let t = String::from("bar");
+            let mystruct = IndependentStruct { x: &s, y: &t };
+            u = mystruct.x;
+        }
+        // OK as Rust knows that mystruct.x is tied to s's lifetime
+        // Useful for accessors basically
+        println!("{:?}", u);
+    }
+
+    #[test]
+    fn test_tied_lifetimes_struct() {
         let s = String::from("foo");
         {
             let t = String::from("bar");
             TiedStruct { x: &s, y: &t };
-        }
-    }
-
-    #[test]
-    fn test_independent_lifetimes_struct() {
-        let whoo: IndependentStruct;
-        let s = String::from("foo");
-        {
-            let t = String::from("bar");
-            whoo = IndependentStruct { x: &s, y: &t };
         }
     }
 }
