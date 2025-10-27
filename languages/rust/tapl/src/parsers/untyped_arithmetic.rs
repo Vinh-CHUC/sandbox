@@ -9,11 +9,12 @@ pub enum Value {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct If {
-    If: Box<Value>,
-    Then: Box<Value>,
-    Else: Box<Value>
+    If: Box<Term>,
+    Then: Box<Term>,
+    Else: Box<Term>
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Term {
    Value(Value), 
    If(If),
@@ -37,31 +38,25 @@ fn parse_values<'src>() -> impl Parser<'src, &'src str, Value> {
         .or(just("zero").to(Value::Zero))
 }
 
-pub fn parse_values_pad_strict<'src>() -> impl Parser<'src, &'src str, Value> {
-    parse_values().padded_by(text::whitespace().at_least(1))
-}
+fn parse_term<'src>() -> impl Parser<'src, &'src str, Term> {
+    recursive(|p| {
+        let p_parens = p.padded().delimited_by(just('('), just(')'));
 
-pub fn parse_values_pad<'src>() -> impl Parser<'src, &'src str, Value> {
-    parse_values().padded_by(text::whitespace())
-}
+        // Todo the inner terms should be parse_alues or p_parens.clone().padded()
+        let if_p = just("if").ignore_then(p_parens.clone().padded())
+            .then(just("then").ignore_then(p_parens.clone().padded()))
+            .then(just("else").ignore_then(p_parens.clone().padded()))
+            .map(
+                |((vif, vthen), velse)|
+                If {If: Box::new(vif), Then: Box::new(vthen), Else: Box::new(velse)}
+            );
 
-pub fn parse_if<'src>() -> impl Parser<'src, &'src str, If> {
-    just("if").ignore_then(parse_values_pad_strict())
-        .then(just("then").ignore_then(parse_values_pad_strict()))
-        .then(just("else").ignore_then(parse_values_pad()))
-        .map(
-            |((vif, vthen), velse)|
-            If {If: Box::new(vif), Then: Box::new(vthen), Else: Box::new(velse)}
-        )
-}
-
-pub fn parse_term<'src>() -> impl Parser<'src, &'src str, Term> {
-    let mk_base = || {
-        parse_values().map(|v| v.into()).or(parse_if().map(|v| v.into()))
-    };
-
-    just("(").ignore_then(mk_base().padded()).then_ignore(just(")")).padded()
-        .or(mk_base().padded().then_ignore(end()))
+        // TL term can have optional round brackets too
+        choice((
+            if_p.map(|v| v.into()),
+            parse_values().map(|v| v.into()),
+        )).padded().boxed()
+    })
 }
 
 mod tests {
@@ -77,18 +72,18 @@ mod tests {
     }
 
     #[test]
-    fn test_if() {
-        let parse = parse_if().parse("if true then false else zero").into_result();
+    fn test_term() {
+        assert!(!parse_term().parse("true").has_errors());
+
+        let parse = parse_term().parse("if (true) then (false) else (zero)").into_result();
         assert_eq!(parse,
             Ok(
                 If {
-                    If: Box::new(Value::True),
-                    Then: Box::new(Value::False),
-                    Else: Box::new(Value::Zero)
-                }
+                    If: Box::new(Term::Value(Value::True)),
+                    Then: Box::new(Term::Value(Value::False)),
+                    Else: Box::new(Term::Value(Value::Zero))
+                }.into()
             )
         );
-
-        assert!(parse_if().parse("if true then false").has_errors());
     }
 }
