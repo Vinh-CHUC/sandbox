@@ -20,6 +20,11 @@ def build_io_manager_config(io_manager_base_path: Path) -> dict:
                 "base_path": str(io_manager_base_path),
             }
         },
+        "csv_and_parquet_io_manager": {
+            "config": {
+                "base_path": str(io_manager_base_path),
+            }
+        },
     }
 
 

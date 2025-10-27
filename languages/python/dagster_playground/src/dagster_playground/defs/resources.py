@@ -1,4 +1,4 @@
-from functools import cache
+from functools import cache, cached_property
 from pathlib import Path
 import dagster as dg
 import pandas as pd
@@ -87,8 +87,15 @@ class PandasParquetIOManager(dg.ConfigurableIOManager):
         return pd.read_parquet(p)
 
 class TeeIOManager(dg.ConfigurableIOManager):
-    csv:dg.ResourceDependency[PandasCSVIOManager]
-    parquet: dg.ResourceDependency[PandasParquetIOManager]
+    base_path: str = ""
+
+    @cached_property
+    def csv(self):
+        return PandasCSVIOManager(base_path=self.base_path)
+
+    @cached_property
+    def parquet(self):
+        return PandasParquetIOManager(base_path=self.base_path)
 
     def handle_output(self, context: dg.OutputContext, obj: pd.DataFrame):
         self.csv.handle_output(context, obj)
