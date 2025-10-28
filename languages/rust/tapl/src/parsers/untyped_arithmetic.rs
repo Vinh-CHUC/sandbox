@@ -40,22 +40,24 @@ fn parse_values<'src>() -> impl Parser<'src, &'src str, Value> {
 
 fn parse_term<'src>() -> impl Parser<'src, &'src str, Term> {
     recursive(|p| {
-        let p_parens = p.padded().delimited_by(just('('), just(')'));
+        let p_parens = p.padded().delimited_by(just('('), just(')')).padded();
+        let p_values = parse_values().padded().map(|v| v.into()).boxed();
+        let p_inner = p_parens.or(p_values.clone()).boxed();
 
-        // Todo the inner terms should be parse_alues or p_parens.clone().padded()
-        let if_p = just("if").ignore_then(p_parens.clone().padded())
-            .then(just("then").ignore_then(p_parens.clone().padded()))
-            .then(just("else").ignore_then(p_parens.clone().padded()))
+        let if_p = just("if").ignore_then(p_inner.clone())
+            .then(just("then").ignore_then(p_inner.clone()))
+            .then(just("else").ignore_then(p_inner))
+            .padded()
             .map(
                 |((vif, vthen), velse)|
-                If {If: Box::new(vif), Then: Box::new(vthen), Else: Box::new(velse)}
+                If {If: Box::new(vif), Then: Box::new(vthen), Else: Box::new(velse)}.into()
             );
 
-        // TL term can have optional round brackets too
+        let term = choice((if_p, p_values)).boxed();
         choice((
-            if_p.map(|v| v.into()),
-            parse_values().map(|v| v.into()),
-        )).padded().boxed()
+            term.clone(),
+            term.delimited_by(just('('), just(')')).padded()
+        )).boxed()
     })
 }
 
@@ -74,6 +76,14 @@ mod tests {
     #[test]
     fn test_term() {
         assert!(!parse_term().parse("true").has_errors());
+        assert!(!parse_term().parse("if true then false else zero").has_errors());
+        assert!(!parse_term().parse("if (if true then false else zero) then false else zero").has_errors());
+        assert!(!parse_term().parse("(if (if true then false else zero) then false else zero)").has_errors());
+        assert!(!parse_term().parse("  (if (   if true then false else zero) then false else zero)").has_errors());
+        assert!(!parse_term().parse("(true)").has_errors());
+        //
+        // Require brackets around any non value inner expression for clarity
+        assert!(parse_term().parse("if if true then false else zero then false else zero").has_errors());
 
         let parse = parse_term().parse("if (true) then (false) else (zero)").into_result();
         assert_eq!(parse,
