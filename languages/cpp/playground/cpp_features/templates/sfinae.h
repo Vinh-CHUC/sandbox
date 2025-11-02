@@ -134,3 +134,33 @@ struct is_assignable : is_assignable_impl<T, U, void> {};
 
 static_assert(is_assignable<int &, double>::value);
 static_assert(!is_assignable<int &, int *>::value);
+
+///////////////////////////////////////
+// conditional_t, not SFINAE enabled //
+///////////////////////////////////////
+template<bool B, class T, class F>
+struct conditional { using type = T; };
+
+template<class T, class F>
+struct conditional<false, T, F> { using type = F; };
+
+template<bool B, class T, class F>
+using conditional_t = typename conditional<B, T, F>::type;
+
+/////////////////
+// enable_if_t //
+/////////////////
+
+
+//// Philosophically enable_if: boolean -> SFINAE = {wellformed, not-well formed}
+
+// true -> T
+// false -> ill-formed (there is no ::type)
+template<bool B, class T = void> struct enable_if { using type = T; };
+template<class T> struct enable_if<false, T> {};
+
+template<bool B, class T = void>
+using enable_if_t = typename enable_if<B, T>::type;
+
+
+//// The otherway around?
