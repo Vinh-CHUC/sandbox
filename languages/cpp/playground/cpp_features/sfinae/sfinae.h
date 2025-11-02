@@ -1,3 +1,4 @@
+#include <memory>
 #include<type_traits>
 
 ////////////
@@ -89,3 +90,24 @@ template<class T> struct MyTemplate2<T, void_t<T&>> : std::integral_constant<int
 
 static_assert(MyTemplate2<int>::value == 1);
 static_assert(MyTemplate2<void>::value == 0);
+
+/////////////////////////////////
+// declval + expression SFINAE //
+/////////////////////////////////
+
+// Trick to product a value of type T out of thin air, for unevaluated contexts
+template<class T> auto declval() noexcept -> std::add_rvalue_reference_t<T>;
+
+template<class T, class U, class Enable> struct is_assignable_impl : false_type{};
+template<class T, class U>
+struct is_assignable_impl<T, U, decltype(void(declval<T>() = declval<U>())) > : true_type {};
+
+// These are equivalent
+// - decltype(void(expr))
+// - decltype(expression, void())
+// - void_t<decltype(expression)>
+
+template<class T, class U> struct is_assignable : is_assignable_impl<T, U, void> {};
+
+static_assert(is_assignable<int&, double>::value);
+static_assert(!is_assignable<int&, int*>::value);
