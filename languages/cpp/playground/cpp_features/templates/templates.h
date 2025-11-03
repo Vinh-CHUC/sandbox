@@ -23,3 +23,9 @@ static_assert(Derived<int>::value == 0);
 // Type Identity
 // Note that T does not appear anywhere in the body of Base !
 static_assert(!std::is_same_v<Base<A>, Base<B>>);
+
+template <typename T> using Foo = Base<T>;
+template <typename T> using Bar = Base<T>;
+
+// using statements do not actually create a new type just an alias
+static_assert(std::is_same_v<Foo<int>, Bar<int>>);
