@@ -26,6 +26,8 @@ TEST(RangesTest, CopyViewIntoAnotherVector) {
           return s;
       })
       // Generally it's not really possible to filter after a transform move?:
+      // This is because of the C++ iterator model
+      // in C++26 std::views::cache_latest will fix this
       /* | std::views::filter([](const std::string& s) { */
       /*     return true; */
       /* }) */
@@ -70,6 +72,36 @@ TEST(RangesTest, MoveIterator2) {
   ASSERT_EQ(vec[0], "");
 }
 
+TEST(RangesTest, MoveIterator3) {
+  std::vector<std::string> vec = {"apple", "banana", "cherry"};
+
+  auto result = vec | std::views::as_rvalue | std::views::transform([](std::string&& s){
+      std::string t = std::move(s);
+      t.append("_moved");
+      return t;
+  }) | std::ranges::to<std::vector>();
+
+  ASSERT_EQ(result[0], "apple_moved");
+  ASSERT_EQ(vec[0], "");
+}
+
+TEST(RangesTest, Zipping) {
+  std::vector<std::string> vec = {"apple", "banana", "cherry"};
+  std::vector<int> vec2 = {1, 2, 3};
+
+  auto result = std::views::zip(vec, vec2) | std::views::transform([](const auto& t){
+    using T = std::remove_cvref_t<decltype(t)>;
+    static_assert(std::is_same_v<T, std::tuple<std::string&, int&>>);
+
+    auto [s, i] = t;
+    return (s.size() == 5) && (i == 1);
+  }) | std::ranges::to<std::vector>();
+
+  ASSERT_EQ(result[0], true);
+  ASSERT_EQ(result[1], false);
+  ASSERT_EQ(result[1], false);
+}
+
 TEST(RangesTest, ViewsTransformInputNotTouched) {
   std::vector<std::string> vec = {"apple", "banana", "cherry"};
   // iiuc views transform can either pass by value of reference
@@ -99,8 +131,9 @@ TEST(RangesTest, ViewsTransformInputMoved) {
   std::vector<std::string> vec = {"apple", "banana", "cherry"};
   auto rng =
       vec | std::views::transform([](std::string &s) {
-        auto t = std::move(s);
+        std::string t = std::move(s);
         t.append("_moved");
+        // Here we return by value which explains why we can bind as && in the next
         return t;
       }) |
       std::views::transform([](std::string &&s) { return std::move(s); });
