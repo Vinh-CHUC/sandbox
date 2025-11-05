@@ -7,6 +7,8 @@ describe("VString", function()
   end)
 
   it("fails correctly", function()
+      -- Class.method(...) is sugar for Class.method(Class, ...)
+      -- Similar for obj:method(...)
       local str = VString:new("Hello there")
       assert.is.equal(str:get(), "Hello there")
   end)
