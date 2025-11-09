@@ -146,3 +146,52 @@ section
     have : A ∨ ¬ A := Or.inr  ‹ ¬ A ›
     contradiction
 end
+
+/- ------------- -/
+/- 5.4 Exercises -/
+/- ------------- -/
+
+/- 1: Prove: Reductio Ab Absurdum from Law of excluded middle  -/
+section
+  open Classical
+
+  /- Variant 1 -/
+  example (h : ¬ A → False) : A := by
+    apply Or.elim (em A)
+    . intro
+      assumption
+    . intro
+      have : False := by
+        apply h
+        assumption
+      apply False.elim
+      assumption
+
+  /- Variant 2 -/
+  example (h : ¬ A → False) : A := by
+    apply Or.elim (em A)
+    . intro
+      assumption
+    . intro
+      have : False := by
+        apply h
+        assumption
+      /- It simply searches for False -/
+      contradiction
+end 
+
+/- 2 -/
+section
+  open Classical
+
+  example (h : ¬ A ∨ ¬ B) : ¬ (A ∧ B) := by
+    intro a_and_b
+    show False
+    apply Or.elim h
+    . intro na
+      have : A := And.left a_and_b
+      contradiction
+    . intro nb
+      have : B := And.right a_and_b
+      contradiction
+end 
