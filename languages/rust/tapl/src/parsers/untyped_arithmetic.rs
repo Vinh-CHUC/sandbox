@@ -1,10 +1,23 @@
 use chumsky::prelude::*;
 
+// TODO:
+// FIXME Look at TAPL ML impl
+// https://claude.ai/share/18af23e6-9eaa-44d2-a280-7ac4c2f6fdf5
+//
+//
+// Can try to detect pure values at parse time?
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Value {
     True,
     False,
-    Zero,
+    NumValue(NumValue)
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum NumValue {
+   Zero,
+   Succ(Box<NumValue>)
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -27,7 +40,6 @@ pub struct IsZero(Box<Term>);
 pub enum Term {
     Value(Value),
     If(If),
-    Succ(Succ),
     Pred(Pred),
     IsZero(IsZero),
 }
@@ -56,18 +68,6 @@ impl From<If> for Box<Term> {
     }
 }
 
-impl From<Succ> for Term {
-    fn from(succ: Succ) -> Self {
-        Term::Succ(succ)
-    }
-}
-
-impl From<Succ> for Box<Term> {
-    fn from(succ: Succ) -> Self {
-        Box::new(succ.into())
-    }
-}
-
 impl From<Pred> for Term {
     fn from(pred: Pred) -> Self {
         Term::Pred(pred)
@@ -93,6 +93,7 @@ impl From<IsZero> for Box<Term> {
 }
 
 fn parse_values<'src>() -> impl Parser<'src, &'src str, Value> {
+    // Make this recusrive
     just("true")
         .to(Value::True)
         .or(just("false").to(Value::False))
@@ -185,6 +186,19 @@ mod tests {
 
         let parse = parse_term()
             .parse("if (true) then (false) else (zero)")
+            .into_result();
+        assert_eq!(
+            parse,
+            Ok(If {
+                r#if: Value::True.into(),
+                then: Value::False.into(),
+                r#else: Value::Zero.into()
+            }
+            .into())
+        );
+
+        let parse = parse_term()
+            .parse("succ zero")
             .into_result();
         assert_eq!(
             parse,
