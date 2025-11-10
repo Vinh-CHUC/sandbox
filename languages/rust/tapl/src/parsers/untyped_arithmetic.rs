@@ -1,25 +1,5 @@
 use chumsky::prelude::*;
 
-// TODO:
-// FIXME Look at TAPL ML impl
-// https://claude.ai/share/18af23e6-9eaa-44d2-a280-7ac4c2f6fdf5
-//
-//
-// Can try to detect pure values at parse time?
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub enum Value {
-    True,
-    False,
-    NumValue(NumValue)
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub enum NumValue {
-   Zero,
-   Succ(Box<NumValue>)
-}
-
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct If {
     r#if: Box<Term>,
@@ -28,89 +8,35 @@ pub struct If {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Succ(Box<Term>);
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Pred(Box<Term>);
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct IsZero(Box<Term>);
-
-#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Term {
-    Value(Value),
+    True,
+    False,
+    Zero,
     If(If),
-    Pred(Pred),
-    IsZero(IsZero),
+    Pred(Box<Term>),
+    IsZero(Box<Term>),
+    Succ(Box<Term>)
 }
 
-impl From<Value> for Term {
-    fn from(v: Value) -> Self {
-        Term::Value(v)
-    }
-}
-
-impl From<Value> for Box<Term> {
-    fn from(v: Value) -> Self {
-        Box::new(v.into())
-    }
-}
-
-impl From<If> for Term {
-    fn from(r#if: If) -> Self {
-        Term::If(r#if)
-    }
-}
-
-impl From<If> for Box<Term> {
-    fn from(r#if: If) -> Self {
-        Box::new(r#if.into())
-    }
-}
-
-impl From<Pred> for Term {
-    fn from(pred: Pred) -> Self {
-        Term::Pred(pred)
-    }
-}
-
-impl From<Pred> for Box<Term> {
-    fn from(pred: Pred) -> Self {
-        Box::new(pred.into())
-    }
-}
-
-impl From<IsZero> for Term {
-    fn from(is_zero: IsZero) -> Self {
-        Term::IsZero(is_zero)
-    }
-}
-
-impl From<IsZero> for Box<Term> {
-    fn from(is_zero: IsZero) -> Self {
-        Box::new(is_zero.into())
-    }
-}
-
-fn parse_values<'src>() -> impl Parser<'src, &'src str, Value> {
+fn parse_atom<'src>() -> impl Parser<'src, &'src str, Term> {
     // Make this recusrive
     just("true")
-        .to(Value::True)
-        .or(just("false").to(Value::False))
-        .or(just("zero").to(Value::Zero))
+        .to(Term::True)
+        .or(just("false").to(Term::False))
+        .or(just("zero").to(Term::Zero))
 }
 
-fn unary_fn_parse<'src, T: From<Term>>(
+fn unary_fn_parse<'src>(
     name: &'src str,
     inner_p: impl Parser<'src, &'src str, Term>,
-) -> impl Parser<'src, &'src str, T> {
-    just(name).ignore_then(inner_p).map(T::from)
+) -> impl Parser<'src, &'src str, Term> {
+    just(name).ignore_then(inner_p)
 }
 
-fn parse_term<'src>() -> impl Parser<'src, &'src str, Term> {
+pub fn parse_term<'src>() -> impl Parser<'src, &'src str, Term> {
     recursive(|p| {
         let p_parens = p.clone().delimited_by(just('('), just(')')).padded();
-        let p_values = parse_values().padded().map(|v| v.into()).boxed();
+        let p_values = parse_atom().padded().boxed();
         let p_inner = p_parens.or(p_values.clone()).boxed();
 
         let if_p = just("if")
@@ -119,20 +45,19 @@ fn parse_term<'src>() -> impl Parser<'src, &'src str, Term> {
             .then(just("else").ignore_then(p_inner.clone()))
             .padded()
             .map(|((vif, vthen), velse)| {
-                If {
+                Term::If(If {
                     r#if: Box::new(vif),
                     then: Box::new(vthen),
                     r#else: Box::new(velse),
-                }
-                .into()
+                })
             });
 
         let term = choice((
             if_p,
             p_values,
-            unary_fn_parse("succ", p_inner.clone()),
-            unary_fn_parse("pred", p_inner.clone()),
-            unary_fn_parse("iszero", p_inner),
+            unary_fn_parse("succ", p_inner.clone()).map(|v| Term::Succ(v.into())),
+            unary_fn_parse("pred", p_inner.clone()).map(|v| Term::Pred(v.into())),
+            unary_fn_parse("iszero", p_inner).map(|v| Term::IsZero(v.into())),
         ))
         .boxed();
         choice((term.clone(), p.delimited_by(just('('), just(')')).padded())).boxed()
@@ -141,18 +66,6 @@ fn parse_term<'src>() -> impl Parser<'src, &'src str, Term> {
 
 mod tests {
     use super::*;
-
-    #[test]
-    fn test_values() {
-        assert_eq!(parse_values().parse("true").into_result(), Ok(Value::True));
-        assert_eq!(
-            parse_values().parse("false").into_result(),
-            Ok(Value::False)
-        );
-        assert_eq!(parse_values().parse("zero").into_result(), Ok(Value::Zero));
-        assert!(parse_values().parse("True").has_errors());
-        assert!(parse_values().parse("FAlse").has_errors());
-    }
 
     #[test]
     fn test_term() {
@@ -189,25 +102,37 @@ mod tests {
             .into_result();
         assert_eq!(
             parse,
-            Ok(If {
-                r#if: Value::True.into(),
-                then: Value::False.into(),
-                r#else: Value::Zero.into()
-            }
-            .into())
+            Ok(Term::If(If {
+                r#if: Term::True.into(),
+                then: Term::False.into(),
+                r#else: Term::Zero.into()
+            }))
         );
 
         let parse = parse_term()
-            .parse("succ zero")
+            .parse("if true then (succ zero) else zero")
             .into_result();
         assert_eq!(
             parse,
-            Ok(If {
-                r#if: Value::True.into(),
-                then: Value::False.into(),
-                r#else: Value::Zero.into()
-            }
-            .into())
+            Ok(Term::If(If {
+                r#if: Term::True.into(),
+                then: Term::Succ(Term::Zero.into()).into(),
+                r#else: Term::Zero.into()
+            }))
+        );
+
+        let parse = parse_term()
+            .parse("succ (succ zero)")
+            .into_result();
+        assert_eq!(
+            parse,
+            Ok(
+                Term::Succ (
+                    Term::Succ (
+                        Term::Zero.into()
+                    ).into()
+                )
+            )
         );
     }
 }
