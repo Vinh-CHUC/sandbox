@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <cstddef>
 #include <gtest/gtest.h>
 #include <iterator>
 #include <ranges>
@@ -102,16 +103,43 @@ TEST(RangesTest, Zipping) {
   ASSERT_EQ(result[1], false);
 }
 
-TEST(RangesTest, ViewsTransformInputNotTouched) {
+TEST(RangesTest, ZippingTypesNoCopy) {
   std::vector<std::string> vec = {"apple", "banana", "cherry"};
-  // iiuc views transform can either pass by value of reference
-  auto rng =
-      vec |
-      std::views::transform([](const std::string &s) { return s.size(); }) |
-      std::views::transform([](int size) { return 2 * size; });
-  ASSERT_EQ(rng[0], 10);
+  std::vector<int> vec2 = {1, 2, 3};
 
-  ASSERT_EQ(vec[0], "apple");
+  for (const auto& [idx, it] : std::views::zip(vec, vec2) | std::views::enumerate){
+    static_assert(std::is_same_v<decltype(it), const std::tuple<std::string&, int&>>);
+
+    auto [s, t] = it;
+    static_assert(std::is_same_v<decltype(s), std::string &>);
+    static_assert(std::is_same_v<decltype(t), int &>);
+  }
+
+  for (const auto& it : std::views::zip(vec, vec2) | std::views::enumerate){
+    static_assert(std::is_same_v<decltype(it), const std::tuple<std::ptrdiff_t, std::tuple<std::string&, int&>>&>);
+
+    auto [idx, data] = it;
+    static_assert(std::is_same_v<decltype(data), std::tuple<std::string&, int&>>);
+  }
+
+  for (const auto& it : std::views::zip(vec, vec2)){
+    static_assert(std::is_same_v<decltype(it), const std::tuple<std::string&, int&>&>);
+
+    auto [s, t] = it;
+  }
+}
+
+TEST(RangesTest, ZippingTypesCopy) {
+  std::vector<std::string> vec = {"apple", "banana", "cherry"};
+  std::vector<int> vec2 = {1, 2, 3};
+
+  for (auto [idx, it] : std::views::zip(vec, vec2) | std::views::enumerate){
+    static_assert(std::is_same_v<decltype(it), std::tuple<std::string&, int&>>);
+
+    auto [s, t] = it;
+    static_assert(std::is_same_v<decltype(s), std::string &>);
+    static_assert(std::is_same_v<decltype(t), int &>);
+  }
 }
 
 TEST(RangesTest, ViewsTransformInputModified) { std::vector<std::string> vec = {"apple", "banana", "cherry"};
