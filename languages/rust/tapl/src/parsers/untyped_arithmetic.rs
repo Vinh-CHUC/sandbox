@@ -64,6 +64,7 @@ pub fn parse_term<'src>() -> impl Parser<'src, &'src str, Term> {
     })
 }
 
+#[cfg(test)]
 mod tests {
     use super::*;
 
