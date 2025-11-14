@@ -12,6 +12,7 @@ kill_port_forwards:
 
 init_cluster:
     helm repo add bitnami https://charts.bitnami.com/bitnami
+    helm repo add dagster https://dagster-io.github.io/helm
     helm repo update
     helm install my-nginx bitnami/nginx
 
@@ -55,6 +56,14 @@ status:
     just mk_status || true; \
     just kind_status || true; \
     just k3d_status
+
+###########
+# Dagster #
+###########
+init-dagster-chart:
+    mkdir -p helm/dagster_playground
+    helm show values dagster/dagster > helm/dagster_playground/values.yaml
+
 
 ###################
 # Troubleshooting #
