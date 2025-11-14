@@ -11,3 +11,9 @@ jobB:
 
 test-job:
     uv run pytest -s tests/
+
+docker-build:
+    docker build . -t vinh_dagster_playground:latest
+
+docker-run:
+    docker run --rm -it vinh_dagster_playground:latest /bin/sh
