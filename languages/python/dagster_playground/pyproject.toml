@@ -4,6 +4,8 @@ requires-python = ">=3.9,<3.14"
 version = "0.1.0"
 dependencies = [
     "dagster==1.11.6",
+    "dagster-k8s>=0.27.6",
+    "dagster-postgres>=0.27.6",
     "geopandas>=1.0.1",
     "pandas>=2.3.1",
     "pyarrow>=21.0.0",
