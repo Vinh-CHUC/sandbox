@@ -195,3 +195,34 @@ section
       have : B := And.right a_and_b
       contradiction
 end 
+
+/- 3 -/
+section
+  open Classical
+
+  example (h : ¬ (A ∧ B)) : ¬ A ∨ ¬ B := by
+    have a_to_nb : (a : A) → ¬ B := by
+      intro
+      intro
+      have : A ∧ B := ⟨ ‹ A › , ‹ B › ⟩
+      contradiction
+    have n_na_or_nb_to_na : ¬(¬ A ∨ ¬ B) → ¬ A := by
+      intro
+      intro
+      have : ¬ B := a_to_nb ‹ A ›
+      have : ¬ A ∨ ¬ B := Or.inr ‹ ¬ B ›
+      contradiction
+    have h3: ¬(¬(¬ A ∨ ¬ B)) := by
+      intro
+      have : ¬ A := by
+        apply n_na_or_nb_to_na
+        assumption
+      have : ¬ A ∨ ¬ B := Or.inl ‹ ¬ A ›
+      contradiction
+    -- This is an indirect way of using ¬ ¬ A = A
+    --
+    -- If you have ¬ ¬ A, proving A byContradiction introduces ¬ A
+    apply byContradiction
+    intro
+    contradiction
+end 
