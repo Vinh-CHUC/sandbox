@@ -158,3 +158,9 @@ kind_delete_cluster cluster_name=cluster_name:
 
 kind_status:
     kind get clusters
+
+########
+# Misc #
+########
+install_misc:
+    brew install helm k9s kubectl
