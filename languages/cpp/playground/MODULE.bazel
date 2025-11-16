@@ -36,4 +36,10 @@ git_override(
     commit = "4f28899228fb3ad0126897876f147ca15026151e",
     # Replace the commit hash (above) with the latest (https://github.com/hedronvision/bazel-compile-commands-extractor/commits/main).
     # Even better, set up Renovate and let it do the work for you (see "Suggestion: Updates" in the README).
+
 )
+
+# The major version of nanobind-bazel is equal to the version
+# of the internally used nanobind.
+# In this case, we are building bindings with nanobind v2.9.2.
+bazel_dep(name = "nanobind_bazel", version = "2.9.2")
