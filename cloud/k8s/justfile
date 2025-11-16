@@ -1,7 +1,7 @@
 set shell := ["bash", "-eu", "-o", "pipefail", "-c"]
 
 cluster_name := "vinh-cluster"
-k8s := "k3d"
+k8s := "kind"
 
 
 save_kube_config k8s=k8s cluster_name=cluster_name:
@@ -60,10 +60,35 @@ status:
 ###########
 # Dagster #
 ###########
+
+# It's the dagster-daemon that has the dagster.yaml that points to the postgres storage
 init-dagster-chart:
     mkdir -p helm/dagster_playground
     helm show values dagster/dagster > helm/dagster_playground/values.yaml
 
+load-dagster-image k8s=k8s cluster_name=cluster_name:
+    if [ "{{k8s}}" = "minikube" ]; then \
+        echo "Not supported yet: {{k8s}}"; \
+    elif [ "{{k8s}}" = "k3d" ]; then \
+        k3d image import vinh_dagster_playground:latest --cluster {{cluster_name}}; \
+    elif [ "{{k8s}}" = "kind" ]; then \
+        kind load docker-image vinh_dagster_playground:latest --name {{cluster_name}}; \
+    else \
+        echo "Unsupported local k8s: {{k8s}}"; \
+    fi
+
+install-dagster-chart:
+    helm upgrade --install dagster-playground dagster/dagster -f helm/dagster_playground/values.yaml
+
+dagster-ui:
+    #!/usr/bin/env bash
+    export DAGSTER_WEBSERVER_POD_NAME=$( \
+        kubectl get pods --namespace default -l \
+            "app.kubernetes.io/name=dagster,app.kubernetes.io/instance=dagster-playground,component=dagster-webserver" \
+            -o jsonpath="{.items[0].metadata.name}" \
+    )
+    echo "Visit http://127.0.0.1:8080 to open the Dagster UI"
+    kubectl --namespace default port-forward $DAGSTER_WEBSERVER_POD_NAME 8080:80
 
 ###################
 # Troubleshooting #

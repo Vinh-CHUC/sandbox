@@ -330,16 +330,16 @@ dagster-user-deployments:
 
   # List of unique deployments
   deployments:
-    - name: "k8s-example-user-code-1"
+    - name: "dagster-playground"
       image:
         # When a tag is not supplied, it will default as the Helm chart version.
-        repository: "docker.io/dagster/user-code-example"
-        tag: ~
+        repository: "vinh_dagster_playground"
+        tag: latest
 
         # Change with caution! If you're using a fixed tag for pipeline run images, changing the
         # image pull policy to anything other than "Always" will use a cached/stale image, which is
         # almost certainly not what you want.
-        pullPolicy: Always
+        pullPolicy: IfNotPresent
 
       # Arguments to `dagster api grpc`.
       # Ex: "dagster api grpc -m dagster_test.test_project.test_jobs.repo -a define_demo_execution_repo"
@@ -356,7 +356,7 @@ dagster-user-deployments:
       # deployment pod.
       dagsterApiGrpcArgs:
         - "--python-file"
-        - "/example_project/example_repo/repo.py"
+        - "/project/dagster_playground/definitions.py"
       port: 3030
 
       # Whether or not to include configuration specified for this user code deployment in the pods

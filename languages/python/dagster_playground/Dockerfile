@@ -8,7 +8,6 @@ RUN apk add python3-dev
 COPY uv.lock .
 COPY pyproject.toml .
 COPY dagster_playground ./dagster_playground
-
 RUN uv sync
 
 
