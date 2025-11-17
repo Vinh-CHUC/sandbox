@@ -33,7 +33,7 @@ def processed_data(config: DataGenConfig):
 @dg.op(out=dg.DynamicOut(io_manager_key="parquet_io_manager"))
 def splitter(df: pd.DataFrame):
     chunk_size = 300
-    number_of_parts = len(df.index) // chunk_size
+    number_of_parts = (len(df.index) // chunk_size) or 1
     df_chunks = np.array_split(df, number_of_parts)
     for idx, c in enumerate(df_chunks):
         yield dg.DynamicOutput(c, mapping_key=str(idx))
