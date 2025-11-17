@@ -197,6 +197,8 @@ section
 end 
 
 /- 3 -/
+/- This is quite convoluted, just following the hints -/
+/- from the book -/
 section
   open Classical
 
@@ -225,4 +227,50 @@ section
     apply byContradiction
     intro
     contradiction
+
+  /- Simpler variant -/
+  example (h : ¬ (A ∧ B)) : ¬ A ∨ ¬ B := by
+    apply Or.elim (em A)
+    . intro
+      have: ¬ B := by
+        intro
+        have: A ∧ B := ⟨‹ A ›,  ‹B ›⟩
+        contradiction
+      apply Or.inr
+      assumption
+    . intro
+      apply Or.inl
+      assumption
 end 
+
+/- 4 -/
+section
+  open Classical
+
+  example 
+    (h: ¬ P → (Q ∨ R))
+    (h2: ¬ Q)
+    (h3: ¬ R)
+    : P := by
+      apply byContradiction
+      intro
+      have : Q ∨ R := h ‹ ¬ P ›
+      apply Or.elim ‹ Q ∨ R ›
+      . intro
+        contradiction
+      . intro
+        contradiction
+end
+
+/- 5 -/
+section
+  open Classical
+
+  example (h: A → B) : ¬ A ∨ B := by
+    apply Or.elim (em A)
+    . intro
+      apply Or.inr (h ‹ A ›)
+    . intro
+      apply Or.inl
+      assumption
+end
