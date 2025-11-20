@@ -33,13 +33,23 @@ bazel_dep(name = "hedron_compile_commands", dev_dependency = True)
 git_override(
     module_name = "hedron_compile_commands",
     remote = "https://github.com/hedronvision/bazel-compile-commands-extractor.git",
-    commit = "4f28899228fb3ad0126897876f147ca15026151e",
+    commit = "abb61a688167623088f8768cc9264798df6a9d10",
     # Replace the commit hash (above) with the latest (https://github.com/hedronvision/bazel-compile-commands-extractor/commits/main).
     # Even better, set up Renovate and let it do the work for you (see "Suggestion: Updates" in the README).
 
 )
 
+
+##############
+## NANOBIND ##
+##############
+
 # The major version of nanobind-bazel is equal to the version
 # of the internally used nanobind.
 # In this case, we are building bindings with nanobind v2.9.2.
 bazel_dep(name = "nanobind_bazel", version = "2.9.2")
+bazel_dep(name = "rules_python", version = "1.7.0")
+
+python = use_extension("@rules_python//python/extensions:python.bzl", "python")
+python.toolchain(is_default = True, python_version = "3.13")
+use_repo(python, python = "python_versions")
