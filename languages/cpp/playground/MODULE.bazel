@@ -27,6 +27,7 @@ use_repo(
     "boost",
 )
 
+
 # Hedron's Compile Commands Extractor for Bazel
 # https://github.com/hedronvision/bazel-compile-commands-extractor
 bazel_dep(name = "hedron_compile_commands", dev_dependency = True)
@@ -39,7 +40,6 @@ git_override(
 
 )
 
-
 ##############
 ## NANOBIND ##
 ##############
@@ -48,7 +48,8 @@ git_override(
 # of the internally used nanobind.
 # In this case, we are building bindings with nanobind v2.9.2.
 bazel_dep(name = "nanobind_bazel", version = "2.9.2")
-bazel_dep(name = "rules_python", version = "1.7.0")
+# version 1.7.0 break hedron?
+bazel_dep(name = "rules_python", version = "1.6.3")
 
 python = use_extension("@rules_python//python/extensions:python.bzl", "python")
 python.toolchain(is_default = True, python_version = "3.13")
