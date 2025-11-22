@@ -1,0 +1,2 @@
+query:
+    bazel query //file_operations:all
