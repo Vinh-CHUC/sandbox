@@ -17,6 +17,7 @@ py_library(
 # in this case the .so file produced by nanobind_extension
 py_package(
     name = "nanobind_playground_pkg",
+    packages = ["nanobind_playground"],
     deps = [":nanobind_playground"],
 )
 
@@ -46,7 +47,7 @@ py_wheel(
     ],
     description_file = "//nanobind:README.md",
     # Note to self this would be the path to this BUILD file minus /BUILD
-    distribution = package_name(),
+    distribution = "nanobind_playground",
     homepage = "https://github.com/Vinh-CHUC/sandbox",
     license = "Proprietary",
 
