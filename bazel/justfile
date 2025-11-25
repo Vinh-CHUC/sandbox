@@ -1,2 +1,6 @@
 query:
     bazel query //file_operations:all
+
+show_files:
+    # Corresponds to DefaultInfo.files?
+    bazel cquery --output=files //file_operations:bar

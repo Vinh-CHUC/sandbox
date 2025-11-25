@@ -51,6 +51,23 @@ bazel_dep(name = "nanobind_bazel", version = "2.9.2")
 # version 1.7.0 break hedron?
 bazel_dep(name = "rules_python", version = "1.6.3")
 
+"""
+Not really necessary for py_library, but required for:
+    - py_binary
+    - py_test
+?
+
+This probably also provides:
+    - python development headers
+    - libpython3.x.so
+    - ...
+"""
 python = use_extension("@rules_python//python/extensions:python.bzl", "python")
-python.toolchain(is_default = True, python_version = "3.13")
+python.toolchain(
+    is_default = True,
+    python_version = "3.13",
+    configure_coverage_tool = True
+)
+
+# Brings python_versions into scope as "python"
 use_repo(python, python = "python_versions")
