@@ -2,32 +2,12 @@
 load("@nanobind_bazel//:build_defs.bzl", "nanobind_extension", "nanobind_stubgen")
 load("@rules_python//python:packaging.bzl", "py_package", "py_wheel")
 
-nanobind_extension(
-    name = "nn_ext",
-    srcs = ["nn.cpp"],
-)
-
-py_library(
-    name = "nanobind_playground",
-    srcs = ["//nanobind/src/nanobind_playground:__init__.py"],
-    data = [":nn_ext"]
-)
 
 # The package ensures that transitive dependencies are also included
 # in this case the .so file produced by nanobind_extension
 py_package(
     name = "nanobind_playground_pkg",
-    packages = ["nanobind_playground"],
-    deps = [":nanobind_playground"],
-)
-
-
-nanobind_stubgen(
-    name = "nn_stubgen",
-    module = ":nn_ext",
-    marker_file = "src/py.typed",
-    output_directory = "src",
-    recursive=True,
+    deps = ["//nanobind/nanobind_playground:nanobind_playground"],
 )
 
 py_wheel(
@@ -51,8 +31,14 @@ py_wheel(
     homepage = "https://github.com/Vinh-CHUC/sandbox",
     license = "Proprietary",
 
+    strip_path_prefixes= ["nanobind"],
+
     # These two are more informational?
-    platform = "manylinux2014_x86_64",
+    platform = select({
+        "@platforms//cpu:aarch64": "manylinux2014_aarch64",
+        "@platforms//cpu:x86_64": "manylinux2014_x86_64",
+    }),
+
     python_tag = "cp313",
 
     # FIXME
