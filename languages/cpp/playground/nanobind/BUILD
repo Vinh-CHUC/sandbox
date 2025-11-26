@@ -1,13 +1,16 @@
 # In a BUILD file, e.g. my_project/BUILD
 load("@nanobind_bazel//:build_defs.bzl", "nanobind_extension", "nanobind_stubgen")
 load("@rules_python//python:packaging.bzl", "py_package", "py_wheel")
+load("@rules_python//python:pip.bzl", "compile_pip_requirements", "pip_parse")
 
 
 # The package ensures that transitive dependencies are also included
 # in this case the .so file produced by nanobind_extension
 py_package(
     name = "nanobind_playground_pkg",
-    deps = ["//nanobind/nanobind_playground:nanobind_playground"],
+    deps = [
+        "//nanobind/nanobind_playground:nanobind_playground",
+    ],
 )
 
 py_wheel(
@@ -47,4 +50,15 @@ py_wheel(
     deps = [
         ":nanobind_playground_pkg",
     ],
+)
+
+# Investigate using UV instead
+# bazel run nanobind:requirements.update
+# bazel test nanobind:requirements.test
+#
+# This will NOT relock automatically upon bazel build ...
+compile_pip_requirements(
+    name = "requirements",
+    src = "pyproject.toml",
+    requirements_txt = "requirements_lock.txt"
 )

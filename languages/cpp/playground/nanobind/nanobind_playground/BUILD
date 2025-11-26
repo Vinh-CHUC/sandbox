@@ -3,6 +3,7 @@ load("@nanobind_bazel//:build_defs.bzl", "nanobind_extension", "nanobind_stubgen
 py_library(
     name = "nanobind_playground",
     srcs = ["__init__.py"],
+    deps = ["//nanobind/nanobind_playground/numpy:numpy"],
     data = [":nn_ext"],
     visibility = ["//visibility:public"]
 )

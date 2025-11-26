@@ -71,3 +71,11 @@ python.toolchain(
 
 # Brings python_versions into scope as "python"
 use_repo(python, python = "python_versions")
+
+pip = use_extension("@rules_python//python/extensions:pip.bzl", "pip")
+pip.parse(
+    python_version = "3.13",
+    hub_name = "pip",
+    requirements_lock = "//nanobind:requirements_lock.txt",
+)
+use_repo(pip, "pip")
