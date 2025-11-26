@@ -1,8 +1,7 @@
 import numpy as np
 
-import nanobind
-from nanobind.nanobind_playground import add
-from nanobind.nanobind_playground.numpy import inspect
+from nanobind_playground import add
+from nanobind_playground.numpy import inspect
 
 def test_dummy():
     add(1, 2)

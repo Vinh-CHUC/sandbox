@@ -1,7 +1,11 @@
 ## To Try
-- [ ] Get things to build, and produce a python package
-- [ ] Hello world of some kind
-- [ ] numpy array
+- [x] Get things to build, and produce a python package
+- [x] Hello world of some kind
+- [x] numpy array
+- [ ] stubgen
+- [ ] round trip
+- [ ] catching exceptions on C++ end
+- [ ] pandas
 
 ## Questions
 

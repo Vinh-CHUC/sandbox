@@ -5,6 +5,7 @@ py_library(
     srcs = ["__init__.py"],
     deps = ["//nanobind/nanobind_playground/numpy:numpy"],
     data = [":nn_ext"],
+    imports = [".."],
     visibility = ["//visibility:public"]
 )
 
