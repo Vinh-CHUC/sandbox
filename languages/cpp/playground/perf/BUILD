@@ -7,12 +7,11 @@ cc_library(
     visibility = ["//visibility:public"],
 )
 
-cc_test(
-    name = "matmul_test",
-    srcs = ["matmul_test.cc"],
+cc_binary(
+    name = "matmul_bench",
+    srcs = ["matmul_bench.cc"],
     deps = [
         ":matmul",
-        "@googletest//:gtest",
-        "@googletest//:gtest_main",
+        "@google_benchmark//:benchmark"
     ]
 )
