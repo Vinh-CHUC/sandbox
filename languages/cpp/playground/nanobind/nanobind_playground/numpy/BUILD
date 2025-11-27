@@ -12,3 +12,8 @@ nanobind_extension(
     srcs = ["numpy.cpp"],
     visibility = ["//visibility:public"]
 )
+
+nanobind_stubgen(
+    name = "numpy_ext_stubgen",
+    module = ":numpy_ext",
+)

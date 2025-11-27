@@ -15,9 +15,6 @@ nanobind_extension(
 )
 
 nanobind_stubgen(
-    name = "nn_stubgen",
+    name = "nn_ext_stubgen",
     module = ":nn_ext",
-    marker_file = "src/py.typed",
-    output_directory = "src",
-    recursive=True,
 )
