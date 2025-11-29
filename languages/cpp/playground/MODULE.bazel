@@ -7,8 +7,6 @@
 bazel_dep(name = "googletest", version = "1.15.2")
 bazel_dep(name = "google_benchmark", version = "1.9.4")
 
-
-
 # Boost
 # Famous C++ library that has given rise to many new additions to the C++ Standard Library
 # Makes @boost available for use: For example, add `@boost//:algorithm` to your deps.
@@ -65,18 +63,34 @@ This probably also provides:
 """
 python = use_extension("@rules_python//python/extensions:python.bzl", "python")
 python.toolchain(
-    is_default = True,
+    python_version = "3.14",
+    configure_coverage_tool = True
+)
+python.toolchain(
     python_version = "3.13",
     configure_coverage_tool = True
 )
+python.defaults(python_version = "3.13")
 
 # Brings python_versions into scope as "python"
 use_repo(python, python = "python_versions")
 
 pip = use_extension("@rules_python//python/extensions:pip.bzl", "pip")
+"""
+uv pip compile pyproject.toml --python-version 3.14 -o requirements_lock_3.13.txt
+"""
 pip.parse(
     python_version = "3.13",
-    hub_name = "pip",
-    requirements_lock = "//nanobind:requirements_lock.txt",
+    hub_name = "pip_3.13",
+    requirements_lock = "//nanobind:requirements_lock_3.13.txt",
 )
-use_repo(pip, "pip")
+
+"""
+uv pip compile pyproject.toml --python-version 3.14 -o requirements_lock_3.14.txt
+"""
+pip.parse(
+    python_version = "3.14",
+    hub_name = "pip_3.14",
+    requirements_lock = "//nanobind:requirements_lock_3.14.txt",
+)
+use_repo(pip, "pip_3.13", "pip_3.14")

@@ -2,6 +2,7 @@
 - [x] Get things to build, and produce a python package
 - [x] Hello world of some kind
 - [x] numpy array
+- [x] Vectorise pytest_test across multiple python versions
 - [ ] stubgen
 - [ ] round trip
 - [ ] catching exceptions on C++ end

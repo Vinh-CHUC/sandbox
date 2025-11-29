@@ -51,14 +51,3 @@ py_wheel(
         ":nanobind_playground_pkg",
     ],
 )
-
-# Investigate using UV instead
-# bazel run nanobind:requirements.update
-# bazel test nanobind:requirements.test
-#
-# This will NOT relock automatically upon bazel build ...
-compile_pip_requirements(
-    name = "requirements",
-    src = "pyproject.toml",
-    requirements_txt = "requirements_lock.txt"
-)
