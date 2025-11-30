@@ -3,11 +3,14 @@
 - [x] Hello world of some kind
 - [x] numpy array
 - [x] Vectorise pytest_test across multiple python versions
-- [ ] Exchanging information, object ownership
+- [ ] [In Progress] Exchanging information, object ownership
 - [ ] stubgen
 - [ ] round trip
 - [ ] catching exceptions on C++ end
 - [ ] pandas
+
+### Advanced
+- [ ] https://github.com/wjakob/nanobind/blob/68b9ae82a3ed1ac34b2b96b141b45554ee79a497/include/nanobind/operators.h
 
 ## Questions
 
