@@ -25,7 +25,7 @@ static void BM_MatMul_ijk(benchmark::State& state) {
                     C[i*N + j] += A[i*N + k] * B[k*N + j];
     }
 }
-BENCHMARK(BM_MatMul_ijk)->Arg(128)->Arg(512);
+BENCHMARK(BM_MatMul_ijk)->Arg(128)->Arg(1024);
 
 
 static void BM_MatMul_ikj(benchmark::State& state) {
@@ -40,7 +40,7 @@ static void BM_MatMul_ikj(benchmark::State& state) {
                     C[i*N + j] += A[i*N + k] * B[k*N + j];
     }
 }
-BENCHMARK(BM_MatMul_ikj)->Arg(128)->Arg(512);
+BENCHMARK(BM_MatMul_ikj)->Arg(128)->Arg(1024);
 
 
 static void BM_MatMul_jik(benchmark::State& state) {
@@ -55,6 +55,6 @@ static void BM_MatMul_jik(benchmark::State& state) {
                     C[i*N + j] += A[i*N + k] * B[k*N + j];
     }
 }
-BENCHMARK(BM_MatMul_jik)->Arg(128)->Arg(512);
+BENCHMARK(BM_MatMul_jik)->Arg(128)->Arg(1024);
 
 BENCHMARK_MAIN();

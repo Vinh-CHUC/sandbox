@@ -9,3 +9,16 @@ pytest_test_manypy(
     ],
     pip_deps = ["numpy"]
 )
+
+py_test(
+    name = "test_dummy",
+    srcs = ["test_dummy.py"]
+)
+
+pytest_test(
+    name = "test_exchanging_information",
+    srcs = ["test_exchanging_information.py"],
+    deps = [
+        "//nanobind/nanobind_playground:nanobind_playground"
+    ],
+)

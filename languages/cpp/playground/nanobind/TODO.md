@@ -3,6 +3,7 @@
 - [x] Hello world of some kind
 - [x] numpy array
 - [x] Vectorise pytest_test across multiple python versions
+- [ ] Exchanging information, object ownership
 - [ ] stubgen
 - [ ] round trip
 - [ ] catching exceptions on C++ end
