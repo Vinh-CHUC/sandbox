@@ -274,3 +274,118 @@ section
       apply Or.inl
       assumption
 end
+
+/- 6 -/
+section
+  open Classical
+
+  example:
+  A → ((A ∧ B) ∨ (A ∧ ¬ B)) := by
+    intro
+    apply Or.elim (em B)
+    . intro
+      have: A ∧ B := ⟨ ‹ A ›, ‹ B › ⟩
+      apply Or.inl
+      assumption
+    . intro
+      have: A ∧ ¬ B := ⟨ ‹ A ›, ‹ ¬ B › ⟩
+      apply Or.inr
+      assumption
+end
+
+/- 7 -/
+section
+  open Classical
+
+  example: ((A ∨ B) ∧ (C ∨ D) ∧ (E ∨ F))
+  →  (
+     (A ∧ C ∧ E) ∨ (A ∧ C ∧ F)
+     ∨ (A ∧ D ∧ E) ∨ (A ∧ D ∧ F)
+     ∨ (B ∧ C ∧ E) ∨ (B ∧ C ∧ F)
+     ∨ (B ∧ D ∧ E) ∨ (B ∧ D ∧ F)
+  ) := by
+    intro h
+    have: A ∨ B := And.left h
+    have: C ∨ D := And.left (And.right h)
+    have: E ∨ F := And.right (And.right h)
+    apply Or.elim ‹ A ∨ B ›
+    . intro
+      apply Or.elim ‹ C ∨ D ›
+      . intro
+        apply Or.elim ‹ E ∨ F ›
+        . intro
+          have: A ∧ C ∧ E :=
+            And.intro ‹ A › (And.intro ‹ C › ‹ E ›)
+          apply Or.inl
+          assumption
+        . intro
+          have: A ∧ C ∧ F :=
+            And.intro ‹ A › (And.intro ‹ C › ‹ F ›)
+          apply Or.inr
+          apply Or.inl
+          assumption
+      . intro
+        apply Or.elim ‹ E ∨ F ›
+        . intro
+          have: A ∧ D ∧ E :=
+            And.intro ‹ A › (And.intro ‹ D › ‹ E ›)
+          apply Or.inr
+          apply Or.inr
+          apply Or.inl
+          assumption
+        . intro
+          have: A ∧ D ∧ F :=
+            And.intro ‹ A › (And.intro ‹ D › ‹ F ›)
+          apply Or.inr
+          apply Or.inr
+          apply Or.inr
+          apply Or.inl
+          assumption
+    . intro
+      apply Or.elim ‹ C ∨ D ›
+      . intro
+        apply Or.elim ‹ E ∨ F ›
+        . intro
+          have: B ∧ C ∧ E :=
+            And.intro ‹ B › (And.intro ‹ C › ‹ E ›)
+          apply Or.inr
+          apply Or.inr
+          apply Or.inr
+          apply Or.inr
+          apply Or.inl
+          assumption
+        . intro
+          have: B ∧ C ∧ F :=
+            And.intro ‹ B › (And.intro ‹ C › ‹ F ›)
+          apply Or.inr
+          apply Or.inr
+          apply Or.inr
+          apply Or.inr
+          apply Or.inr
+          apply Or.inl
+          assumption
+      . intro
+        apply Or.elim ‹ E ∨ F ›
+        . intro
+          have: B ∧ D ∧ E :=
+            And.intro ‹ B › (And.intro ‹ D › ‹ E ›)
+          apply Or.inr
+          apply Or.inr
+          apply Or.inr
+          apply Or.inr
+          apply Or.inr
+          apply Or.inr
+          apply Or.inl
+          assumption
+        . intro
+          have: B ∧ D ∧ F :=
+            And.intro ‹ B › (And.intro ‹ D › ‹ F ›)
+          apply Or.inr
+          apply Or.inr
+          apply Or.inr
+          apply Or.inr
+          apply Or.inr
+          apply Or.inr
+          apply Or.inr
+          assumption
+  end
