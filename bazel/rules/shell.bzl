@@ -31,7 +31,9 @@ concat_files = rule(
         # This is usually other targets
         "sources": attr.label_list(
             allow_files=True
-        )
+        ),
+        # TWEAK
+        "setting": attr.label()
     }
 )
 
