@@ -111,11 +111,8 @@ DAGSTER_DEFAULT_OUTPUT_FOLDER = (
 
 defs = dg.Definitions(
     resources={
-        "csv_io_manager": (csv := PandasCSVIOManager.configure_at_launch()),
-        "parquet_io_manager": (parquet := PandasParquetIOManager.configure_at_launch()),
-        "csv_and_parquet_io_manager": TeeIOManager(
-            csv=csv,
-            parquet=parquet,
-        ),
+        "csv_io_manager": PandasCSVIOManager(base_path=str(DAGSTER_DEFAULT_OUTPUT_FOLDER)),
+        "parquet_io_manager": PandasParquetIOManager(base_path=str(DAGSTER_DEFAULT_OUTPUT_FOLDER)),
+        "csv_and_parquet_io_manager": TeeIOManager(base_path=str(DAGSTER_DEFAULT_OUTPUT_FOLDER)),
     }
 )
