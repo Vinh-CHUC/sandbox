@@ -98,6 +98,18 @@ struct MyTemplate<T, void_t<T &>> : std::integral_constant<int, 1> {
 static_assert(MyTemplate<int, void>::value == 1);
 static_assert(MyTemplate<void, void>::value == 0);
 
+template <class T, typename>
+struct MyTemplate3 : std::integral_constant<int, 0> {
+  using type = T;
+};
+template <class T>
+struct MyTemplate3<T, T &> : std::integral_constant<int, 1> {
+  using type = T;
+};
+static_assert(MyTemplate3<void, void>::value == 0);
+static_assert(MyTemplate3<int, int&>::value == 1);
+
+
 // Using a default type = void to make this more ergonomic
 template <class T, typename U = void>
 struct MyTemplate2 : std::integral_constant<int, 0> {

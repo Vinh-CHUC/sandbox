@@ -1,24 +1,39 @@
 load("//rules:shell.bzl", "concat_files")
 load("//rules:config.bzl", "mysetting")
 
+# A configuration item, an instance of a rule() that has a build_setting attribute
 mysetting(
-    name="foo_setting",
-    build_setting_default="hehe"
+    name="extension",
+    build_setting_default="txt"
+)
+
+# Maps from a setting to a boolean effectively so that it can be consumed by select({})
+config_setting(
+    name = "log",
+    flag_values = {
+        ":extension": "log"
+    }
 )
 
 concat_files(
     name = "foo",
-    filename = "foo.txt",
+    # Interesting this target does not to depend on :extension to leverage the select({})
+    filename = select({
+        ":log": "foo.log",
+        "//conditions:default": "foo.txt"
+    }),
     sources = [
         "hello.txt",
         "world.txt",
     ],
-    setting=":foo_setting"
 )
 
 concat_files(
     name = "bar",
-    filename = "bar.txt",
+    filename = select({
+        ":log": "bar.log",
+        "//conditions:default": "bar.txt"
+    }),
     sources = [
         "babar.txt",
         ":foo"
