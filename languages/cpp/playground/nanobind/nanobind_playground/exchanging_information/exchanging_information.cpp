@@ -1,7 +1,9 @@
 #include <vector>
+#include <memory>
 
 #include <nanobind/ndarray.h>
 #include <nanobind/stl/vector.h>
+#include <nanobind/stl/unique_ptr.h>
 
 namespace nb = nanobind;
 
@@ -20,7 +22,50 @@ void double_it_mut(IntVector &in) {
     }
 }
 
+nb::list double_it_py(nb::list l) {
+  nb::list result;
+  for (nb::handle h: l){
+    result.append(h * nb::int_(2));
+  }
+  return result;
+}
+
+struct Data {};
+Data data;
+Data *get_data() { return &data; }
+
+struct A {
+  Data &b(){ return data;}
+};
+
 NB_MODULE(exchanging_information_ext, m) {
     m.def("double_it", &double_it);
     m.def("double_it_mut", &double_it_mut);
+    m.def("double_it_py", &double_it_py);
+
+    auto ownership_m = m.def_submodule("ownership_ext", "");
+
+    // Python will incorrectly try to get ownership of the pointer (non-heap)
+    ownership_m.def("kaboom", &get_data);
+
+    // take_ownership is actually the default for pointer return values
+    //
+    // THIS IMPLIES THAT THE C++ HAS TO RELINQUISH OWNERSHIP (NOT ALLOWED TO DESTRUCT THE INSTANCE)
+    ownership_m.def("make_data",[]{return new Data();}, nb::rv_policy::take_ownership);
+
+    // copy is default for lvalue references
+    ownership_m.def("make_data", &A::b, nb::rv_policy::copy);
+
+    // nanobind::rv_policy::reference
+    // No ownership from Python, CAN BE DANGEROUS IF C++ DELETES IT
+    
+    // rv_policy:automatic_reference
+    // Same as automatic
+    // BUT uses reference for pointer types
+    
+    //// unique_ptr ////
+    
+    nb::class_<Data>(ownership_m, "Data");
+    ownership_m.def("create_uptr", [](){ return std::make_unique<Data>();});
+    ownership_m.def("consume_uptr", [](std::unique_ptr<Data> x){});
 }
