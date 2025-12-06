@@ -5,5 +5,5 @@ show_files:
     # Corresponds to DefaultInfo.files?
     bazel cquery --output=files //file_operations:bar
 
-build:
+build-with-config:
     bazel build //... --//file_operations:extension=log

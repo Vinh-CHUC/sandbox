@@ -10,7 +10,7 @@ from dagster_playground.defs.config import DataGenConfig
 from dagster_playground.defs.jobs import DAGSTER_DEFAULT_OUTPUT_FOLDER
 
 """
-Only one configuration object per asset that has to be named config
+Only one configuration object per asset that **has to be named config**
 """
 
 RNG = np.random.default_rng(seed=0)
