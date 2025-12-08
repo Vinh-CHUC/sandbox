@@ -4,6 +4,7 @@
 #include <nanobind/ndarray.h>
 #include <nanobind/stl/vector.h>
 #include <nanobind/stl/unique_ptr.h>
+#include <nanobind/stl/shared_ptr.h>
 
 namespace nb = nanobind;
 
@@ -45,6 +46,8 @@ NB_MODULE(exchanging_information_ext, m) {
 
     auto ownership_m = m.def_submodule("ownership_ext", "");
 
+    nb::class_<Data>(ownership_m, "Data");
+
     // Python will incorrectly try to get ownership of the pointer (non-heap)
     ownership_m.def("kaboom", &get_data);
 
@@ -65,7 +68,9 @@ NB_MODULE(exchanging_information_ext, m) {
     
     //// unique_ptr ////
     
-    nb::class_<Data>(ownership_m, "Data");
     ownership_m.def("create_uptr", [](){ return std::make_unique<Data>();});
     ownership_m.def("consume_uptr", [](std::unique_ptr<Data> x){});
+
+    ownership_m.def("create_sptr", [](){return std::make_shared<Data>();});
+    ownership_m.def("receive_sptr", [](std::shared_ptr<Data>){});
 }

@@ -6,4 +6,6 @@ from .exchanging_information_ext.ownership_ext import (
     kaboom,
     create_uptr,
     consume_uptr,
+    create_sptr,
+    receive_sptr
 )

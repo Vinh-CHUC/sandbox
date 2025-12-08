@@ -3,7 +3,7 @@ import pytest
 from nanobind_playground.exchanging_information import (
     bind_double_it, bind_double_it_mut, double_it_py,
     double_it, double_it_mut, IntVector,
-    kaboom, create_uptr, consume_uptr
+    kaboom, create_uptr, consume_uptr, create_sptr, receive_sptr
 )
 
 def test_type_casters():
@@ -35,7 +35,12 @@ def test_wrappers():
     assert double_it_py(l) == [2, 4, 6]
 
 def test_kaboom():
-    # kaboom()
+    """
+    This would crash Python itself
+    - Interestingly one does not even need to bind the return value to a reference to trigger this
+      Python interpreter crash
+    kaboom()
+    """
     pass
 
 def foo(x):
@@ -52,3 +57,8 @@ def test_unique_ptr():
     # These are fine there are other referencess to the wrapper around the unique_ptr
     foo(data)
     data2 = data
+
+def test_shared_ptr():
+    data = create_sptr()
+    receive_sptr(data)
+    pass
