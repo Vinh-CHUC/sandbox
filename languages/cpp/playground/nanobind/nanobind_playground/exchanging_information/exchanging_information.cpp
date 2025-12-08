@@ -1,6 +1,7 @@
 #include <vector>
 #include <memory>
 
+#include <nanobind/nanobind.h>
 #include <nanobind/ndarray.h>
 #include <nanobind/stl/vector.h>
 #include <nanobind/stl/unique_ptr.h>
@@ -72,5 +73,9 @@ NB_MODULE(exchanging_information_ext, m) {
     ownership_m.def("consume_uptr", [](std::unique_ptr<Data> x){});
 
     ownership_m.def("create_sptr", [](){return std::make_shared<Data>();});
-    ownership_m.def("receive_sptr", [](std::shared_ptr<Data>){});
+    ownership_m.def(
+        "receive_sptr", [](std::shared_ptr<Data> data){
+          return data.use_count();
+        }
+    );
 }

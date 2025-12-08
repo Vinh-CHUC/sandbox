@@ -59,6 +59,9 @@ def test_unique_ptr():
     data2 = data
 
 def test_shared_ptr():
+    # Multiple references on the python side don't increase the shared_ptr ref count
     data = create_sptr()
-    receive_sptr(data)
-    pass
+    data2 = data
+
+    ref_count = receive_sptr(data)
+    assert ref_count == 1
