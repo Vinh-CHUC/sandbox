@@ -3,3 +3,4 @@
 import Playground.Basic
 import Playground.Exercises.FPInLean._1_GettingToKnowLean
 import Playground.Exercises.LogicAndProof._4_Propositional_Logic
+import Playground.Exercises.LogicAndProof._5_Classical_Reasoning

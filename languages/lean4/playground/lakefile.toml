@@ -8,3 +8,7 @@ name = "Playground"
 [[lean_exe]]
 name = "playground"
 root = "Main"
+
+[[require]]
+name = "mathlib"
+scope = "leanprover-community"

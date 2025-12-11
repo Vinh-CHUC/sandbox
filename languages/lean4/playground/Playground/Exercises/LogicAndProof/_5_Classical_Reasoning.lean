@@ -1,3 +1,5 @@
+import Mathlib.Tactic
+
 section
   open Classical
   variable (A: Prop)
@@ -19,7 +21,7 @@ section
     show False
     exact h1 h5
 
-  example : A ∨ ¬ A := em A
+  example : A ∨ ¬ A := Classical.em A
 
 /- Double negation elimination -/
   example : ¬ ¬ A ↔ A :=
@@ -69,7 +71,7 @@ section
     assumption
 
   example : (A → B) ∨ (B → A) :=
-  Or.elim (em B)
+  Or.elim (Classical.em B)
     (fun h : B ↦ 
       have : A → B :=
         fun _ : A ↦ show B from h
@@ -83,7 +85,7 @@ section
 
   /- Tactical mode -/
   example : (A → B) ∨ (B → A) := by
-  apply Or.elim (em B)
+  apply Or.elim (Classical.em B)
   . intro b
     have : A → B := by
       intro
@@ -157,7 +159,7 @@ section
 
   /- Variant 1 -/
   example (h : ¬ A → False) : A := by
-    apply Or.elim (em A)
+    apply Or.elim (Classical.em A)
     . intro
       assumption
     . intro
@@ -169,7 +171,7 @@ section
 
   /- Variant 2 -/
   example (h : ¬ A → False) : A := by
-    apply Or.elim (em A)
+    apply Or.elim (Classical.em A)
     . intro
       assumption
     . intro
@@ -230,7 +232,7 @@ section
 
   /- Simpler variant -/
   example (h : ¬ (A ∧ B)) : ¬ A ∨ ¬ B := by
-    apply Or.elim (em A)
+    apply Or.elim (Classical.em A)
     . intro
       have: ¬ B := by
         intro
@@ -267,7 +269,7 @@ section
   open Classical
 
   example (h: A → B) : ¬ A ∨ B := by
-    apply Or.elim (em A)
+    apply Or.elim (Classical.em A)
     . intro
       apply Or.inr (h ‹ A ›)
     . intro
@@ -282,7 +284,7 @@ section
   example:
   A → ((A ∧ B) ∨ (A ∧ ¬ B)) := by
     intro
-    apply Or.elim (em B)
+    apply Or.elim (Classical.em B)
     . intro
       have: A ∧ B := ⟨ ‹ A ›, ‹ B › ⟩
       apply Or.inl
@@ -389,3 +391,30 @@ section
           apply Or.inr
           assumption
   end
+
+/- 8 -/
+section
+
+open Classical
+variable {A B C : Prop}
+
+-- Prove ¬ (A ∧ B) → ¬ A ∨ ¬ B by replacing the sorry's below
+-- by proofs.
+
+lemma step1 (h₁ : ¬ (A ∧ B)) (h₂ : A) : ¬ A ∨ ¬ B :=
+have : ¬ B := sorry
+show ¬ A ∨ ¬ B from Or.inr this
+
+lemma step2 (h₁ : ¬ (A ∧ B)) (h₂ : ¬ (¬ A ∨ ¬ B)) : False :=
+have : ¬ A :=
+  fun _ : A ↦
+  have : ¬ A ∨ ¬ B := step1 h₁ ‹A›
+  show False from h₂ this
+show False from sorry
+
+theorem step3 (h : ¬ (A ∧ B)) : ¬ A ∨ ¬ B :=
+byContradiction
+  (fun h' : ¬ (¬ A ∨ ¬ B) ↦
+    show False from step2 h h')
+
+end
