@@ -402,7 +402,10 @@ variable {A B C : Prop}
 -- by proofs.
 
 lemma step1 (h₁ : ¬ (A ∧ B)) (h₂ : A) : ¬ A ∨ ¬ B :=
-have : ¬ B := sorry
+have : ¬ B := by
+  intro
+  have: A ∧ B := ⟨ ‹ A › , ‹ B › ⟩
+  contradiction
 show ¬ A ∨ ¬ B from Or.inr this
 
 lemma step2 (h₁ : ¬ (A ∧ B)) (h₂ : ¬ (¬ A ∨ ¬ B)) : False :=
@@ -410,11 +413,37 @@ have : ¬ A :=
   fun _ : A ↦
   have : ¬ A ∨ ¬ B := step1 h₁ ‹A›
   show False from h₂ this
-show False from sorry
+have : (¬ A ∨ ¬ B) := Or.inl ‹ ¬ A ›
+show False from h₂ this
 
 theorem step3 (h : ¬ (A ∧ B)) : ¬ A ∨ ¬ B :=
 byContradiction
   (fun h' : ¬ (¬ A ∨ ¬ B) ↦
     show False from step2 h h')
 
+end
+
+/- 9 -/
+section
+open Classical
+variable {A B C : Prop}
+
+example (h : ¬ B → ¬ A) : A → B := by
+  intro
+  apply byContradiction
+  intro
+  have: ¬ A := by
+    apply h
+    assumption
+  contradiction
+
+example (h : A → B) : ¬ A ∨ B := by
+  apply Or.elim (Classical.em A)
+  . intro
+    have: B := h ‹ A ›
+    apply Or.inr
+    assumption
+  . intro
+    apply Or.inl
+    assumption
 end
