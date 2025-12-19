@@ -9,7 +9,7 @@ pub fn eval_step(t: Term) -> Option<Term> {
         Term::False => None,
         Term::Pred(b) => {
             // We have this inner match because "box patterns" isn't a thing yet as of when I write
-            // these lines
+            // these lines. Box's internals are private!
             let inner = *b;
             match inner {
                 Term::Zero => Some(Term::Zero),
