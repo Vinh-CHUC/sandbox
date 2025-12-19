@@ -1,11 +1,15 @@
 use crate::parsers::untyped_arithmetic::{Term};
 
+// We have to have a way to signal that the evaluation "did not do anything"
+// The caller (eval) can then detect that and just return the argument if this return None
 pub fn eval_step(t: Term) -> Option<Term> {
     match t {
         Term::Zero => None,
         Term::True => None,
         Term::False => None,
         Term::Pred(b) => {
+            // We have this inner match because "box patterns" isn't a thing yet as of when I write
+            // these lines
             let inner = *b;
             match inner {
                 Term::Zero => Some(Term::Zero),

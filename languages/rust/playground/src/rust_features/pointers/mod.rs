@@ -144,6 +144,15 @@ mod tests {
     }
 
     #[test]
+    fn boxes() {
+        let yo = Box::new(String::from("Vinh"));
+        *yo;
+
+        // The only fact of dereferencing moves things out
+        // println!("{:?}", yo);
+    }
+
+    #[test]
     fn ref_cells() {
         // The point is to allow to mutate the value held inside even if the RefCell itself is
         // immutable
