@@ -3,7 +3,8 @@ import pytest
 from nanobind_playground.exchanging_information import (
     bind_double_it, bind_double_it_mut, double_it_py,
     double_it, double_it_mut, IntVector,
-    kaboom, create_uptr, consume_uptr, create_sptr, receive_sptr
+    kaboom, create_uptr, consume_uptr, create_sptr, receive_sptr,
+    receive_callback_and_call, ping_pong
 )
 
 def test_type_casters():
@@ -65,3 +66,17 @@ def test_shared_ptr():
 
     ref_count = receive_sptr(data)
     assert ref_count == 1
+
+def test_callable():
+    ret = receive_callback_and_call(lambda: 5)
+    assert ret == 5
+
+    # Wrong arity
+    with pytest.raises(TypeError):
+        ret = receive_callback_and_call(lambda x: 5 + x)
+
+    ret = receive_callback_and_call(lambda: create_sptr)
+
+def test_ping_pong():
+    assert ping_pong(5) == 5
+    assert ping_pong({1: 2}) == {1: 2}

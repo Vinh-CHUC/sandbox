@@ -7,5 +7,7 @@ from .exchanging_information_ext.ownership_ext import (
     create_uptr,
     consume_uptr,
     create_sptr,
-    receive_sptr
+    receive_sptr,
+    receive_callback_and_call,
+    ping_pong
 )

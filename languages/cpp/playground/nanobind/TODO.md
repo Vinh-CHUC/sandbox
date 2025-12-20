@@ -6,6 +6,8 @@
 - [ ] [In Progress] Exchanging information, object ownership
 - [ ] stubgen
 - [ ] round trip
+- [ ] Return a bound cpp type "by value"
+- [ ] Type casters (STLs) with non trivial types
 - [ ] catching exceptions on C++ end
 - [ ] pandas
 

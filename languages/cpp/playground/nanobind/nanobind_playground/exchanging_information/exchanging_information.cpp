@@ -74,8 +74,16 @@ NB_MODULE(exchanging_information_ext, m) {
 
     ownership_m.def("create_sptr", [](){return std::make_shared<Data>();});
     ownership_m.def(
-        "receive_sptr", [](std::shared_ptr<Data> data){
-          return data.use_count();
-        }
+      "receive_sptr", [](std::shared_ptr<Data> data){
+        return data.use_count();
+      }
     );
+
+    ownership_m.def("receive_callback_and_call", [](nb::callable callable){
+      return callable();
+    });
+
+    ownership_m.def("ping_pong", [](nb::object obj){
+      return obj;
+    });
 }
