@@ -18,12 +18,13 @@ template <class T> RefType doSomething(T &&x) {
 }
 
 template <class T> RefType wrapper(T &&x) {
-  // Preserving "lvalue-ness" or "rvalue-ness"
   return doSomething(x);
 };
 
 template <class T> RefType forwarding_wrapper(T &&x) {
-  // Preserving "lvalue-ness" or "rvalue-ness"
+  // The key here is that T is passed along to std::forward
+  // - T would be std::string for example if called with a std::string&&
+  // - T would be std::string& if called with std::string&
   return doSomething(std::forward<T>(x));
 };
 

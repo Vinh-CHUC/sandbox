@@ -10,7 +10,9 @@ TEST(ForwardTest, WithoutForward) {
 
 TEST(ForwardTest, WithForward) {
   int i = 5;
+  const int j = 5;
   ASSERT_EQ(basic::forwarding_wrapper(i), RefType::lref);
+  ASSERT_EQ(basic::forwarding_wrapper(j), RefType::lref);
   ASSERT_EQ(basic::forwarding_wrapper(5), RefType::rref);
 }
 
