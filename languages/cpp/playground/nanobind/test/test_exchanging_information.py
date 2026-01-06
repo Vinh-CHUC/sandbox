@@ -26,6 +26,7 @@ def test_bindings():
     assert l == [2, 4, 6]
     assert l == (2, 4, 6)
 
+    # There's some magic here that will cast/copy the python list into the IntVector
     l = [1, 2, 3]
     bind_double_it_mut(l)
     assert l != [2, 4, 6]
@@ -49,15 +50,23 @@ def foo(x):
 
 def test_unique_ptr():
     data = create_uptr() 
+    # This is ok it's an additional ref to the wrapper around the unique_ptr
+    data2 = data
     consume_uptr(data)
 
     with pytest.raises(TypeError):
         # Has already been consumed by consume_uptr (which takes a std::unique_ptr)
         consume_uptr(data)
-    
-    # These are fine there are other referencess to the wrapper around the unique_ptr
+
+    with pytest.raises(TypeError):
+        # Has already been consumed by consume_uptr (which takes a std::unique_ptr)
+        consume_uptr(data2)
+
+    # These python objects are technically still valid
     foo(data)
-    data2 = data
+    foo(data2)
+    assert data is not None
+    assert data2 is not None
 
 def test_shared_ptr():
     # Multiple references on the python side don't increase the shared_ptr ref count
