@@ -3,8 +3,8 @@ import pytest
 from nanobind_playground.exchange_and_ownership import (
     bind_double_it, bind_double_it_mut, double_it_py,
     double_it, double_it_mut, IntVector,
-    kaboom, create_uptr, consume_uptr, create_sptr, receive_sptr,
-    receive_callback_and_call, ping_pong
+    kaboom, create_uptr, consume_uptr, consume_uptr_2, create_sptr, receive_sptr, ping_pong,
+    create_move_only_string, consume_move_only_string
 )
 
 def test_type_casters():
@@ -68,6 +68,13 @@ def test_unique_ptr():
     assert data is not None
     assert data2 is not None
 
+def test_unique_ptr_2():
+    data = create_uptr() 
+    with pytest.raises(TypeError):
+        consume_uptr_2(data, data)
+
+    consume_uptr_2(create_uptr(), create_uptr())
+
 def test_shared_ptr():
     # Multiple references on the python side don't increase the shared_ptr ref count
     data = create_sptr()
@@ -76,16 +83,12 @@ def test_shared_ptr():
     ref_count = receive_sptr(data)
     assert ref_count == 1
 
-def test_callable():
-    ret = receive_callback_and_call(lambda: 5)
-    assert ret == 5
-
-    # Wrong arity
-    with pytest.raises(TypeError):
-        ret = receive_callback_and_call(lambda x: 5 + x)
-
-    ret = receive_callback_and_call(lambda: create_sptr)
-
 def test_ping_pong():
     assert ping_pong(5) == 5
     assert ping_pong({1: 2}) == {1: 2}
+
+def test_move_string():
+    s = create_move_only_string()
+    assert str(s) == "hello"
+    consume_move_only_string(s)
+    assert str(s) == ""

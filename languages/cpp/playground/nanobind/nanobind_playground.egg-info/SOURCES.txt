@@ -1,0 +1,13 @@
+README.md
+pyproject.toml
+nanobind_playground/__init__.py
+nanobind_playground.egg-info/PKG-INFO
+nanobind_playground.egg-info/SOURCES.txt
+nanobind_playground.egg-info/dependency_links.txt
+nanobind_playground.egg-info/requires.txt
+nanobind_playground.egg-info/top_level.txt
+nanobind_playground/exchanging_information/__init__.py
+nanobind_playground/numpy/__init__.py
+test/test_dummy.py
+test/test_exchanging_information.py
+test/test_numpy.py

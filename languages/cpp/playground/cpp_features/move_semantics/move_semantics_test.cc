@@ -92,3 +92,12 @@ TEST(MoveSemantics, std_move_is_not_magic) {
   ASSERT_EQ(str2.get_moves_count(), 0);
   ASSERT_EQ(str2.get_copy_count(), 1);
 }
+
+TEST(MoveSemantics, move_only_type) {
+  auto s = MoveOnlyString{"hellos"};
+  // Won't compile
+  // consume(s);
+
+  // Compiles
+  consume(std::move(s));
+}

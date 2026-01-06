@@ -1,0 +1,14 @@
+Metadata-Version: 2.4
+Name: nanobind-playground
+Version: 0.1.0
+Summary: Add your description here
+Requires-Python: <3.14,>=3.13
+Description-Content-Type: text/markdown
+Requires-Dist: ipython>=9.7.0
+Requires-Dist: numpy>=2.3.5
+Requires-Dist: pyright>=1.1.407
+Requires-Dist: pytest>=9.0.1
+Requires-Dist: setuptools>=80.9.0
+
+## Notes about using uv
+Using `uv` is only about supporting pyright

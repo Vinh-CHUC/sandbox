@@ -1,0 +1,5 @@
+ipython>=9.7.0
+numpy>=2.3.5
+pyright>=1.1.407
+pytest>=9.0.1
+setuptools>=80.9.0

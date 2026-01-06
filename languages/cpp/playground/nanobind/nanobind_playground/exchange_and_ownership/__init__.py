@@ -4,10 +4,12 @@ from .bind_ext import double_it as bind_double_it, double_it_mut as bind_double_
 from .exchange_and_ownership_ext.ownership_ext import (
     make_data,
     kaboom,
+    create_move_only_string,
+    consume_move_only_string,
     create_uptr,
     consume_uptr,
+    consume_uptr_2,
     create_sptr,
     receive_sptr,
-    receive_callback_and_call,
     ping_pong
 )

@@ -26,3 +26,5 @@ VString fn6(VString &&vstr) {
   std::move(vstr);
   return VString(vstr);
 }
+
+void consume(MoveOnlyString s) { auto s2 = std::move(s); }
