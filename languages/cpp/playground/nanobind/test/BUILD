@@ -26,8 +26,8 @@ py_test(
 )
 
 pytest_test(
-    name = "test_exchanging_information",
-    srcs = ["test_exchanging_information.py"],
+    name = "test_exchange_and_ownership",
+    srcs = ["test_exchange_and_ownership.py"],
     deps = [
         "//nanobind/nanobind_playground:nanobind_playground"
     ],

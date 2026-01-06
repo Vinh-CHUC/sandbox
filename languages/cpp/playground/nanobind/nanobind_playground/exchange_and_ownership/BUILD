@@ -1,18 +1,18 @@
 load("@nanobind_bazel//:build_defs.bzl", "nanobind_extension", "nanobind_stubgen")
 
 py_library(
-    name = "exchanging_information",
+    name = "exchange_and_ownership",
     srcs = ["__init__.py"],
     data = [
-        ":exchanging_information_ext",
+        ":exchange_and_ownership_ext",
         ":bind_ext"
     ],
     visibility = ["//visibility:public"]
 )
 
 nanobind_extension(
-    name = "exchanging_information_ext",
-    srcs = ["exchanging_information.cpp"],
+    name = "exchange_and_ownership_ext",
+    srcs = ["exchange_and_ownership.cpp"],
     visibility = ["//visibility:public"]
 )
 
@@ -24,5 +24,5 @@ nanobind_extension(
 
 nanobind_stubgen(
     name = "exchanging_information_stub",
-    module = ":exchanging_information_ext",
+    module = ":exchange_and_ownership_ext",
 )

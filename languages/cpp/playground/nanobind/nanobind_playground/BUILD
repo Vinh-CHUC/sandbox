@@ -5,7 +5,7 @@ py_library(
     srcs = ["__init__.py"],
     deps = [
         "//nanobind/nanobind_playground/numpy:numpy",
-        "//nanobind/nanobind_playground/exchanging_information:exchanging_information",
+        "//nanobind/nanobind_playground/exchange_and_ownership:exchange_and_ownership",
         "//nanobind/nanobind_playground/back_and_forth:back_and_forth"
     ],
     data = [":nn_ext"],

@@ -1,6 +1,6 @@
 import pytest
 
-from nanobind_playground.exchanging_information import (
+from nanobind_playground.exchange_and_ownership import (
     bind_double_it, bind_double_it_mut, double_it_py,
     double_it, double_it_mut, IntVector,
     kaboom, create_uptr, consume_uptr, create_sptr, receive_sptr,

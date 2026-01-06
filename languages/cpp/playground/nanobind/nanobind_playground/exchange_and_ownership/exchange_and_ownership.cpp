@@ -40,7 +40,7 @@ struct A {
   Data &b(){ return data;}
 };
 
-NB_MODULE(exchanging_information_ext, m) {
+NB_MODULE(exchange_and_ownership_ext, m) {
     m.def("double_it", &double_it);
     m.def("double_it_mut", &double_it_mut);
     m.def("double_it_py", &double_it_py);
