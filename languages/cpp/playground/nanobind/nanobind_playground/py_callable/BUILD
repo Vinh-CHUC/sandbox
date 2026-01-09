@@ -2,21 +2,21 @@
 load("@nanobind_bazel//:build_defs.bzl", "nanobind_extension", "nanobind_stubgen")
 
 py_library(
-    name = "back_and_forth",
+    name = "py_callable",
     srcs = ["__init__.py"],
     data = [
-        ":back_and_forth_ext",
+        ":py_callable_ext",
     ],
     visibility = ["//visibility:public"]
 )
 
 nanobind_extension(
-    name = "back_and_forth_ext",
-    srcs = ["back_and_forth.cpp"],
+    name = "py_callable_ext",
+    srcs = ["py_callable.cpp"],
     visibility = ["//visibility:public"]
 )
 
 nanobind_stubgen(
-    name = "back_and_forth_stubgen",
-    module = ":back_and_forth_ext",
+    name = "py_callable_stubgen",
+    module = ":py_callable_ext",
 )

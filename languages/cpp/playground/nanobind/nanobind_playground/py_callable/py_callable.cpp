@@ -44,7 +44,7 @@ struct Callbacks {
     std::unordered_map<std::string, nb::callable> m_callbacks;
 };
 
-NB_MODULE(back_and_forth_ext, m) {
+NB_MODULE(py_callable_ext, m) {
     nb::class_<BoundData>(m, "BoundData");
 
     nb::class_<Callbacks>(m, "Callbacks")

@@ -1,6 +1,6 @@
 import pytest
 
-from nanobind_playground.back_and_forth import BoundData, Callbacks
+from nanobind_playground.py_callable import BoundData, Callbacks
 
 def test_callbacks():
     cbs = Callbacks()

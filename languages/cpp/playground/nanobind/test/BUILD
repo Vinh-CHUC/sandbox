@@ -11,9 +11,9 @@ pytest_test_manypy(
 )
 
 pytest_test_manypy(
-    name = "test_back_and_forth",
+    name = "test_py_callable",
     python_versions = ["3.13", "3.14"],
-    srcs = ["test_back_and_forth.py"],
+    srcs = ["test_py_callable.py"],
     deps = [
         "//nanobind/nanobind_playground:nanobind_playground"
     ],
