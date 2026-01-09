@@ -22,3 +22,30 @@ def test_cant_call_py_with_non_bound_cpp():
         cbs.call_callback_1_with_unbound_cpp("bar")
 
     assert type(cbs.call_callback_1_with_bound_cpp("bar")) == BoundData
+
+class TestExchangingInformation:
+    @staticmethod
+    def modify(d: BoundData):
+        d.set("hello")
+
+    def test_stack_var_is_copied(self):
+        cbs = Callbacks()
+        cbs.register_callback("bar", self.modify)
+
+        # This returns whether the internal cpp was unchanged
+        assert cbs.call_callback_1_stack_unchanged("bar")
+
+    def test_managed_pointers_not_supported(self):
+        cbs = Callbacks()
+        cbs.register_callback("bar", self.modify)
+
+        with pytest.raises(RuntimeError, match="std::bad_cast"):
+            assert cbs.call_callback_1_unique_ptr("bar")
+
+        with pytest.raises(RuntimeError, match="std::bad_cast"):
+            assert cbs.call_callback_1_shared_ptr("bar")
+
+    def test_pointer(self):
+        cbs = Callbacks()
+        cbs.register_callback("bar", self.modify)
+        assert not cbs.call_callback_1_ptr_changed("bar")

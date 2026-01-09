@@ -1,4 +1,5 @@
 #include <string>
+#include <memory>
 #include <unordered_map>
 
 #include <nanobind/nanobind.h>
@@ -8,7 +9,11 @@
 namespace nb = nanobind;
 
 class UnboundData{};
-class BoundData{};
+struct BoundData{
+  std::string str;
+  std::string get_str() {return str;}
+  void set_str(const std::string& s) {str = s;}
+};
 
 // Add checks for whether the key is in the map, throw a python exception if not
 struct Callbacks {
@@ -40,12 +45,46 @@ struct Callbacks {
     return m_callbacks[name](BoundData());
   }
 
+  bool call_callback_1_stack_unchanged(std::string name){
+    auto data = BoundData();
+    auto before = data.get_str();
+    m_callbacks[name](data);
+    return before == data.get_str(); 
+  }
+
+  bool call_callback_1_unique_ptr(std::string name){
+    auto data = std::make_unique<BoundData>();
+    auto before = data->get_str();
+    // Seems that a Python callable can't take a managed ptr to bound class, see relevant Python 
+    // test
+    m_callbacks[name](data);
+    return before == data->get_str(); 
+  }
+
+  bool call_callback_1_shared_ptr(std::string name){
+    auto data = std::make_shared<BoundData>();
+    auto before = data->get_str();
+    // Seems that a Python callable can't take a managed ptr to bound class, see relevant Python 
+    // test
+    m_callbacks[name](data);
+    return before == data->get_str(); 
+  }
+
+  bool call_callback_1_ptr_changed(std::string name){
+    auto data = std::make_unique<BoundData>();
+    auto before = data->get_str();
+    m_callbacks[name](data.get());
+    return before == data->get_str(); 
+  }
+
   private:
     std::unordered_map<std::string, nb::callable> m_callbacks;
 };
 
 NB_MODULE(py_callable_ext, m) {
-    nb::class_<BoundData>(m, "BoundData");
+    nb::class_<BoundData>(m, "BoundData")
+      .def("get", &BoundData::get_str)
+      .def("set", &BoundData::set_str);
 
     nb::class_<Callbacks>(m, "Callbacks")
       .def(nb::init<>())
@@ -59,6 +98,20 @@ NB_MODULE(py_callable_ext, m) {
       .def(
           "call_callback_1_with_bound_cpp",
           &Callbacks::call_callback_1_with_bound_cpp
+      )
+      .def(
+          "call_callback_1_stack_unchanged",
+          &Callbacks::call_callback_1_stack_unchanged
+      )
+      .def("call_callback_1_unique_ptr",
+          &Callbacks::call_callback_1_unique_ptr
+      )
+      .def("call_callback_1_shared_ptr",
+          &Callbacks::call_callback_1_shared_ptr
+      )
+      .def(
+          "call_callback_1_ptr_changed",
+          &Callbacks::call_callback_1_ptr_changed
       )
       .def("call_callback_2", &Callbacks::call_callback_2)
       .def("call_callback_3", &Callbacks::call_callback_3)

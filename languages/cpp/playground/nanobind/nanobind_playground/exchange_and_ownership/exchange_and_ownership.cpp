@@ -75,6 +75,11 @@ NB_MODULE(exchange_and_ownership_ext, m) {
       std::cout << s2.value << std::endl;
     });
 
+    // DOESNT COMPILE
+    // ownership_m.def("consume_move_only_string", [](MoveOnlyString s) {
+    //   std::cout << s.value << std::endl;
+    // });
+
     // Python will incorrectly try to get ownership of the pointer (non-heap)
     ownership_m.def("kaboom", &get_data);
 
