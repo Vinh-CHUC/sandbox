@@ -45,43 +45,46 @@ def test_kaboom():
     """
     pass
 
-def foo(x):
-    return x
 
-def test_unique_ptr():
-    data = create_uptr() 
-    # This is ok it's an additional ref to the wrapper around the unique_ptr
-    data2 = data
-    consume_uptr(data)
+class TestSmartPointers:
+    @staticmethod
+    def foo(x):
+        return x
 
-    with pytest.raises(TypeError):
-        # Has already been consumed by consume_uptr (which takes a std::unique_ptr)
+    def test_unique_ptr(self):
+        data = create_uptr() 
+        # This is ok it's an additional ref to the wrapper around the unique_ptr
+        data2 = data
         consume_uptr(data)
 
-    with pytest.raises(TypeError):
-        # Has already been consumed by consume_uptr (which takes a std::unique_ptr)
-        consume_uptr(data2)
+        with pytest.raises(TypeError):
+            # Has already been consumed by consume_uptr (which takes a std::unique_ptr)
+            consume_uptr(data)
 
-    # These python objects are technically still valid
-    foo(data)
-    foo(data2)
-    assert data is not None
-    assert data2 is not None
+        with pytest.raises(TypeError):
+            # Has already been consumed by consume_uptr (which takes a std::unique_ptr)
+            consume_uptr(data2)
 
-def test_unique_ptr_2():
-    data = create_uptr() 
-    with pytest.raises(TypeError):
-        consume_uptr_2(data, data)
+        # These python objects are technically still valid
+        self.foo(data)
+        self.foo(data2)
+        assert data is not None
+        assert data2 is not None
 
-    consume_uptr_2(create_uptr(), create_uptr())
+    def test_unique_ptr_2(self):
+        data = create_uptr()
+        with pytest.raises(TypeError):
+            consume_uptr_2(data, data)
 
-def test_shared_ptr():
-    # Multiple references on the python side don't increase the shared_ptr ref count
-    data = create_sptr()
-    data2 = data
+        consume_uptr_2(create_uptr(), create_uptr())
 
-    ref_count = receive_sptr(data)
-    assert ref_count == 1
+    def test_shared_ptr(self):
+        # Multiple references on the python side don't increase the shared_ptr ref count
+        data = create_sptr()
+        data2 = data
+
+        ref_count = receive_sptr(data)
+        assert ref_count == 1
 
 def test_ping_pong():
     assert ping_pong(5) == 5
