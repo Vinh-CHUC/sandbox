@@ -15,6 +15,9 @@ config_setting(
     }
 )
 
+# The rule needs not depend on the mysetting :extension target
+# But rather you depend on a select({}) which itself depends on a config_setting which it turn
+# depends on the configuration target
 concat_files(
     name = "foo",
     # Interesting this target does not to depend on :extension to leverage the select({})

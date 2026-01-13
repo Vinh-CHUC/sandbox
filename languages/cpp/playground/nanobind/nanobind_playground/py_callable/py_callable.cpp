@@ -22,7 +22,16 @@ struct Callbacks {
   };
 
   nb::object call_callback_0(std::string name){
-    return m_callbacks[name]();
+    try {
+      return m_callbacks[name]();
+    } catch (const nb::python_error &e){
+      nb::str type_name = e.type().attr("__name__");
+      if (std::string(type_name.c_str()) != "RuntimeError"){
+        throw;
+      } else {
+        return type_name;
+      }
+    }
   }
 
   nb::object call_callback_1(std::string name, nb::object arg1){

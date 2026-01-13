@@ -49,3 +49,23 @@ class TestExchangingInformation:
         cbs = Callbacks()
         cbs.register_callback("bar", self.modify)
         assert not cbs.call_callback_1_ptr_changed("bar")
+
+class TestExceptions:
+    @staticmethod
+    def throw_something():
+        raise RuntimeError("hello there")
+
+    @staticmethod
+    def raise_something():
+        raise AssertionError("hello there")
+
+    def test_exception_is_handled_by_cpp(self):
+        cbs = Callbacks()
+        cbs.register_callback("foo", self.throw_something)
+        assert cbs.call_callback_0("foo") == "RuntimeError"
+
+    def test_exception_is_not_handled_by_cpp(self):
+        cbs = Callbacks()
+        cbs.register_callback("foo", self.raise_something)
+        with pytest.raises(AssertionError):
+            cbs.call_callback_0("foo")
