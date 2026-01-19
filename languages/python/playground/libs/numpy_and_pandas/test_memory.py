@@ -4,17 +4,16 @@ import numpy as np
 import numpy.testing as nptest
 import pandas as pd
 
+
 class TestDataFrameCopy:
     def test_2d_array(self):
         """
-        Passing a 2D nd-array behaves like a copy=False by default so one has to force 
+        Passing a 2D nd-array behaves like a copy=False by default so one has to force
         copy=True
         """
         arr = np.zeros((10, 5))
 
-        df = pd.DataFrame(
-            arr, columns=[f"col_{i}" for i in range(5)], copy=True
-        )
+        df = pd.DataFrame(arr, columns=[f"col_{i}" for i in range(5)], copy=True)
         # Using .iloc or .loc for in-place modification
         df.iloc[:, 3] = 10
 
@@ -34,6 +33,7 @@ class TestDataFrameCopy:
 
         with pytest.raises(AssertionError):
             nptest.assert_array_equal(df["col_3"].to_numpy(), arr[:, 3])
+
 
 class TestDataFrameView:
     def test_2d_array(self):
@@ -79,10 +79,11 @@ class TestDataFrameView:
         # but following the pattern to verify behavior
         nptest.assert_array_equal(df["x"].to_numpy(), arr["coords"]["x"])
 
+
 class TestViewBreak:
     def test_view_breaks_on_direct_assignment(self):
         """
-        Assigning a new object to a column breaks the view because it replaces 
+        Assigning a new object to a column breaks the view because it replaces
         the reference for that column.
         """
         arr = np.zeros((10, 3))
@@ -110,7 +111,7 @@ class TestViewBreak:
 
     def test_dataframe_assign(self):
         """
-        df.assign() returns a NEW DataFrame. 
+        df.assign() returns a NEW DataFrame.
         Unmodified columns remain views, but the assigned column is new.
         """
         arr = np.zeros((10, 2))

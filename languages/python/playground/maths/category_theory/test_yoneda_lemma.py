@@ -1,15 +1,13 @@
 """
 TODO: Use variants of Phi that might shuffle the input list
 """
+
 from typing import Callable
 
 import numpy as np
 from hypothesis import given, settings, strategies as st
 
-from maths.category_theory.yoneda_lemma import(
-    HomFunctor,
-    Phi
-)
+from maths.category_theory.yoneda_lemma import HomFunctor, Phi
 
 
 @given(
@@ -44,6 +42,7 @@ def test_naturality_condition(seed, size):
 
 # Pretending that this is Fin n in Haskell
 type int_lt_size = int
+
 
 @given(
     seed=st.integers(min_value=42),

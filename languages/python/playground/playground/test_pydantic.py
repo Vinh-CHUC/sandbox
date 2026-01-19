@@ -5,6 +5,8 @@ from playground.pydantic_playground import A, B, C, D, E, F
 Pydantic arbitrarily selects the first member of the type union
 if there is an ambiguity
 """
+
+
 def test_union_fields_ambiguity():
     c = C()
     c_json = c.model_dump_json()
