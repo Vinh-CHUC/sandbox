@@ -17,11 +17,6 @@ def test_safe_capsule():
     del cap
 
 def run_in_subprocess(func):
-    """
-    Grabs the source of 'func', adds a call to it, 
-    and runs it in an isolated process.
-    """
-    # Get the source of the function
     lines = inspect.getsource(func)
     # The first line might be indented if it's a nested function
     script = textwrap.dedent(lines) + f"\n{func.__name__}()"

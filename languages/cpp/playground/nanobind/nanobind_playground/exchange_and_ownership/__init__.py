@@ -13,4 +13,19 @@ from .exchange_and_ownership_ext.ownership_ext import (
     receive_sptr,
     ping_pong
 )
-from .capsule_ext import make_owning_capsule, make_coowning_capsule, make_coowning_capsule_noret
+
+from .capsule_ext import (
+    make_owning_capsule, make_coowning_capsule, make_coowning_capsule_noret
+)
+
+from .refcount_ext import (
+    get_new_list_ptr,
+    get_borrowed_ptr,
+    manual_incref,
+    manual_decref,
+    get_refcount,
+    wrap_steal,
+    wrap_borrow,
+    borrow_refcount,
+    underflow_steal
+)

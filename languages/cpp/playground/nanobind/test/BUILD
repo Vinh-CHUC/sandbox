@@ -40,3 +40,11 @@ pytest_test(
         "//nanobind/nanobind_playground:nanobind_playground"
     ],
 )
+
+pytest_test(
+    name = "test_refcount",
+    srcs = ["test_refcount.py"],
+    deps = [
+        "//nanobind/nanobind_playground:nanobind_playground"
+    ],
+)
