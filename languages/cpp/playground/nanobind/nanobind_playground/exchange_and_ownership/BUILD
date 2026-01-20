@@ -5,7 +5,8 @@ py_library(
     srcs = ["__init__.py"],
     data = [
         ":exchange_and_ownership_ext",
-        ":bind_ext"
+        ":bind_ext",
+        ":capsule_ext"
     ],
     visibility = ["//visibility:public"]
 )
@@ -19,6 +20,12 @@ nanobind_extension(
 nanobind_extension(
     name = "bind_ext",
     srcs = ["bind.cpp"],
+    visibility = ["//visibility:public"]
+)
+
+nanobind_extension(
+    name = "capsule_ext",
+    srcs = ["capsule.cpp"],
     visibility = ["//visibility:public"]
 )
 

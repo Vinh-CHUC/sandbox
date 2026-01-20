@@ -32,3 +32,11 @@ pytest_test(
         "//nanobind/nanobind_playground:nanobind_playground"
     ],
 )
+
+pytest_test(
+    name = "test_capsule",
+    srcs = ["test_capsule.py"],
+    deps = [
+        "//nanobind/nanobind_playground:nanobind_playground"
+    ],
+)

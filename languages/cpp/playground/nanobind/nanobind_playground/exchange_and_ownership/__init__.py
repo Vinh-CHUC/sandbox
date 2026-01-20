@@ -13,3 +13,4 @@ from .exchange_and_ownership_ext.ownership_ext import (
     receive_sptr,
     ping_pong
 )
+from .capsule_ext import make_owning_capsule, make_coowning_capsule, make_coowning_capsule_noret
