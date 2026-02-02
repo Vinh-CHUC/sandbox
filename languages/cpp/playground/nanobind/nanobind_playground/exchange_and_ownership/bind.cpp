@@ -20,8 +20,16 @@ void double_it_mut(IntVector &in) {
     }
 }
 
+void double_it_mut_copy(IntVector in) {
+    for (auto& val: in){
+      val *= 2;
+    }
+}
+
+
 NB_MODULE(bind_ext, m) {
     nb::bind_vector<IntVector>(m, "IntVector");
     m.def("double_it", &double_it);
     m.def("double_it_mut", &double_it_mut);
+    m.def("double_it_mut_copy", &double_it_mut_copy);
 }

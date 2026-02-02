@@ -10,6 +10,7 @@ dependencies = [
     "capstone>=5.0.6",
     "debugpy>=1.8.17",
     "geopandas>=1.1.1",
+    "numba>=0.63.1",
     "pandas>=2.3.3",
     "pydantic>=2.11.10",
     "pytest-xdist>=3.8.0",

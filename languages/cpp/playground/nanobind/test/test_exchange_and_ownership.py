@@ -1,10 +1,10 @@
 import pytest
 
 from nanobind_playground.exchange_and_ownership import (
-    bind_double_it, bind_double_it_mut, double_it_py,
+    bind_double_it, bind_double_it_mut, bind_double_it_mut_copy, double_it_py,
     double_it, double_it_mut, IntVector,
     kaboom, create_uptr, consume_uptr, consume_uptr_2, create_sptr, receive_sptr, ping_pong,
-    create_move_only_string, consume_move_only_string
+    create_move_only_string, consume_move_only_string, Data, data_vector
 )
 
 def test_type_casters():
@@ -14,6 +14,8 @@ def test_type_casters():
     double_it_mut(l)
     # Didn't change as internally things are converted (copied)
     assert l == [1, 2, 3]
+
+    data_vector([Data(), Data()])
 
 def test_bindings():
     assert bind_double_it([1, 2, 3]) == [2, 4, 6]
@@ -29,6 +31,13 @@ def test_bindings():
     # There's some magic here that will cast/copy the python list into the IntVector
     l = [1, 2, 3]
     bind_double_it_mut(l)
+    assert l != [2, 4, 6]
+    assert l != (2, 4, 6)
+
+    # IntVector here binds to an std::vector
+    l = IntVector([1, 2, 3])
+    # The bound fn takes by value, copied!
+    bind_double_it_mut_copy(l)
     assert l != [2, 4, 6]
     assert l != (2, 4, 6)
 

@@ -15,6 +15,7 @@ namespace nb = nanobind;
 
 using IntVector = std::vector<int>;
 
+// Could one take by value? nanobind would move?
 IntVector double_it(const IntVector &in) {
     IntVector out(in.size());
     for (size_t i = 0; i < in.size(); ++i)
@@ -64,7 +65,11 @@ NB_MODULE(exchange_and_ownership_ext, m) {
 
     auto ownership_m = m.def_submodule("ownership_ext", "");
 
-    nb::class_<Data>(ownership_m, "Data");
+    nb::class_<Data>(ownership_m, "Data")
+      .def(nb::init<>());
+
+    ownership_m.def("data_vector", [](std::vector<Data>){});
+
     nb::class_<MoveOnlyString>(ownership_m, "MoveOnlyString")
         .def("__str__", [](const MoveOnlyString &s) { return s.value; });
 
