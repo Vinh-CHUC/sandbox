@@ -28,4 +28,5 @@ dev = [
     "pyright>=1.1.406",
     "pytest>=8.4.2",
     "ruff>=0.13.3",
+    "pytest-benchmark>=5.2.3",
 ]

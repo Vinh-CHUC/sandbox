@@ -1,34 +1,58 @@
 import numpy as np
 
-STRUCT_ALIGNED_DTYPE = np.dtype([
-    ("header", [
-        ("id", "u4"),
-        ("type", "S1"),
-    ]),
-    ("payload", [
-        ("data", "f8", (3,)),
-        ("meta", [
-            ("timestamp", "f8"),
-            ("flags", "u1"),
-        ]),
-    ]),
-    ("footer", "u4"),
-], align=True)
+STRUCT_ALIGNED_DTYPE = np.dtype(
+    [
+        (
+            "header",
+            [
+                ("id", "u4"),
+                ("type", "S1"),
+            ],
+        ),
+        (
+            "payload",
+            [
+                ("data", "f8", (3,)),
+                (
+                    "meta",
+                    [
+                        ("timestamp", "f8"),
+                        ("flags", "u1"),
+                    ],
+                ),
+            ],
+        ),
+        ("footer", "u4"),
+    ],
+    align=True,
+)
 
-PACKED_STRUCTURED_DTYPE = np.dtype([
-    ("header", [
-        ("id", "u4"),
-        ("type", "S1"),
-    ]),
-    ("payload", [
-        ("data", "f8", (3,)),
-        ("meta", [
-            ("timestamp", "f8"),
-            ("flags", "u1"),
-        ]),
-    ]),
-    ("footer", "u4"),
-], align=False)
+PACKED_STRUCTURED_DTYPE = np.dtype(
+    [
+        (
+            "header",
+            [
+                ("id", "u4"),
+                ("type", "S1"),
+            ],
+        ),
+        (
+            "payload",
+            [
+                ("data", "f8", (3,)),
+                (
+                    "meta",
+                    [
+                        ("timestamp", "f8"),
+                        ("flags", "u1"),
+                    ],
+                ),
+            ],
+        ),
+        ("footer", "u4"),
+    ],
+    align=False,
+)
 
 
 def test_isaligned_struct():
@@ -41,7 +65,8 @@ def test_isaligned_struct():
     assert not PACKED_STRUCTURED_DTYPE.isalignedstruct
     assert PACKED_STRUCTURED_DTYPE.alignment == 1
 
-class TestAlignment():
+
+class TestAlignment:
     def test_alignment_basic(self):
         a = np.zeros(5, dtype=STRUCT_ALIGNED_DTYPE)
         # This would qualify for C struct reinterpretation:
@@ -71,7 +96,6 @@ class TestAlignment():
         # BTW 32 | (40 * 8), otherwise wouldn't work
         int_view = arr.view(np.int32)
         assert int_view.flags.aligned
-
 
         ## Part 2
         arr = np.zeros(41, dtype=np.uint8)
