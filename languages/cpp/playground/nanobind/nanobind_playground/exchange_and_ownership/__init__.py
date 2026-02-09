@@ -22,7 +22,8 @@ from .exchange_and_ownership_ext.ownership_ext import (
 )
 
 from .capsule_ext import (
-    make_owning_capsule, make_coowning_capsule, make_coowning_capsule_noret
+    make_owning_capsule, make_coowning_capsule, make_coowning_capsule_noret,
+    capsule_cleanup_is_not_python_only
 )
 
 from .refcount_ext import (

@@ -37,7 +37,8 @@ pytest_test(
     name = "test_capsule",
     srcs = ["test_capsule.py"],
     deps = [
-        "//nanobind/nanobind_playground:nanobind_playground"
+        "//nanobind/nanobind_playground:nanobind_playground",
+        "@pip_3.13//pyarrow"
     ],
 )
 

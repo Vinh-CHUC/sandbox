@@ -4,6 +4,14 @@ build:
 test:
     bazel test --test_output=errors //...
 
+# Build nanobind wheel with Python 3.13
+wheel-py313:
+    bazel build //nanobind:nanobind_playground_whl --target_python_version=3.13
+
+# Build nanobind wheel with Python 3.14
+wheel-py314:
+    bazel build //nanobind:nanobind_playground_whl --target_python_version=3.14
+
 hedron:
     bazel run @hedron_compile_commands//:refresh_all
 

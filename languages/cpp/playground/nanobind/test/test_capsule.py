@@ -8,8 +8,11 @@ import textwrap
 from nanobind_playground.exchange_and_ownership import (
     make_owning_capsule,
     make_coowning_capsule,
-    make_coowning_capsule_noret
+    make_coowning_capsule_noret,
+    capsule_cleanup_is_not_python_only
 )
+
+import pyarrow
 
 def test_safe_capsule():
     cap = make_owning_capsule()
@@ -52,3 +55,6 @@ class TestInterpreterCrash:
         res = run_in_subprocess(trigger_double_free)
         assert res.returncode != 0
         assert "double free detected" in res.stderr
+
+def test_capsule_cleanup_is_python_only():
+    assert capsule_cleanup_is_not_python_only()
