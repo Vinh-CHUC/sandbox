@@ -37,6 +37,8 @@ py_wheel(
         "//conditions:default": "cp313",  # Default to 3.13 as per MODULE.bazel
     }),
 
+    stamp = -1,
+
     author = "Vinh Chuc",
     author_email = "vinh.chuc@gmail.com",
     classifiers = [
@@ -68,9 +70,12 @@ py_wheel(
         "//conditions:default": "cp313",  # Default to 3.13 as per MODULE.bazel
     }),
 
-    # FIXME
-    # version = module_version(),
-    version = "0.1.0",
+    # Version with stamp support
+    # When stamp=-1, use --stamp --embed_label="+suffix" to append to version
+    # e.g., --embed_label="+dev.git123" → 0.1.0+dev.git123
+    # Note: Bazel output filename won't include stamp info (analysis phase limitation)
+    # Use the .dist-suffix target to get properly named wheel in dist/ folder
+    version = "0.1.0{BUILD_EMBED_LABEL}",
     deps = [
         ":nanobind_playground_pkg",
     ],

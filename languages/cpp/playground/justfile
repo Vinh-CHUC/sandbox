@@ -12,6 +12,14 @@ wheel-py313:
 wheel-py314:
     bazel build //nanobind:nanobind_playground_whl --target_python_version=3.14
 
+# Build stamped wheel with custom label (e.g., wheel-stamped +dev.git123)
+wheel-stamped label:
+    bazel build //nanobind:nanobind_playground_whl.dist --stamp --embed_label="{{label}}"
+
+# Build stamped wheel for Python 3.14 with custom label
+wheel-stamped-py314 label:
+    bazel build //nanobind:nanobind_playground_whl.dist --stamp --embed_label="{{label}}" --target_python_version=3.14
+
 hedron:
     bazel run @hedron_compile_commands//:refresh_all
 
