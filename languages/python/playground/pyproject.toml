@@ -6,15 +6,15 @@ authors = [{ name = "Vinh Chuc", email = "vinh.chuc@gmail.com" }]
 requires-python = ">=3.13, <3.14"
 readme = "README.md"
 dependencies = [
-    "altair>=5.5.0",
-    "capstone>=5.0.6",
-    "debugpy>=1.8.17",
-    "geopandas>=1.1.1",
-    "numba>=0.63.1",
-    "pandas>=2.3.3",
-    "pydantic>=2.11.10",
+    "altair>=6.0.0",
+    "capstone>=5.0.7",
+    "debugpy>=1.8.20",
+    "geopandas>=1.1.2",
+    "numba>=0.64.0",
+    "pandas>=3.0.1",
+    "pydantic>=2.12.5",
     "pytest-xdist>=3.8.0",
-    "scipy>=1.16.2",
+    "scipy>=1.17.0",
 ]
 
 [build-system]
@@ -23,10 +23,10 @@ build-backend = "hatchling.build"
 
 [dependency-groups]
 dev = [
-    "ipython>=9.6.0",
-    "hypothesis>=6.140.3",
-    "pyright>=1.1.406",
-    "pytest>=8.4.2",
-    "ruff>=0.13.3",
+    "ipython>=9.10.0",
+    "hypothesis>=6.151.9",
+    "pyright>=1.1.408",
+    "pytest>=9.0.2",
+    "ruff>=0.15.2",
     "pytest-benchmark>=5.2.3",
 ]
