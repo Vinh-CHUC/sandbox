@@ -27,6 +27,9 @@ def test_binary_vectors(seed, dim, size):
     assert np.isclose((bernoullis * (1 - bernoullis)), cov.diagonal(), atol=0.03).all()
 
     # The covariances are 0
+    # More concretely if one filters by samples[:, i] == 0 or 1
+    # Then the distribution of samples[:, j] is unchanged (modulo noise) as all the values are
+    # generated independently
     assert np.isclose(cov - (cov.diagonal() * np.eye(cov.shape[0])), 0, atol=0.03).all()
 
 
@@ -50,6 +53,8 @@ class TestBinaryVectorMixtures:
             rng=np.random.default_rng(seed=seed),
             size=size,
         )
+
+        import pdb; pdb.set_trace()
 
         df = pd.DataFrame(samples, columns=["a", "b"])
         # The essence of it, given an observation we got more information about which cluster
