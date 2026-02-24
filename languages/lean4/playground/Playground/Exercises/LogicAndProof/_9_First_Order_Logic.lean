@@ -1,5 +1,8 @@
 -- 9.1 Functions Predicates and Relations
 -- Axiom programming equivalent: declared but not defined?
+-- Deeper:
+--  axiom: adds to some kind of global registry?
+--  variable: intent is implicit parameters
 axiom U : Type
 
 axiom c : U
@@ -25,3 +28,8 @@ variable (x y: U)
 #check Prop
 #check Type
 #check Type 1
+
+#check Nat
+-- 1 for precedence
+notation: 1 "ℕ" => Nat
+#check ℕ
