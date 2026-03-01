@@ -141,7 +141,40 @@ variable (U : Type)
 variable (P : U → Prop)
 
 -- Introduction
+-- Notice the very explicit link between y and P y!!
 example (y : U) (h : P y) : ∃ x, P x :=
   Exists.intro y h
 
 -- Elimination
+variable (U : Type)
+variable (P : U → Prop)
+variable (Q : Prop)
+
+-- If one remembers the ".. should not be free in B or any uncancelled hypothesis"
+-- Here it's about the type Q not depending on x?
+example (h1 : ∃ x, P x) (h2 : ∀ x, P x → Q) : Q :=
+Exists.elim h1
+  (fun (y : U) (h : P y) ↦
+  show Q from h2 y h)
+
+-- Example --
+variable (U : Type)
+variable (A B : U → Prop)
+
+example : (∃ x, A x ∧ B x) → ∃ x, A x :=
+fun h1 : ∃ x, A x ∧ B x ↦
+Exists.elim h1
+  (fun y (h2: A y ∧ B y) ↦  
+    have h3: A y := And.left h2
+    show ∃ x, A x from Exists.intro y h3)
+
+-- Using the $ like in haskell
+example : (∃ x, A x ∧ B x) → ∃ x, A x :=
+fun h1 : ∃ x, A x ∧ B x ↦
+Exists.elim h1 $
+  fun y (h2: A y ∧ B y) ↦  
+    have h3: A y := And.left h2
+    -- Some kind of anonymous ctor a bit like C++'s {...}
+    show ∃ x, A x from ⟨y, h3⟩
+
+#check Exists.intro
