@@ -38,8 +38,8 @@ variable (x y: U)
 --
 
 namespace hidden
--- 1 for precedence
-notation:1 "ℕ" => Nat
+/- -- 1 for precedence -/
+/- notation:1 "ℕ" => Nat -/
 #check ℕ
 
 axiom mul : ℕ → (ℕ → (ℕ))
@@ -67,6 +67,81 @@ local infix:50 (priority := high)  " < " => lt
 
 end hidden
 
---------------------------------------------
--- 9.2 Functions Predicates and Relations --
---------------------------------------------
+variable (Point Line : Type)
+variable (lies_on : Point → Line → Prop)
+
+#check ∀ (p q : Point) (L M : Line),
+        p ≠ q → lies_on p L → lies_on q L → lies_on p M →
+          lies_on q M → L = M
+
+----------------------------------------
+-- 9.2 Using the Universal Quantifier --
+----------------------------------------
+#check ∀ x, (Even x ∨ Odd x)∧ ¬ (Even x ∧ Odd x)
+#check ∀ x, Even x ↔ 2 ∣ x
+#check ∀ x, Even x ↔ Even (x^2)
+#check ∀ x, Even x ↔ Odd (x + 1)
+#check ∀ x, Prime x ∧ x > 2 → Odd x
+#check ∀ x y z, x ∣ y → y ∣ z →  x ∣ z
+
+-- Proving/introducing a universal statement
+-- These two are redundant given the axioms at the top?
+variable (U : Type)
+variable (P : U → Prop)
+example : ∀ x, P x := fun x ↦ show P x from sorry
+
+-- Kind of the same as Lambda intro?
+
+
+-- Elimination rule
+-- Note that this is similar to lambda elimination!!!
+variable (U : Type)
+variable (P : U → Prop)
+variable (h: ∀ x, P x)
+variable (a: U)
+
+example : P a := show P a from h a
+
+-- Another example
+variable (U : Type)
+variable (A B : U → Prop)
+example (h1 : ∀ x, A x → B x) (h2 : ∀ x, A x) : ∀ x, B x :=
+  fun y ↦
+  have h3 : A y := h2 y
+  have h4 : A y → B y := h1 y
+  show B y from h4 h3
+
+example (h1 : ∀ x, A x → B x) (h2 : ∀ x, A x) : ∀ x, B x :=
+  fun y ↦
+    show B y from h1 y (h2 y)
+
+-- Another example
+variable (U : Type)
+variable (A B : U → Prop)
+example : (∀ x, A x) → (∀ x, B x) → (∀ x, A x ∧ B x) :=
+fun hA ↦
+  fun hB ↦
+    fun y ↦
+      have Ay: A y := hA y
+      have By: B y := hB y
+      show A y ∧ B y from And.intro Ay By
+
+example : (∀ x, A x) → (∀ x, B x) → (∀ x, A x ∧ B x) :=
+fun hA ↦
+  fun hB ↦
+    fun y ↦
+      have Ay: A y := hA y
+      have By: B y := hB y
+      show A y ∧ B y from ⟨‹A y›, ‹B y›⟩
+
+------------------------------------------
+-- 9.3 Using the Existential Quantifier --
+------------------------------------------
+variable (U : Type)
+variable (P : U → Prop)
+
+-- Introduction
+example (y : U) (h : P y) : ∃ x, P x :=
+  Exists.intro y h
+
+-- Elimination

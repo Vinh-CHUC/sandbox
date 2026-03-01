@@ -206,13 +206,11 @@ section
 
   example (h : ¬ (A ∧ B)) : ¬ A ∨ ¬ B := by
     have a_to_nb : (a : A) → ¬ B := by
-      intro
-      intro
+      intro _ _
       have : A ∧ B := ⟨ ‹ A › , ‹ B › ⟩
       contradiction
     have n_na_or_nb_to_na : ¬(¬ A ∨ ¬ B) → ¬ A := by
-      intro
-      intro
+      intro _ _
       have : ¬ B := a_to_nb ‹ A ›
       have : ¬ A ∨ ¬ B := Or.inr ‹ ¬ B ›
       contradiction

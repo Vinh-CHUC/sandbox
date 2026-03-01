@@ -105,7 +105,7 @@ def volume (p: RectangularPrism) : Float :=
 def isZero(n: Nat): Bool :=
   match n with
   | Nat.zero => true
-  | Nat.succ k => false
+  | Nat.succ _ => false
 def xy_prod(p: Point): Float :=
   match p with
   | { x := a, y:= b} => a * b
@@ -248,14 +248,14 @@ def mulType {α: Type} (x: Bool × α): α ⊕ α :=
 def myLength (xs: List α) : Nat :=
   match xs with
   | [] => 0
-  | y :: ys => Nat.succ (myLength ys)
+  | _ :: ys => Nat.succ (myLength ys)
 
 /- 1.7.2 Pattern-Matchin Definitions -/
 /- The return type has to be a function type -/
 def drop : Nat -> List α -> List α
   | Nat.zero, xs => xs
   | _, [] => []
-  | Nat.succ n, x :: xs => drop n xs
+  | Nat.succ n, _ :: xs => drop n xs
 
 /- Can mix the two approaches -/
 def fromOption (default: α) : Option α → α
@@ -306,7 +306,7 @@ def mydrop (n : Nat) (xs : List α) : List α :=
   match n, xs with
   | Nat.zero, ys => ys
   | _, [] => []
-  | Nat.succ n, y :: ys => mydrop n ys
+  | Nat.succ n, _ :: ys => mydrop n ys
 
 /- 1.7.6 NN Patterns -/
 def halve: Nat → Nat
