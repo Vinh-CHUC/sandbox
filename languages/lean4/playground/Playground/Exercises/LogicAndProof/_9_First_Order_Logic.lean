@@ -229,3 +229,59 @@ example: (∀ x, A x → ¬ B x) → ¬ ∃ x, A x ∧ B x :=
   fun h1: ∀ x, A x → ¬ B x ↦
   fun h2: ∃ x, A x ∧ B x ↦
   Exists.elim h2 $
+    fun x (h3: A x ∧ B x) ↦ 
+      have h4: A x := And.left h3
+      have h5: B x := And.right h3
+      show False from (h1 x h4) h5
+
+---------------
+-- Example 4 --
+---------------
+variable (U : Type)
+variable (u : U)
+variable (P : Prop)
+
+-- A bit weird
+-- Lean does not assume that types are necessarily 
+-- inhabited. So the proof depends on u: U
+example : (∃ x: U, P) ↔ P :=
+  Iff.intro
+    (fun h1 : ∃ x, P ↦
+      Exists.elim h1 $
+      fun x (h2: P) ↦ h2)
+    (fun h1 : P ↦ ⟨u, h1⟩)
+
+------------------
+-- 9.4 Equality --
+------------------
+
+variable (A: Type)
+
+variable (x y z: A)
+variable (P : A → Prop)
+
+example: x = x := show x = x from Eq.refl x
+
+example: y = x :=
+  have h: x = y := sorry
+  show y = x from Eq.symm h
+
+example: x = z :=
+  have h1: x = y := sorry
+  have h2: y = z := sorry
+  show x = z from Eq.trans h1 h2
+
+example: P y :=
+  have h1: x = y := sorry
+  have h2: P x := sorry
+  show P y from Eq.subst h1 h2
+
+-- Example 1, variant A --
+variable (A : Type) (x y z : A)
+
+example: y = x → y = z → x = z :=
+  fun h1 h2 ↦ Eq.trans (Eq.symm h1) h2
+
+---------------------
+-- 9.5 Tactic Mode --
+---------------------
