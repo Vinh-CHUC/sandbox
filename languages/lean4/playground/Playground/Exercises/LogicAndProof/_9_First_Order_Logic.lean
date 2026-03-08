@@ -142,6 +142,12 @@ variable (P : U → Prop)
 
 -- Introduction
 -- Notice the very explicit link between y and P y!!
+-- Here P is a dependent type, it is indexed by a
+-- **value**
+--
+-- You can't have Exists.intro take a (P y) alone, otherwise y would be a free variable, it has
+-- to be fixed
+-- And that would be closer to a universal quantifier!
 example (y : U) (h : P y) : ∃ x, P x :=
   Exists.intro y h
 
@@ -151,7 +157,10 @@ variable (P : U → Prop)
 variable (Q : Prop)
 
 -- If one remembers the ".. should not be free in B or any uncancelled hypothesis"
--- Here it's about the type Q not depending on x?
+-- Here it's about the type Q not depending on x
+--
+-- As a reminder we cannot depend on x as we don't know which one it is. Similarly to above that
+-- would get us to some kind of universal quantifier
 example (h1 : ∃ x, P x) (h2 : ∀ x, P x → Q) : Q :=
 Exists.elim h1
   (fun (y : U) (h : P y) ↦
@@ -161,6 +170,8 @@ Exists.elim h1
 variable (U : Type)
 variable (A B : U → Prop)
 
+-- Interestingly here introducing another exists
+-- In the elim "hides" our dependence on the exact witness
 example : (∃ x, A x ∧ B x) → ∃ x, A x :=
 fun h1 : ∃ x, A x ∧ B x ↦
 Exists.elim h1
@@ -178,3 +189,11 @@ Exists.elim h1 $
     show ∃ x, A x from ⟨y, h3⟩
 
 #check Exists.intro
+
+-- Example 2 --
+example: (∃ x, A x ∨ B x) → (∃ x, A x) ∨ (∃ x, B x) :=
+  fun h1: ∃ x, A x ∨ B x ↦
+  (
+    have r := sorry
+    r
+  )
