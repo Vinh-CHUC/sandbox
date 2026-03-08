@@ -212,10 +212,20 @@ example: (∃ x, A x ∨ B x) → (∃ x, A x) ∨ (∃ x, B x) :=
   Exists.elim h1 $
     fun y (h2: A y ∨ B y) ↦
       Or.elim h2
-        (fun A y ↦
-          have h4: ∃ x, A x := Exists.intro y ‹A y›
+        (fun (_ : A y) ↦
+          have h4: ∃ x, A x := ⟨y, ‹A y›⟩
           show (∃ x, A x) ∨ (∃ x, B x) from Or.inl h4)
-        (fun h3 : B y ↦
-          have h4: ∃ x, B x := Exists.intro y h3
+        (fun (_ : B y) ↦
+          have h4: ∃ x, B x := ⟨y, ‹B y›⟩
           show (∃ x, A x) ∨ (∃ x, B x) from Or.inr h4)
-        
+
+---------------
+-- Example 3 --
+---------------
+variable (U : Type)
+variable (A B : U → Prop)
+
+example: (∀ x, A x → ¬ B x) → ¬ ∃ x, A x ∧ B x :=
+  fun h1: ∀ x, A x → ¬ B x ↦
+  fun h2: ∃ x, A x ∧ B x ↦
+  Exists.elim h2 $
