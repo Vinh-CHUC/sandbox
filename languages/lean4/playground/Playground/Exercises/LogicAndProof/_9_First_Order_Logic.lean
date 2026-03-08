@@ -190,10 +190,32 @@ Exists.elim h1 $
 
 #check Exists.intro
 
--- Example 2 --
+-------------------------
+-- Example 2 variant a --
+-------------------------
 example: (∃ x, A x ∨ B x) → (∃ x, A x) ∨ (∃ x, B x) :=
   fun h1: ∃ x, A x ∨ B x ↦
-  (
-    have r := sorry
-    r
-  )
+  Exists.elim h1 $
+    fun y (h2: A y ∨ B y) ↦
+      Or.elim h2
+        (fun h3 : A y ↦
+          have h4: ∃ x, A x := Exists.intro y h3
+          show (∃ x, A x) ∨ (∃ x, B x) from Or.inl h4)
+        (fun h3 : B y ↦
+          have h4: ∃ x, B x := Exists.intro y h3
+          show (∃ x, A x) ∨ (∃ x, B x) from Or.inr h4)
+        
+
+-- Example 2 variant b --
+example: (∃ x, A x ∨ B x) → (∃ x, A x) ∨ (∃ x, B x) :=
+  fun h1: ∃ x, A x ∨ B x ↦
+  Exists.elim h1 $
+    fun y (h2: A y ∨ B y) ↦
+      Or.elim h2
+        (fun A y ↦
+          have h4: ∃ x, A x := Exists.intro y ‹A y›
+          show (∃ x, A x) ∨ (∃ x, B x) from Or.inl h4)
+        (fun h3 : B y ↦
+          have h4: ∃ x, B x := Exists.intro y h3
+          show (∃ x, A x) ∨ (∃ x, B x) from Or.inr h4)
+        
