@@ -1,0 +1,18 @@
+##############
+## Openclaw ##
+##############
+openclaw-install:
+    mise use -g node@latest
+    curl -fsSL https://openclaw.ai/install.sh | bash
+
+openclaw-onboard:
+    opencloaw onboard
+    ln -sf $HOME/.openclaw/completions/openclaw.fish ~/.config/fish/completions/
+
+openclaw-audit:
+    openclaw security audit --deep
+    openclaw security audit --fix
+
+openclaw-restart:
+    openclaw gateway stop
+    openclaw gateway start
