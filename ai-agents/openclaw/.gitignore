@@ -1,6 +1,7 @@
 # Sensitive memory data
 MEMORY.md
 workspace/memory/
+memory/
 
 # agents
 # runtime state

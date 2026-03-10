@@ -37,6 +37,9 @@
   },
   "tools": {
     "profile": "coding",
+    "sessions": {
+      "visibility": "all"
+    },
     "web": {
       "search": {
         "enabled": true,
