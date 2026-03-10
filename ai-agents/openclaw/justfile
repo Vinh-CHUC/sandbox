@@ -15,4 +15,4 @@ openclaw-audit:
 
 openclaw-restart:
     openclaw gateway stop
-    openclaw gateway start
+    openclaw gateway run
