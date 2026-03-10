@@ -288,3 +288,11 @@ example: y = x → y = z → x = z :=
 
 ---------------------------------
 -- 9.5.1 Universal Quantifiers --
+variable (U : Type)
+variable (A B : U → Prop)
+
+-- We can use intro and apply as one would expect
+example (h1: ∀ x, A x → B x) (h2: ∀ x, A x) : ∀ x, B x := by
+  intro
+  have a := by apply h2 ‹U›
+  exact h1 ‹U› a
