@@ -54,6 +54,7 @@ pytest_test(
     name = "test_exceptions",
     srcs = ["test_exceptions.py"],
     deps = [
-        "//nanobind/nanobind_playground:nanobind_playground"
+        "//nanobind/nanobind_playground:nanobind_playground",
+        "@pip_3.13//numpy"
     ],
 )
