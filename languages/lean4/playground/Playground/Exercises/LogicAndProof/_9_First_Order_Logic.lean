@@ -296,3 +296,50 @@ example (h1: ∀ x, A x → B x) (h2: ∀ x, A x) : ∀ x, B x := by
   intro
   have a := by apply h2 ‹U›
   exact h1 ‹U› a
+
+-----------------------------------
+-- 9.5.2 Existential Quantifiers --
+example : (∃ x, A x ∧ B x) → ∃ x, A x := by
+  intro (h1: ∃ x, A x ∧ B x)
+  cases h1 with
+  -- Note the very interesting duality here, the constructor mirrors the elim rule?
+  | intro y h2 =>
+    show ∃ x, A x
+    apply Exists.intro y
+    show A y
+    cases h2 with
+    | intro h3 _ =>
+      exact h3
+
+example : (∃ x, A x ∨ B x) → (∃ x, A x) ∨ (∃ x, B x) := by
+  intro (h1: ∃ x, A x ∨ B x)
+  cases h1 with
+  | intro y h2 =>
+    cases h2 with
+    | inl h3 =>
+      apply Or.inl
+      apply Exists.intro y
+      -- Could have used assumption
+      exact ‹A y›
+    | inr h4 =>
+      apply Or.inr
+      apply Exists.intro y
+      assumption
+
+
+-- Same as above but using a mixture of tactic and 
+example : (∃ x, A x ∨ B x) → (∃ x, A x) ∨ (∃ x, B x) := by
+  intro (h1 : ∃ x, A x ∨ B x)
+  cases h1 with
+  | intro y h2 =>
+    cases h2 with
+    | inl h3 => exact Or.inl (Exists.intro y h3)
+    | inr h3 => exact Or.inr (Exists.intro y h3)
+
+-- Same as above but using the obtain tactic
+example : (∃ x, A x ∨ B x) → (∃ x, A x) ∨ (∃ x, B x) := by
+  intro (h1 : ∃ x, A x ∨ B x)
+  obtain ⟨y, (h2: A y ∨ B y)⟩ := h1
+  obtain (h3: A y) | (h4: B y) := h2
+  . exact Or.inl (Exists.intro y h3)
+  . exact Or.inr (Exists.intro y h4)
