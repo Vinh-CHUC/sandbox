@@ -49,3 +49,11 @@ pytest_test(
         "//nanobind/nanobind_playground:nanobind_playground"
     ],
 )
+
+pytest_test(
+    name = "test_exceptions",
+    srcs = ["test_exceptions.py"],
+    deps = [
+        "//nanobind/nanobind_playground:nanobind_playground"
+    ],
+)

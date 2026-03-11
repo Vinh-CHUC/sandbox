@@ -6,7 +6,8 @@ py_library(
     deps = [
         "//nanobind/nanobind_playground/numpy:numpy",
         "//nanobind/nanobind_playground/exchange_and_ownership:exchange_and_ownership",
-        "//nanobind/nanobind_playground/py_callable:py_callable"
+        "//nanobind/nanobind_playground/py_callable:py_callable",
+        "//nanobind/nanobind_playground/exceptions:exceptions"
     ],
     data = [":nn_ext"],
     imports = [".."],
