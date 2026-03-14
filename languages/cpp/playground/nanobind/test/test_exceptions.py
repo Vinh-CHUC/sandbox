@@ -29,4 +29,4 @@ def test_rich_ex():
     except RichExc as e:
         error_codes = e.info.get()
 
-    assert np.sum(error_codes) == 6
+    assert np.sum(error_codes) == 10

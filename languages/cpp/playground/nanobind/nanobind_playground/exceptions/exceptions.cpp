@@ -20,9 +20,13 @@ public:
 
 class RichExc : std::exception {
   const char *msg;
+  std::vector<int> codes;
 
 public:
-  explicit RichExc(const char *message) noexcept : msg(message) {}
+  explicit RichExc(const char *message, std::vector<int> codes) noexcept
+      : msg(message), codes(std::move(codes)) {}
+
+  std::vector<int> getCodes() const { return codes; }
 
   const char *what() const noexcept override { return msg; }
 };
@@ -31,10 +35,12 @@ struct RichExcInfo {
   std::vector<int> codes;
 
   nb::object get() {
-    auto buf = std::make_unique<std::vector<int>>(std::move(codes));
-    auto size = buf->size();
+    auto size = codes.size();
+    auto buf = std::make_unique_for_overwrite<int[]>(size);
+    std::copy(codes.begin(), codes.end(), buf.get());
+
     nb::capsule owner(buf.release(), [](void *p) noexcept {
-      std::unique_ptr<std::vector<int>>(static_cast<std::vector<int> *>(p));
+      delete[] std::bit_cast<int *>(p);
     });
     return nb::cast(nb::ndarray<int, nb::numpy, nb::ndim<1>, nb::c_contig>(
         owner.data(), {size}, owner));
@@ -45,7 +51,7 @@ void ThrowValueError() { throw nb::value_error("Some value error"); }
 
 void ThrowCustomEx() { throw CustomEx("Custom exception"); }
 
-void ThrowRichEx() { throw RichExc("Rich exception"); }
+void ThrowRichEx() { throw RichExc("Rich exception", {1, 2, 3, 4}); }
 
 NB_MODULE(exceptions_ext, m) {
   m.def("throw_value_error", &ThrowValueError);
@@ -71,7 +77,7 @@ NB_MODULE(exceptions_ext, m) {
           nb::object exc_val = nb::steal(PyObject_CallOneArg(exc_t, msg.ptr()));
 
           exc_val.attr("info") =
-              nb::cast(RichExcInfo{.codes = {1, 2, 3}}, nb::rv_policy::move);
+              nb::cast(RichExcInfo{.codes = e.getCodes()}, nb::rv_policy::move);
 
           PyErr_SetRaisedException(exc_val.release().ptr());
         }

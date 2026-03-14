@@ -249,7 +249,7 @@
     },
     "@@rules_boost~//:boost/repositories.bzl%non_module_dependencies": {
       "general": {
-        "bzlTransitiveDigest": "rdES0Z1VihyIt8QrpMujIq7i+0viO4gKfYwks1agkfc=",
+        "bzlTransitiveDigest": "341284n8i1DAErtGHVh6Jg+gPUg1kIT32KED/33pmz4=",
         "usagesDigest": "wM1bZ+h2EEQZ9sdUOCmqB/wPEON4FqjWtign6x4ThXs=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},
@@ -288,6 +288,21 @@
             "rules_boost~",
             "com_github_nelhage_rules_boost",
             "rules_boost~"
+          ],
+          [
+            "rules_boost~",
+            "rules_cc",
+            "rules_cc~"
+          ],
+          [
+            "rules_cc~",
+            "cc_compatibility_proxy",
+            "rules_cc~~compatibility_proxy~cc_compatibility_proxy"
+          ],
+          [
+            "rules_cc~~compatibility_proxy~cc_compatibility_proxy",
+            "rules_cc",
+            "rules_cc~"
           ]
         ]
       }
