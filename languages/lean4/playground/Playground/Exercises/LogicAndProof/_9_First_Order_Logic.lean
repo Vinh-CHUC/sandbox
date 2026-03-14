@@ -343,3 +343,43 @@ example : (∃ x, A x ∨ B x) → (∃ x, A x) ∨ (∃ x, B x) := by
   obtain (h3: A y) | (h4: B y) := h2
   . exact Or.inl (Exists.intro y h3)
   . exact Or.inr (Exists.intro y h4)
+
+--------------------
+-- 9.5.3 Equality --
+
+-- Term mode
+example : y = x → y = z → x = z :=
+  fun h1 h2 ↦ Eq.trans (Eq.symm h1) h2
+
+-- Equivalent in tactic mode
+example : y = x → y = z → x = z := by
+  intro (hyx: y = x) (hyz: y = z)
+  -- At this point the goal is x = z
+  rewrite [← hyx]
+  -- Rewrite performs a substitution
+  -- y = x, with the <- arrow x = y
+  -- Subtitude x for y in the goal
+  --
+  -- And now it's y = z!!!
+  --
+  -- It's a consequence that transitivity is a consequence of substitution!
+  exact hyz
+
+example : y = x → y = z → x = z := by
+  intro (hyx : y = x) (hyz : y = z)
+  rw [←hyx]
+  -- This turns the goal into z = z, and automatically applies reflexivity
+  -- A bit convoluted?
+  rw [hyz]
+
+variable (A B : Prop)
+
+-- Works as well with equivalence of propositions
+example (hAC : A ↔ C) (hCB : C ∧ B) : A ∧ B := by
+  -- Note that it wouldn't work with A → C!!
+  rw [hAC]
+  exact hCB
+
+------------------------------
+-- 9.6 Calculational Proofs --
+------------------------------
