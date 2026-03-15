@@ -1,4 +1,5 @@
 import Mathlib.Data.Nat.Prime.Basic
+import Mathlib.Data.Int.Lemmas
 
 -- 9.1 Functions Predicates and Relations
 -- Axiom programming equivalent: declared but not defined?
@@ -383,3 +384,89 @@ example (hAC : A ↔ C) (hCB : C ∧ B) : A ∧ B := by
 ------------------------------
 -- 9.6 Calculational Proofs --
 ------------------------------
+
+-- The idea: formalise a typical sequence of equality
+example: y = x → y = z → x = z :=
+  fun h1 : y = x ↦
+  fun h2 : y = z ↦ 
+  calc
+    x = y := Eq.symm h1
+    _ = z := h2
+
+#check Int.add_zero
+
+variable (x y z: Int)
+ 
+example : x + 0 = x :=
+Int.add_zero x
+
+example : 0 + x = x :=
+Int.zero_add x
+
+example : (x + y) + z = x + (y + z) :=
+Int.add_assoc x y z
+
+example : x + y = y + x :=
+Int.add_comm x y
+
+example : (x * y) * z = x * (y * z) :=
+Int.mul_assoc x y z
+
+example : x * y = y * x :=
+Int.mul_comm x y
+
+example : x * (y + z) = x * y + x * z :=
+Int.mul_add x y z
+
+example : (x + y) * z = x * z + y * z :=
+Int.add_mul x y z
+
+-- Example 1 - Variant A --
+example (x y z : Int) : (x + y) + z = (x + z) + y :=
+calc
+  (x + y) + z = x + (y + z) := Int.add_assoc x y z
+  -- the @ symbol is about forcing all parameters to be explicitly provided
+  -- α 
+  -- α → Prop
+  -- a: Inferred to be y + z
+  -- b: Inferred to be z + y
+  -- a = b
+  -- P a
+  --
+  -- We get P b
+  _ = x + (z + y) := @Eq.subst _ (λ w ↦ x + (y + z) = x + w) _ _ (Int.add_comm y z) rfl
+  -- Eq.symm as the assoc isn't written in the canonical direction
+  _ = (x + z) + y := Eq.symm (Int.add_assoc x z y)
+
+-- Example 1 - Variant B --
+example (x y z : Int) : (x + y) + z = (x + z) + y :=
+calc
+  (x + y) + z = x + (y + z) := by rw [Int.add_assoc]
+  _ = x + (z + y) := by rw [Int.add_comm y z]
+  _ = (x + z) + y := by rw [Int.add_assoc]
+
+-- Example 1 - Variant C --
+example (x y z : Int) : (x + y) + z = (x + z) + y := by
+  rw [Int.add_assoc, Int.add_comm y z, Int.add_assoc]
+
+-- Example 2 - 
+variable (a b d c : Int)
+
+example : (a + b) * (c + d) = a * c + b * c + a * d + b * d :=
+calc
+  (a + b) * (c + d) = (a + b) * c + (a + b) * d := by rw [Int.mul_add]
+    _ = (a * c + b * c) + (a + b) * d         := by rw [Int.add_mul]
+    _ = (a * c + b * c) + (a * d + b * d)     := by rw [Int.add_mul]
+    -- In more details
+    -- add_assoc means a + b + c = a + (b + c)
+    --
+    -- + is left associative by default, so it's really
+    -- (a + b) + c = a + (b + c)
+    _ = a * c + b * c + a * d + b * d         := by rw [←Int.add_assoc]
+
+
+-- Example 2 - Variant B - 
+variable (a b d c : Int)
+
+example : (a + b) * (c + d) = a * c + b * c + a * d + b * d :=
+by rw [Int.mul_add, Int.add_mul, Int.add_mul, ←Int.add_assoc]
