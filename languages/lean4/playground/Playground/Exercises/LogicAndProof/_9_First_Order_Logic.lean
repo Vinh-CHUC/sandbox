@@ -176,7 +176,7 @@ variable (A B : U → Prop)
 example : (∃ x, A x ∧ B x) → ∃ x, A x :=
 fun h1 : ∃ x, A x ∧ B x ↦
 Exists.elim h1
-  (fun y (h2: A y ∧ B y) ↦  
+  (fun y (h2: A y ∧ B y) ↦
     have h3: A y := And.left h2
     show ∃ x, A x from Exists.intro y h3)
 
@@ -184,7 +184,7 @@ Exists.elim h1
 example : (∃ x, A x ∧ B x) → ∃ x, A x :=
 fun h1 : ∃ x, A x ∧ B x ↦
 Exists.elim h1 $
-  fun y (h2: A y ∧ B y) ↦  
+  fun y (h2: A y ∧ B y) ↦
     have h3: A y := And.left h2
     -- Some kind of anonymous ctor a bit like C++'s {...}
     show ∃ x, A x from ⟨y, h3⟩
@@ -205,7 +205,7 @@ example: (∃ x, A x ∨ B x) → (∃ x, A x) ∨ (∃ x, B x) :=
         (fun h3 : B y ↦
           have h4: ∃ x, B x := Exists.intro y h3
           show (∃ x, A x) ∨ (∃ x, B x) from Or.inr h4)
-        
+
 
 -- Example 2 variant b --
 example: (∃ x, A x ∨ B x) → (∃ x, A x) ∨ (∃ x, B x) :=
@@ -230,7 +230,7 @@ example: (∀ x, A x → ¬ B x) → ¬ ∃ x, A x ∧ B x :=
   fun h1: ∀ x, A x → ¬ B x ↦
   fun h2: ∃ x, A x ∧ B x ↦
   Exists.elim h2 $
-    fun x (h3: A x ∧ B x) ↦ 
+    fun x (h3: A x ∧ B x) ↦
       have h4: A x := And.left h3
       have h5: B x := And.right h3
       show False from (h1 x h4) h5
@@ -243,7 +243,7 @@ variable (u : U)
 variable (P : Prop)
 
 -- A bit weird
--- Lean does not assume that types are necessarily 
+-- Lean does not assume that types are necessarily
 -- inhabited. So the proof depends on u: U
 example : (∃ x: U, P) ↔ P :=
   Iff.intro
@@ -328,7 +328,7 @@ example : (∃ x, A x ∨ B x) → (∃ x, A x) ∨ (∃ x, B x) := by
       assumption
 
 
--- Same as above but using a mixture of tactic and 
+-- Same as above but using a mixture of tactic and
 example : (∃ x, A x ∨ B x) → (∃ x, A x) ∨ (∃ x, B x) := by
   intro (h1 : ∃ x, A x ∨ B x)
   cases h1 with
@@ -388,7 +388,7 @@ example (hAC : A ↔ C) (hCB : C ∧ B) : A ∧ B := by
 -- The idea: formalise a typical sequence of equality
 example: y = x → y = z → x = z :=
   fun h1 : y = x ↦
-  fun h2 : y = z ↦ 
+  fun h2 : y = z ↦
   calc
     x = y := Eq.symm h1
     _ = z := h2
@@ -396,7 +396,7 @@ example: y = x → y = z → x = z :=
 #check Int.add_zero
 
 variable (x y z: Int)
- 
+
 example : x + 0 = x :=
 Int.add_zero x
 
@@ -426,7 +426,7 @@ example (x y z : Int) : (x + y) + z = (x + z) + y :=
 calc
   (x + y) + z = x + (y + z) := Int.add_assoc x y z
   -- the @ symbol is about forcing all parameters to be explicitly provided
-  -- α 
+  -- α
   -- α → Prop
   -- a: Inferred to be y + z
   -- b: Inferred to be z + y
@@ -449,7 +449,7 @@ calc
 example (x y z : Int) : (x + y) + z = (x + z) + y := by
   rw [Int.add_assoc, Int.add_comm y z, Int.add_assoc]
 
--- Example 2 - 
+-- Example 2 -
 variable (a b d c : Int)
 
 example : (a + b) * (c + d) = a * c + b * c + a * d + b * d :=
@@ -465,8 +465,17 @@ calc
     _ = a * c + b * c + a * d + b * d         := by rw [←Int.add_assoc]
 
 
--- Example 2 - Variant B - 
+-- Example 2 - Variant B -
 variable (a b d c : Int)
+
+#check a
+#check Int
+#check Prop
+#check Int → Prop
+#check P
+#check U → Prop
+#check Type
+#check Type → Type
 
 example : (a + b) * (c + d) = a * c + b * c + a * d + b * d :=
 by rw [Int.mul_add, Int.add_mul, Int.add_mul, ←Int.add_assoc]

@@ -12,6 +12,14 @@ cc_binary(
     srcs = ["matmul_bench.cc"],
     deps = [
         ":matmul",
-        "@google_benchmark//:benchmark"
-    ]
+        "@google_benchmark//:benchmark",
+    ],
+)
+
+cc_binary(
+    name = "vector_update_bench",
+    srcs = ["vector_update_bench.cc"],
+    deps = [
+        "@google_benchmark//:benchmark",
+    ],
 )
