@@ -466,16 +466,3 @@ calc
 
 
 -- Example 2 - Variant B -
-variable (a b d c : Int)
-
-#check a
-#check Int
-#check Prop
-#check Int → Prop
-#check P
-#check U → Prop
-#check Type
-#check Type → Type
-
-example : (a + b) * (c + d) = a * c + b * c + a * d + b * d :=
-by rw [Int.mul_add, Int.add_mul, Int.add_mul, ←Int.add_assoc]
