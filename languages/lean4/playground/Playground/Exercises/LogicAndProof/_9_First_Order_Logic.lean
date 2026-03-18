@@ -466,3 +466,75 @@ calc
 
 
 -- Example 2 - Variant B -
+example : (a + b) * (c + d) = a * c + b * c + a * d + b * d := by
+  rw [Int.mul_add, Int.add_mul, Int.add_mul, ← Int.add_assoc]
+
+-------------------
+-- 9.7 Exercises --
+-------------------
+
+-- 1 -
+section
+  variable (A: Type)
+  variable (f: A → A)
+  variable (P: A → Prop)
+  variable (h: ∀ x, P x → P (f x))
+
+  example: ∀ y, P y → P (f (f y)) := by
+  intro (y: A) (py: P y) -- P (f (f y))
+  apply h -- P (f y)
+  apply h -- P y
+  exact py
+
+  -- Term version
+  example: ∀ y, P y → P (f (f y)) :=
+  fun (y: A) (py: P y) ↦ (
+    show P (f (f y)) from
+    have pfy: P (f y) := h y py
+    have pffy: P (f (f y)) := h (f y) (pfy)
+    pffy
+  )
+end
+
+-- 2 -
+section
+  variable (U: Type)
+  variable (A B: U → Prop)
+
+  example : (∀ x, A x ∧ B x) → ∀ x, A x := by
+  intro x_a_and_b x
+  exact And.left $ x_a_and_b x
+
+  -- Term version
+  example : (∀ x, A x ∧ B x) → ∀ x, A x :=
+  fun (x_a_and_b: ∀ x, A x ∧ B x) ↦
+    fun (x: U) ↦
+      And.left $ x_a_and_b x
+end
+
+-- 3 -
+section
+  variable (U: Type)
+  variable (A B C: U → Prop)
+
+  variable (h1: ∀ x, A x ∨ B x)
+  variable (h2: ∀ x, A x → C x)
+  variable (h3: ∀ x, B x → C x)
+
+  example : ∀ x, C x := by
+    intro
+    apply Or.elim $ h1 ‹U›
+    . show A ‹U› → C ‹U›
+      intro
+      exact h2 ‹U›  ‹A ‹U››
+    . show B ‹U› → C ‹U›
+      intro
+      exact h3 ‹U›  ‹B ‹U››
+
+  -- Term version
+  example : ∀ x, C x :=
+    fun (x: U) ↦
+      match h1 x with
+      | Or.inl ax => h2 x ax
+      | Or.inr bx => h3 x bx
+end
