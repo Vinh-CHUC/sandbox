@@ -538,3 +538,81 @@ section
       | Or.inl ax => h2 x ax
       | Or.inr bx => h3 x bx
 end
+
+-- 4 -
+section
+  open Classical   -- not needed, but you can use it
+
+  -- This is an exercise from Chapter 4. Use it as an axiom here.
+  axiom not_iff_not_self (P : Prop) : ¬ (P ↔ ¬ P)
+
+  example (Q : Prop) : ¬ (Q ↔ ¬ Q) := not_iff_not_self Q
+
+  variable (Person : Type)
+  variable (shaves : Person → Person → Prop)
+  variable (barber : Person)
+  variable (h : ∀ x, shaves barber x ↔ ¬ shaves x x)
+
+  example : False := by
+    have a : shaves barber barber ↔ ¬ shaves barber barber := h barber
+    -- Do not use the ‹shaves barber barber› here! 
+    exact not_iff_not_self (shaves barber barber) a
+
+  -- Term variant
+  example : False :=
+    have a : shaves barber barber ↔ ¬ shaves barber barber := h barber
+    not_iff_not_self (shaves barber barber) a
+
+  example : False := by
+    apply Or.elim $ Classical.em $ shaves barber barber
+    . intro
+      have b_doesnot_shave_himself: ¬ shaves barber barber := by
+        apply Iff.mp (h barber)
+        exact ‹shaves barber barber›
+      contradiction
+    . intro
+      have b_does_shave_himself: shaves barber barber := by
+        apply Iff.mpr (h barber)
+        exact ‹¬ shaves barber barber›
+      contradiction
+
+  -- Term variant
+  example : False :=
+  Or.elim (Classical.em (shaves barber barber))
+  (
+    fun (shaves_himself: shaves barber barber) => 
+      have b_doesnot_shave_himself: ¬ shaves barber barber := Iff.mp (h barber) shaves_himself
+      b_doesnot_shave_himself shaves_himself
+  )
+  (
+    fun (doesnot_shave_himself: ¬ shaves barber barber) => 
+      have shaves_himself: shaves barber barber := Iff.mpr (h barber) doesnot_shave_himself
+      doesnot_shave_himself shaves_himself
+  )
+
+end
+
+-- 5 -
+-- ASK ON ZULIP
+section
+  variable (U : Type)
+  variable (A B : U → Prop)
+
+  example : (∃ x, A x) → ∃ x, A x ∨ B x := by
+  intro h
+  obtain ⟨x, ax⟩ := h
+  -- Somehow magically no need to supply x as well
+  apply Exists.intro
+  . exact Or.inl ax
+
+  example : (∃ x, A x) → ∃ x, A x ∨ B x := by
+  intro h
+  obtain ⟨x, ax⟩ := h
+  apply Exists.intro x
+  . exact Or.inl ax
+
+end
+
+---------------
+-- ASK ON ZULIP FOR THE ABOVE
+---------------
