@@ -616,3 +616,64 @@ end
 ---------------
 -- ASK ON ZULIP FOR THE ABOVE
 ---------------
+
+-- 6 -
+section
+  variable (U: Type)
+  variable (A B : U → Prop)
+
+  variable (h1 : ∀ x, A x → B x)
+  variable (h2 : ∃ x, A x)
+
+  example : ∃ x, B x := by
+  obtain ⟨x, ax⟩ := h2
+  exact Exists.intro x $ h1 x ax
+
+  -- Term variant
+  example : ∃ x, B x :=
+  match h2 with
+  | Exists.intro x ax => Exists.intro x $ h1 x ax
+end 
+
+-- 7 -
+section
+  variable (U: Type)
+  variable (A B C : U → Prop)
+
+  example
+    (h1 : ∃ x, A x ∧ B x)
+    (h2 : ∀ x, B x → C x)
+  : ∃ x, A x ∧ C x := by
+  obtain ⟨x, ⟨ax, bx⟩⟩ := h1
+  apply Exists.intro
+  exact ⟨ax, h2 x bx⟩
+
+  -- Term variant
+  example
+    (h1 : ∃ x, A x ∧ B x)
+    (h2 : ∀ x, B x → C x)
+  : ∃ x, A x ∧ C x :=
+  match h1 with
+  | Exists.intro x ⟨ax, bx⟩ =>
+    Exists.intro x ⟨ax, h2 x bx⟩
+end
+
+-- 8 -
+section
+  variable (U : Type)
+  variable (A B C : U → Prop)
+
+  example : (¬ ∃ x, A x) → ∀ x, ¬ A x := by
+  intro not_ex_ax x ax
+  apply not_ex_ax
+  exact Exists.intro x ax
+
+  example : (¬ ∃ x, A x) → ∀ x, ¬ A x :=
+  sorry
+
+  example : (∀ x, ¬ A x) → ¬ ∃ x, A x := by
+  sorry
+
+  example : (∀ x, ¬ A x) → ¬ ∃ x, A x :=
+  sorry
+end 
