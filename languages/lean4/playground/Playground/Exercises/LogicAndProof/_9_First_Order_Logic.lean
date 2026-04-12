@@ -555,7 +555,7 @@ section
 
   example : False := by
     have a : shaves barber barber ↔ ¬ shaves barber barber := h barber
-    -- Do not use the ‹shaves barber barber› here! 
+    -- Do not use the ‹shaves barber barber› here!
     exact not_iff_not_self (shaves barber barber) a
 
   -- Term variant
@@ -580,12 +580,12 @@ section
   example : False :=
   Or.elim (Classical.em (shaves barber barber))
   (
-    fun (shaves_himself: shaves barber barber) => 
+    fun (shaves_himself: shaves barber barber) =>
       have b_doesnot_shave_himself: ¬ shaves barber barber := Iff.mp (h barber) shaves_himself
       b_doesnot_shave_himself shaves_himself
   )
   (
-    fun (doesnot_shave_himself: ¬ shaves barber barber) => 
+    fun (doesnot_shave_himself: ¬ shaves barber barber) =>
       have shaves_himself: shaves barber barber := Iff.mpr (h barber) doesnot_shave_himself
       doesnot_shave_himself shaves_himself
   )
@@ -633,7 +633,7 @@ section
   example : ∃ x, B x :=
   match h2 with
   | Exists.intro x ax => Exists.intro x $ h1 x ax
-end 
+end
 
 -- 7 -
 section
@@ -668,12 +668,173 @@ section
   apply not_ex_ax
   exact Exists.intro x ax
 
+  -- Term variant
   example : (¬ ∃ x, A x) → ∀ x, ¬ A x :=
-  sorry
+  fun (not_ex_ax: ¬ ∃ x, A x) (x : U) (ax: A x) ↦
+    not_ex_ax $ Exists.intro x ax
 
   example : (∀ x, ¬ A x) → ¬ ∃ x, A x := by
+  intro neg_ax ex_ax
+  obtain ⟨x, ax⟩ := ex_ax
+  exact neg_ax x ax
+
+  -- Term variant
+  example : (∀ x, ¬ A x) → ¬ ∃ x, A x :=
+  fun (not_ax) (ex_ax) ↦
+    match ex_ax with
+    | Exists.intro x ax => not_ax x ax
+end
+
+-- 9 -
+section
+  variable (U : Type)
+  variable (R : U → U → Prop)
+
+  example : (∃ x, ∀ y, R x y) → ∀ y, ∃ x, R x y := by
+  intro xy_rxy
+  obtain ⟨x, y_to_rxy⟩ := xy_rxy
+  intro y
+  apply Exists.intro
+  exact y_to_rxy y
+
+  -- Term variant
+  example : (∃ x, ∀ y, R x y) → ∀ y, ∃ x, R x y :=
+  fun (exx_y_rxy) (y) ↦
+    have ⟨x, y_to_rxy⟩ := exx_y_rxy
+    Exists.intro x $ y_to_rxy y
+end
+
+-- 10 -
+#check rfl
+
+section
+  theorem foo {A : Type} {a b c : A} : a = b → c = b → a = c :=
   sorry
 
-  example : (∀ x, ¬ A x) → ¬ ∃ x, A x :=
-  sorry
-end 
+  section
+    variable (A : Type)
+    variable (a b c : A)
+
+    example (h1 : a = b) (h2 : c = b) : a = c :=
+    foo h1 h2
+  end
+
+  section
+    variable {A : Type}
+    variable {a b c : A}
+
+    -- replace the sorry with a proof, using foo and rfl, without using eq.symm.
+    theorem my_symm (h : b = a) : a = b := by
+    -- a = a → b = a
+    exact foo (refl a) h
+
+    -- now use foo and my_symm to prove transitivity
+    theorem my_trans (h1 : a = b) (h2 : b = c) : a = c := by
+    exact foo h1 (my_symm h2)
+  end
+end
+
+-- 11 -
+section
+#check @add_assoc
+#check @add_comm
+#check @add_zero
+#check @zero_add
+#check @mul_assoc
+#check @mul_comm
+#check @mul_one
+#check @one_mul
+#check @left_distrib
+#check @right_distrib
+#check @Int.add_left_neg
+#check @Int.add_right_neg
+#check @sub_eq_add_neg
+
+variable (x y z : Int)
+
+theorem t1 : x - x = 0 :=
+  calc
+  x - x = x + -x := by rw [sub_eq_add_neg]
+  _ = 0 := by rw [Int.add_right_neg]
+
+theorem t2 (h : x + y = x + z) : y = z :=
+  calc
+  y = 0 + y := by rw [zero_add]
+  _ = (-x + x) + y := by rw [Int.add_left_neg]
+  _ = -x + (x + y) := by rw [add_assoc]
+  _ = -x + (x + z) := by rw [h]
+  _ = (-x + x) + z := by rw [add_assoc]
+  _ = 0 + z := by rw [Int.add_left_neg]
+  _ = z := by rw [zero_add]
+
+theorem t3 (h : x + y = z + y) : x = z :=
+  calc
+  x = x + 0 := by rw [add_zero]
+  _ = x + (y + -y) := by rw [Int.add_right_neg]
+  _ = (x + y) + -y := by rw [← add_assoc]
+  _ = (z + y) + -y := by rw [h]
+  _ = z + (y + -y) := by rw [add_assoc]
+  _ = z + 0 := by rw [Int.add_right_neg]
+  _ = z := by rw [add_zero]
+
+theorem t4 (h : x + y = 0) : x = -y :=
+calc
+x = x + 0 := by rw [add_zero]
+_ = x + (y + -y) := by rw [Int.add_right_neg]
+_ = (x + y) + -y := by rw [← add_assoc]
+_ = 0 + -y := by rw [h]
+_ = -y := by rw [zero_add]
+
+theorem t5 : x * 0 = 0 :=
+have h1 : x * 0 + x * 0 = x * 0 + 0 :=
+  calc
+    x * 0 + x * 0 = x * (0 + 0) := by rw [← left_distrib]
+    _ = x * 0 := by rw [zero_add]
+    _ = x * 0 + 0 := by rw [add_zero]
+show x * 0 = 0 from t2 _ _ _ h1
+
+theorem t6 : x * (-y) = - (x * y) :=
+have h1 : x * (-y) + x * y = 0 :=
+  calc
+    x * (-y) + x * y = x * (-y + y) := by rw [← left_distrib]
+    _ = x * 0 := by rw [Int.add_left_neg]
+    _ = 0 := by rw [t5 x]
+show x * (-y) = -(x * y) from t4 _ _ h1
+
+theorem t7 : x + x = 2 * x :=
+calc
+x + x = 1 * x + 1 * x := by rw [one_mul]
+_ = (1 + 1) * x := by rw [← right_distrib]
+_ = 2 * x := rfl
+
+end
+
+-- 12 -
+section
+
+#check Nat
+open Nat
+#check odd_add
+#check odd_mul
+#check not_even_iff_odd
+#check not_even_one
+
+example : ∀ x y z: ℕ, Odd x → Odd y → Even z → Odd ((x * y) * (z + 1)) := by
+  intro x y z oddx oddy evenz
+  have : Odd (x * y) := odd_mul.mpr ⟨oddx, oddy⟩
+  have : 1 + z = z + 1 := by rw [add_comm]
+  have : Odd (1 + z) := by
+    apply odd_add.mpr
+    apply Iff.intro
+    . intro
+      assumption
+    . intro
+      apply not_even_iff_odd.mp
+      exact not_even_one
+  have odd_sym : Odd (1 + z) ↔ Odd (z + 1) := by rw [‹1 + z = z + 1›]
+  apply odd_mul.mpr
+  apply And.intro
+  . assumption
+  . apply odd_sym.mp
+    assumption
+end
