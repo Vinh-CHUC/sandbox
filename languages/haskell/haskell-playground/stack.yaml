@@ -17,7 +17,7 @@
 #
 # resolver: ./custom-snapshot.yaml
 # resolver: https://example.com/snapshots/2018-01-01.yaml
-resolver: lts-22.41
+resolver: lts-24.40
 
 # User packages to be built.
 # Various formats can be used as shown in the example below.
@@ -33,6 +33,8 @@ packages:
 
 
 extra-deps:
+- ormolu-0.8.0.2@sha256:405af576a1c9ef39ed249d1879b2e4182ca1a35b735abe9f331b919f33711d6b,5354
+- Cabal-syntax-3.14.2.0@sha256:6653175960c346f01152223972a3292c56723c1bfab61f4603ca66cb264297b0,7646
 # Dependency packages to be pulled from upstream that are not in the resolver.
 # These entries can reference officially published versions as well as
 # forks / in-progress versions pinned to a git hash. For example:
