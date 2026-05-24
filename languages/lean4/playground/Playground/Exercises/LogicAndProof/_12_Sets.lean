@@ -1,4 +1,5 @@
 import Mathlib.Data.Set.Basic
+import Mathlib.Order.BooleanAlgebra.Set
 open Set
 
 -----------------
@@ -87,3 +88,39 @@ example : ∅ ⊆ A :=
   show x ∈ A from  False.elim ‹x ∈ ∅›
 
 #check @mem_inter
+#check Set.mem_of_mem_diff
+#check Set.notMem_of_mem_diff
+
+-- Proving some set inclusions --
+example : A \ B ⊆ A :=
+  fun x ↦
+  fun h : x ∈ A \ B ↦
+  show x ∈ A from And.left h
+  /- show x ∈ A from mem_of_mem_diff h -/
+
+example: A \ B ⊆ Bᶜ :=
+  fun x ↦
+  fun h : x ∈ A \ B ↦
+  have : x ∉ B := notMem_of_mem_diff h
+  /- have : x ∉ B := And.right h -/
+  show x ∈ Bᶜ from this
+
+--------------------------
+-- 12.2 Some Identities --
+--------------------------
+theorem inter_union_subset {x} :
+  (x ∈ A ∩ (B ∪ C)) → (x ∈ (A ∩ B) ∪ (A ∩ C)) := by
+  intro (hx: x ∈ A ∩ (B ∪ C))
+  have hA: x ∈ A := hx.left
+  have hBC: x ∈ B ∪ C := hx.right
+  cases hBC with
+  | inl hB =>
+    have : x ∈ A ∩ B := ⟨hA, hB⟩
+    show x ∈ (A ∩ B) ∪ (A ∩ C)
+    apply Or.inl
+    assumption
+  | inr hC =>
+    have : x ∈ A ∩ C := ⟨hA, hC⟩
+    show x ∈ (A ∩ B) ∪ (A ∩ C)
+    apply Or.inr
+    assumption
