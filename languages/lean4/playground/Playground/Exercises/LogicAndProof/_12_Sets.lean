@@ -78,7 +78,7 @@ example : ∀ x, x ∈ A → x ∈ B → x ∈ A ∩ B:=
   -- show x ∈ A ∩ B from mem_inter ‹x ∈ A› ‹x ∈ B›
 
 example: A ⊆ A ∪ B :=
-  fun x ↦ 
+  fun x ↦
   fun _: x ∈ A ↦
   show x ∈ A ∪ B from Or.inl ‹x ∈ A›
   -- mem_union_left
@@ -164,6 +164,9 @@ calc
 variable {I U : Type}
 
 
+-- A: I → Set U is an indexed family of sets
+-- {x | P x} : this is definitionally a Set? ie the set of xs such that P x is true
+-- In the cases below the P x is itself a predicate that involves quantification on set membership
 def myiUnion(A : I → Set U) : Set U := {x | ∃ i: I, x ∈ A i}
 def myiInter(A : I → Set U) : Set U := {x | ∀ i: I, x ∈ A i}
 
@@ -215,7 +218,7 @@ example : (⋂ i, A i ∩ B i) = (⋂ i, A i) ∩ (⋂ i, B i) := by
   constructor
   . intro (h : (∀ (i: I), x ∈ A i ∧ x ∈ B i))
     show (∀ (i: I), x ∈ A i) ∧ (∀ (i : I), x ∈ B i)
-    constructor 
+    constructor
     . show (∀ (i: I), x ∈ A i)
       exact fun j ↦ And.left $ h j
     . show (∀ (i: I), x ∈ B i)
