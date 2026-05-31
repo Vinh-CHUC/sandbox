@@ -295,7 +295,7 @@ section
 variable {U : Type}
 
 -- This shows that B ∈ power A is definitionally the same as B ⊆ A
-def powerset(A : Set U) : Set (Set U) := {B : Set U | B ⊆ A}
+def myPowerset(A : Set U) : Set (Set U) := {B : Set U | B ⊆ A}
 end
 
 --------------------
@@ -338,6 +338,58 @@ section
   example (A B: Set U) (x : U) (h : A ⊆ B) (h1: x ∈ A) : x ∈ B :=
     h h1
 
-  example (A B C D: Set U) (h1: disj A B) (h2 : C ⊆ A) (h3 : D ⊆ B) : disj C D :=
-    sorry
+  example (A B C D: Set U) (h1: disj A B) (h2 : C ⊆ A) (h3 : D ⊆ B) : disj C D := by
+    intro x x_in_c x_in_d
+    have x_in_a := h2 x_in_c
+    have x_in_b := h3 x_in_d
+    exact h1 x_in_a x_in_b
+end
+
+-- 3
+section
+  variable {I U : Type}
+  variable (A : I → Set U) (B : I → Set U) (C : Set U)
+
+  example : (⋂ i, A i) ∩ (⋂ i, B i) ⊆ (⋂ i, A i ∩ B i) := by
+  intro x h1
+  obtain ⟨ai, bi⟩ := h1
+  apply mem_iInter.mpr
+  intro i
+  exact ⟨mem_iInter.mp ai i, mem_iInter.mp bi i⟩
+
+  example : C ∩ (⋃ i, A i) ⊆ ⋃ i, C ∩ A i := by
+  intro x h1
+  obtain ⟨x_c, x_ai⟩ := h1
+  rw [mem_iUnion]
+  obtain ⟨i: I, _: x ∈ A i⟩ := (mem_iUnion.mp x_ai)
+  constructor
+  exact ⟨x_c, ‹x ∈ A i›⟩ 
+end
+
+-- 4
+-- Worth philosophing about
+section
+  variable {U : Type}
+  variable (A B C : Set U)
+
+  example (h1 : A ⊆ B) (h2: B ⊆ C) : A ⊆ C := Subset.trans h1 h2
+
+  example : A ⊆ A := Subset.refl A
+
+  example (h : A ⊆ B) : powerset A ⊆ powerset B := by
+  intro sa sa_in_pa
+  apply Subset.trans
+  . show sa ⊆ A
+    exact sa_in_pa
+  . show A ⊆ B
+    exact h
+
+  example (h : powerset A ⊆ powerset B) : A ⊆ B := by
+  -- h is formally sa -> sa ∈ P A -> sa ∈ P B
+  -- h is formally sa -> sa ⊆ A -> sa ⊆ B
+  have : A ⊆ A := Subset.refl A
+  apply h
+  -- the first argument of h (of type Set A) is implicit
+  show A ∈ powerset A
+  assumption
 end
