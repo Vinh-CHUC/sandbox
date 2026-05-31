@@ -301,3 +301,43 @@ end
 --------------------
 -- 12.5 Exercises --
 --------------------
+
+-- 1
+section
+  variable {A : Set U}
+  variable {B : Set U}
+  variable {C : Set U}
+
+  example : ∀ x, x ∈ A ∩ C → x ∈ A ∪ B := by
+    intro x x_a_and_c
+    exact Or.inl $ And.left x_a_and_c
+
+  example : ∀ x, x ∈ (A ∪ B)ᶜ → x ∈ Aᶜ := by
+    intro x x_n_a_or_c x_in_a
+    have x_in_a_or_b : x ∈ A ∪ B := Or.inl x_in_a
+    contradiction
+end
+
+-- 2
+section
+  variable {U : Type}
+
+  def disj (A B: Set U) : Prop := ∀ ⦃x⦄, x ∈ A → x ∈ B → False
+
+  example (A B : Set U) (h : ∀ x, ¬ (x ∈ A ∧ x ∈ B)): disj A B :=
+    fun x ↦
+    fun h1 : x ∈ A ↦
+    fun h2 : x ∈ B ↦
+    have h3 : x ∈ A ∧ x ∈ B := And.intro h1 h2
+    show False from h x h3
+
+  -- Note that h1 x h2 h3 is not necessary given the implicit  ⦃x⦄ further above
+  example (A B: Set U) (h1 : disj A B) (x : U) (h2 : x ∈ A) (h3 : x ∈ B) : False :=
+    h1 h2 h3
+
+  example (A B: Set U) (x : U) (h : A ⊆ B) (h1: x ∈ A) : x ∈ B :=
+    h h1
+
+  example (A B C D: Set U) (h1: disj A B) (h2 : C ⊆ A) (h3 : D ⊆ B) : disj C D :=
+    sorry
+end
