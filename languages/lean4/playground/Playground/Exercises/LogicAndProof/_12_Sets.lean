@@ -226,3 +226,78 @@ example : (⋂ i, A i ∩ B i) = (⋂ i, A i) ∩ (⋂ i, B i) := by
   . intro (h: (∀ (i: I), x ∈ A i) ∧ (∀ (i : I), x ∈ B i))
     show ∀ i, x ∈ A i ∧ x ∈ B i
     exact fun j ↦ ⟨h.left j, h.right j⟩
+
+-- Helpers
+variable {I U : Type}
+variable {A : I → Set U}
+
+theorem Inter.intro {x : U} (h : ∀ i, x ∈ A i) : x ∈ ⋂ i, A i := by
+  rw [mem_iInter]
+  show ∀ i, x ∈ A i
+  assumption
+
+theorem Inter.elim {x : U} (h : x ∈ ⋂ i, A i) (i : I) : x ∈ A i := by
+  rw [mem_iInter] at h
+  apply h
+
+theorem Union.intro {x : U} (i : I) (h : x ∈ A i) : x ∈ ⋃ i, A i := by
+  rw [mem_iUnion]
+  show ∃ i, x ∈ A i
+  exact ⟨i, h⟩
+
+theorem Union.elim {b : Prop} {x : U}
+(h₁ : x ∈ ⋃ i, A i) (h₂ : ∀ (i : I), x ∈ A i → b) : b := by
+  rw [mem_iUnion] at h₁
+  cases h₁ with
+  | intro i hi => exact h₂ i hi
+
+-- Another
+section
+  variable {I U : Type}
+  variable {A : I → Set U}
+  variable {B : I → Set U}
+  variable {C : Set U}
+
+  example : (⋃ i, C ∩ A i) ⊆ C ∩ (⋃ i, A i) :=
+    fun x : U ↦
+    fun h : x ∈ ⋃ i, C ∩ A i ↦
+    Union.elim h $
+    fun i ↦
+    fun h1 : x ∈ C ∩ A i ↦
+    have h2 : x ∈ C := And.left h1
+    have h3 : x ∈ A i := And.right h1
+    have h4 : x ∈ ⋃ i, A i := Union.intro i h3
+    show x ∈ C ∩ ⋃ i, A i from And.intro h2 h4
+end
+
+-- Indexed families, multiple indexing variables
+section
+variable {I J U: Type}
+variable {A : I → J → Set U}
+
+example : (⋃i, ⋂j, A i j) ⊆ (⋂j, ⋃i, A i j) :=
+  fun x : U ↦
+  fun h : x ∈ ⋃i, ⋂j, A i j ↦
+  Union.elim h $
+  fun i ↦
+  fun h1 : x ∈ ⋂ j, A i j ↦
+  show x ∈ ⋂j, ⋃i, A i j from
+    Inter.intro $
+    fun j ↦
+    have h2 : x ∈ A i j := Inter.elim h1 j
+    Union.intro i h2
+end
+
+---------------------
+-- 12.4 Power Sets --
+---------------------
+section
+variable {U : Type}
+
+-- This shows that B ∈ power A is definitionally the same as B ⊆ A
+def powerset(A : Set U) : Set (Set U) := {B : Set U | B ⊆ A}
+end
+
+--------------------
+-- 12.5 Exercises --
+--------------------
