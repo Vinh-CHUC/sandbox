@@ -37,21 +37,23 @@ pub fn noop_parser<'src>() -> impl Parser<'src, &'src str, ()>{
 
 // just
 //
-// The output type of the parser is basically Just<T> where T is the input to just(seq: T)
-pub fn just_char_parser<'src>() -> impl Parser<'src, &'src str, char> {
-    just('h')
+// The output type of the parser depends on the pattern:
+// - just(char) -> Parser<..., char>
+// - just(&str) -> Parser<..., &str>
+pub fn just_char_parser<'src>(c: char) -> impl Parser<'src, &'src str, char> {
+    just(c)
 }
 
-pub fn just_str_parser<'src>() -> impl Parser<'src, &'src str, &'src str> {
-    just("hello")
+pub fn just_str_parser<'src>(s: &'src str) -> impl Parser<'src, &'src str, &'src str> {
+    just(s)
 }
 
-pub fn none_of_parser<'src>() -> impl Parser<'src, &'src str, char> {
-    none_of("abc")
+pub fn none_of_parser<'src>(s: &'src str) -> impl Parser<'src, &'src str, char> {
+    none_of(s)
 }
 
-pub fn one_of_parser<'src>() -> impl Parser<'src, &'src str, char> {
-    one_of("abc")
+pub fn one_of_parser<'src>(s: &'src str) -> impl Parser<'src, &'src str, char> {
+    one_of(s)
 }
 
 pub fn any_parser<'src>() -> impl Parser<'src, &'src str, char> {
@@ -66,8 +68,14 @@ pub fn empty_parser<'src>() -> impl Parser<'src, &'src str, ()> {
     empty()
 }
 
-pub fn choice_parser<'src>() -> impl Parser<'src, &'src str, &'src str> {
-    choice((just("hello"), just("goodbye")))
+pub fn choice_parser<'src>(s1: &'src str, s2: &'src str) -> impl Parser<'src, &'src str, &'src str> {
+    choice((just(s1), just(s2)))
+}
+
+/// Possible but inefficient: Using an owned String as a pattern.
+/// The output type becomes String, and it clones the pattern on every match.
+pub fn owned_string_pattern_parser(s: String) -> impl Parser<'static, &'static str, String> {
+    just(s)
 }
 
 #[cfg(test)]
@@ -82,24 +90,24 @@ mod tests {
 
     #[test]
     fn test_just_parsers() {
-        assert_eq!(just_char_parser().parse("h").into_result(), Ok('h'));
-        assert_eq!(just_str_parser().parse("hello").into_result(), Ok("hello"));
+        assert_eq!(just_char_parser('h').parse("h").into_result(), Ok('h'));
+        assert_eq!(just_str_parser("hello").parse("hello").into_result(), Ok("hello"));
 
-        assert!(just_char_parser().parse("x").has_errors());
-        assert!(just_str_parser().parse("world").has_errors());
+        assert!(just_char_parser('h').parse("x").has_errors());
+        assert!(just_str_parser("hello").parse("world").has_errors());
     }
 
     #[test]
     fn test_none_of_parser() {
-        assert_eq!(none_of_parser().parse("d").into_result(), Ok('d'));
-        assert!(none_of_parser().parse("a").has_errors());
+        assert_eq!(none_of_parser("abc").parse("d").into_result(), Ok('d'));
+        assert!(none_of_parser("abc").parse("a").has_errors());
     }
 
     #[test]
     fn test_one_of_parser() {
-        assert_eq!(one_of_parser().parse("a").into_result(), Ok('a'));
-        assert_eq!(one_of_parser().parse("b").into_result(), Ok('b'));
-        assert!(one_of_parser().parse("d").has_errors());
+        assert_eq!(one_of_parser("abc").parse("a").into_result(), Ok('a'));
+        assert_eq!(one_of_parser("abc").parse("b").into_result(), Ok('b'));
+        assert!(one_of_parser("abc").parse("d").has_errors());
     }
 
     #[test]
@@ -124,8 +132,15 @@ mod tests {
 
     #[test]
     fn test_choice_parser() {
-        assert_eq!(choice_parser().parse("hello").into_result(), Ok("hello"));
-        assert_eq!(choice_parser().parse("goodbye").into_result(), Ok("goodbye"));
-        assert!(choice_parser().parse("ciao").has_errors());
+        assert_eq!(choice_parser("hello", "goodbye").parse("hello").into_result(), Ok("hello"));
+        assert_eq!(choice_parser("hello", "goodbye").parse("goodbye").into_result(), Ok("goodbye"));
+        assert!(choice_parser("hello", "goodbye").parse("ciao").has_errors());
+    }
+
+    #[test]
+    fn test_owned_string_pattern() {
+        let pattern = String::from("owned");
+        // Note: The parser now returns a String, not a &str
+        assert_eq!(owned_string_pattern_parser(pattern).parse("owned").into_result(), Ok(String::from("owned")));
     }
 }
