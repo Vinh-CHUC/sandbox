@@ -46,6 +46,30 @@ pub fn just_str_parser<'src>() -> impl Parser<'src, &'src str, &'src str> {
     just("hello")
 }
 
+pub fn none_of_parser<'src>() -> impl Parser<'src, &'src str, char> {
+    none_of("abc")
+}
+
+pub fn one_of_parser<'src>() -> impl Parser<'src, &'src str, char> {
+    one_of("abc")
+}
+
+pub fn any_parser<'src>() -> impl Parser<'src, &'src str, char> {
+    any()
+}
+
+pub fn end_parser<'src>() -> impl Parser<'src, &'src str, ()> {
+    end()
+}
+
+pub fn empty_parser<'src>() -> impl Parser<'src, &'src str, ()> {
+    empty()
+}
+
+pub fn choice_parser<'src>() -> impl Parser<'src, &'src str, &'src str> {
+    choice((just("hello"), just("goodbye")))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -63,5 +87,45 @@ mod tests {
 
         assert!(just_char_parser().parse("x").has_errors());
         assert!(just_str_parser().parse("world").has_errors());
+    }
+
+    #[test]
+    fn test_none_of_parser() {
+        assert_eq!(none_of_parser().parse("d").into_result(), Ok('d'));
+        assert!(none_of_parser().parse("a").has_errors());
+    }
+
+    #[test]
+    fn test_one_of_parser() {
+        assert_eq!(one_of_parser().parse("a").into_result(), Ok('a'));
+        assert_eq!(one_of_parser().parse("b").into_result(), Ok('b'));
+        assert!(one_of_parser().parse("d").has_errors());
+    }
+
+    #[test]
+    fn test_any_parser() {
+        assert_eq!(any_parser().parse("a").into_result(), Ok('a'));
+        assert_eq!(any_parser().parse("z").into_result(), Ok('z'));
+        assert!(any_parser().parse("").has_errors());
+    }
+
+    #[test]
+    fn test_end_parser() {
+        assert_eq!(end_parser().parse("").into_result(), Ok(()));
+        assert!(end_parser().parse("a").has_errors());
+    }
+
+    #[test]
+    fn test_empty_parser() {
+        assert_eq!(empty_parser().parse("").into_result(), Ok(()));
+        // empty() consumes nothing, so .parse("a") fails because it expects to reach the end of input
+        assert!(empty_parser().parse("a").has_errors());
+    }
+
+    #[test]
+    fn test_choice_parser() {
+        assert_eq!(choice_parser().parse("hello").into_result(), Ok("hello"));
+        assert_eq!(choice_parser().parse("goodbye").into_result(), Ok("goodbye"));
+        assert!(choice_parser().parse("ciao").has_errors());
     }
 }
