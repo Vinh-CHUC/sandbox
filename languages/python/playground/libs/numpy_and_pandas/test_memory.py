@@ -38,11 +38,11 @@ class TestDataFrameCopy:
 class TestDataFrameView:
     def test_2d_array(self):
         """
-        Passing a 2D nd-array behaves like a copy=False by default
+        One needs to use copy=False to have pandas dataframes as a view
         """
         arr = np.zeros((10, 5))
 
-        df = pd.DataFrame(arr, columns=[f"col_{i}" for i in range(5)])
+        df = pd.DataFrame(arr, columns=[f"col_{i}" for i in range(5)], copy=False)
         # Using .iloc or .loc for in-place modification
         df.iloc[:, 3] = 10
 
@@ -95,7 +95,7 @@ class TestViewBreak:
         # This replaces the column reference (breaks view)
         df["b"] = np.ones(10) * 5
 
-        df["c"] = df["c"].astype("float64")
+        df["c"] = df["c"].astype("float32")
         df.loc[:, "c"] = 9.9
 
         # 'a' is still a view !!!

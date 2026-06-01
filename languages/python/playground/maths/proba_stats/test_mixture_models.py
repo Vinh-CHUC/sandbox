@@ -54,8 +54,6 @@ class TestBinaryVectorMixtures:
             size=size,
         )
 
-        import pdb; pdb.set_trace()
-
         df = pd.DataFrame(samples, columns=["a", "b"])
         # The essence of it, given an observation we got more information about which cluster
         # we're likely in. Which in turns gives information about the other one
