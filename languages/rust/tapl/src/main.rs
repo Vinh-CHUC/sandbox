@@ -1,3 +1,5 @@
+use tapl::chumsky_tutorial::*;
+
 fn main() {
-    println!("Hello, world!");
+    tutorial_main();
 }

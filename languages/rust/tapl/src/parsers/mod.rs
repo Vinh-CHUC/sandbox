@@ -16,6 +16,7 @@ pub fn flat_arithmetic_expression<'src>() -> impl Parser<'src, &'src str, u32> {
         .foldl(just('+').ignore_then(int).repeated(), |a, b| a + b)
 }
 
+#[cfg(test)]
 mod tests {
     use super::*;
 

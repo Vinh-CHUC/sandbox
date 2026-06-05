@@ -38,9 +38,9 @@
 use chumsky::prelude::*;
 
 // This compiles would recurse infinitely at runtime
-pub fn broken_infinite_parser<'src>() -> impl Parser<'src, &'src str, String> {
-    just("yo").then(broken_infinite_parser().boxed()).map(|(x, y)| format!("{x}{y}"))
-}
+// pub fn broken_infinite_parser<'src>() -> impl Parser<'src, &'src str, String> {
+//     just("yo").then(broken_infinite_parser().boxed()).map(|(x, y)| format!("{x}{y}"))
+// }
 
 // Solution for the simple infinite_parser
 pub fn infinite_parser<'src>() -> impl Parser<'src, &'src str, String>{
