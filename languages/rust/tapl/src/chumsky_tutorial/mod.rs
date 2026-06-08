@@ -26,53 +26,65 @@ pub enum Expr<'src> {
 }
 
 fn parser<'src>() -> impl Parser<'src, &'src str, Expr<'src>> {
-    let int = text::int(10)
-        // unwrap() is kind of save as we know this will parse integers
-        .map(|s: &str| Expr::Num(s.parse().unwrap()))
-        .padded();
+    recursive(|expr| {
+        let int = text::int(10)
+            // unwrap() is kind of save as we know this will parse integers
+            .map(|s: &str| Expr::Num(s.parse().unwrap()))
+            .padded();
 
-    let atom = int;
+        let atom = int.or(expr.delimited_by(just('('), just(')'))).padded();
 
-    let op = |c| just(c).padded();
+        let op = |c| just(c).padded();
 
-    // foldr note the **right** so it's literally something of the form -----atom
-    //
-    // (['-',   '-',   '-'],   Num(42.0))
-    //   ---    ---    ---     ---------
-    //    |      |      |           |
-    //    |      |       \         /
-    //    |      |      Neg(Num(42.0))
-    //    |      |            |
-    //    |       \          /
-    //    |    Neg(Neg(Num(42.0)))
-    //    |            |
-    //     \          /
-    // Neg(Neg(Neg(Num(42.0))))
-    let unary = op('-')
-        .repeated()
-        .foldr(atom, |_op, rhs| Expr::Neg(Box::new(rhs)));
+        // foldr note the **right** so it's literally something of the form -----atom
+        //
+        // (['-',   '-',   '-'],   Num(42.0))
+        //   ---    ---    ---     ---------
+        //    |      |      |           |
+        //    |      |       \         /
+        //    |      |      Neg(Num(42.0))
+        //    |      |            |
+        //    |       \          /
+        //    |    Neg(Neg(Num(42.0)))
+        //    |            |
+        //     \          /
+        // Neg(Neg(Neg(Num(42.0))))
+        let unary = op('-')
+            .repeated()
+            .foldr(atom, |_op, rhs| Expr::Neg(Box::new(rhs)));
 
-    let product = unary.foldl(
-        choice((
-            op('*').to(Expr::Mul as fn(_, _) -> _),
-            op('/').to(Expr::Div as fn(_, _) -> _),
-        ))
-        .then(unary)
-        .repeated(),
-        |lhs, (op, rhs)| op(Box::new(lhs), Box::new(rhs)),
-    );
+        let product = unary.clone().foldl(
+            choice((
+                op('*').to(Expr::Mul as fn(_, _) -> _),
+                op('/').to(Expr::Div as fn(_, _) -> _),
+            ))
+            .then(unary)
+            .repeated(),
+            |lhs, (op, rhs)| op(Box::new(lhs), Box::new(rhs)),
+        );
 
-    let sum = product.foldl(
-        choice((
-            op('+').to(Expr::Add as fn(_, _) -> _),
-            op('-').to(Expr::Sub as fn(_, _) -> _),
-        ))
-        .then(product)
-        .repeated(),
-        |lhs, (op, rhs)| op(Box::new(lhs), Box::new(rhs)),
-    );
+        let sum = product.clone().foldl(
+            choice((
+                op('+').to(Expr::Add as fn(_, _) -> _),
+                op('-').to(Expr::Sub as fn(_, _) -> _),
+            ))
+            .then(product)
+            .repeated(),
+            |lhs, (op, rhs)| op(Box::new(lhs), Box::new(rhs)),
+        );
 
-    sum
+        sum
+    })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parser(){
+        assert!(!parser().parse("(2+3)*3+4*(---5)").has_errors());
+    }
 }
 
 
