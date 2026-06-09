@@ -1,6 +1,6 @@
 use chumsky::prelude::*;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Expr<'src> {
     Num(f64),
     Var(&'src str),
@@ -111,12 +111,32 @@ fn eval<'src>(expr: &'src Expr<'src>, vars: &mut Vec<(&'src str, f64)>) -> Resul
         Expr::Mul(a, b) => Ok(eval(a, vars)? * eval(b, vars)?),
         Expr::Div(a, b) => Ok(eval(a, vars)? / eval(b, vars)?),
         Expr::Var(name) => {
+            // Searching variables backwards, e.g. shadowing
             if let Some((_, val)) = vars.iter().rev().find(|(var, _)| var == name){
                 Ok(*val)
             } else {
                 Err(format!("Cannot find variable `{}` in scope", name))
             }
-        }
+        },
+        Expr::Let {name, rhs, then } => {
+            let rhs = eval(rhs, vars);
+            vars.push((name, rhs?));
+            let output = eval(then, vars);
+
+            // Strictly speaking not necessary when I write these lines as there's no nested
+            // let expressions? Explanations:
+            // - Basically when pop()-ing there's no further evaluation
+            // - Because rhs is evaluated before then
+            // - There is only one scope
+            //
+            // If there were nested let expressions:
+            //let a =
+            //  let b = 1;
+            //  b;
+            // a
+            vars.pop();
+            output
+        },
         _ => todo!(),
     }
 }
@@ -152,12 +172,24 @@ mod tests {
     fn test_eval(){
         let s = r#"
             let yo = 5 + 3;
-            let a = 5 + a;
+            let a = 5 + yo;
             a
         "#;
         let mut vars = vec![];
         let ast = parser().parse(s).into_result().unwrap();
         assert_eq!(eval(&ast, &mut vars).unwrap(), 13.0);
+    }
+
+    #[test]
+    fn test_eval_2(){
+        let s = r#"
+            let x = 5;
+            let x = 3 + x;
+            x
+        "#;
+        let mut vars = vec![];
+        let ast = parser().parse(s).into_result().unwrap();
+        assert_eq!(eval(&ast, &mut vars).unwrap(), 8.0);
     }
 }
 
