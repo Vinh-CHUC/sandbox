@@ -34,8 +34,19 @@ fn parser<'src>() -> impl Parser<'src, &'src str, Expr<'src>> {
             .map(|s: &str| Expr::Num(s.parse().unwrap()))
             .padded();
 
+        let call = ident
+            .then(
+                expr.clone()
+                    .separated_by(just(','))
+                    .allow_trailing()
+                    .collect::<Vec<_>>()
+                    .delimited_by(just('('), just(')')),
+            )
+            .map(|(f, args)| Expr::Call(f, args));
+
         let atom = int
-            .or(expr.delimited_by(just('('), just(')'))).padded()
+            .or(expr.delimited_by(just('('), just(')')))
+            .or(call)
             .or(ident.map(Expr::Var))
             .padded();
 
@@ -87,16 +98,28 @@ fn parser<'src>() -> impl Parser<'src, &'src str, Expr<'src>> {
             .then_ignore(just('='))
             .then(expr.clone())
             .then_ignore(just(';'))
-            .then(decl)
+            .then(decl.clone())
             .map(|((name, rhs), then) | Expr::Let {
                 name,
                 rhs: Box::new(rhs),
                 then: Box::new(then),
             });
 
-        r#let
-            .or(expr)
-            .padded()
+        let r#fn = text::ascii::keyword("fn")
+            .ignore_then(ident)
+            .then(ident.repeated().collect::<Vec<_>>())
+            .then_ignore(just('='))
+            .then(expr.clone())
+            .then_ignore(just(';'))
+            .then(decl)
+            .map(|(((name, args), body), then)| Expr::Fn {
+                name,
+                args,
+                body: Box::new(body),
+                then: Box::new(then),
+            });
+
+        r#let.or(r#fn).or(expr).padded()
     });
 
     decl
