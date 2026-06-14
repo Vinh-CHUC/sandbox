@@ -1,3 +1,5 @@
+use std::vec;
+
 use chumsky::prelude::*;
 
 #[derive(Debug, PartialEq)]
@@ -125,14 +127,18 @@ fn parser<'src>() -> impl Parser<'src, &'src str, Expr<'src>> {
     decl
 }
 
-fn eval<'src>(expr: &'src Expr<'src>, vars: &mut Vec<(&'src str, f64)>) -> Result<f64, String> {
+fn eval<'src>(
+    expr: &'src Expr<'src>,
+    vars: &mut Vec<(&'src str, f64)>,
+    funcs: &mut Vec<(&'src str, &'src [&'src str], &'src Expr<'src>)>,
+) -> Result<f64, String> {
     match expr {
         Expr::Num(x) => Ok(*x),
-        Expr::Neg(a) => Ok(-eval(a, vars)?),
-        Expr::Add(a, b) => Ok(eval(a, vars)? + eval(b, vars)?),
-        Expr::Sub(a, b) => Ok(eval(a, vars)? - eval(b, vars)?),
-        Expr::Mul(a, b) => Ok(eval(a, vars)? * eval(b, vars)?),
-        Expr::Div(a, b) => Ok(eval(a, vars)? / eval(b, vars)?),
+        Expr::Neg(a) => Ok(-eval(a, vars, funcs)?),
+        Expr::Add(a, b) => Ok(eval(a, vars, funcs)? + eval(b, vars, funcs)?),
+        Expr::Sub(a, b) => Ok(eval(a, vars, funcs)? - eval(b, vars, funcs)?),
+        Expr::Mul(a, b) => Ok(eval(a, vars, funcs)? * eval(b, vars, funcs)?),
+        Expr::Div(a, b) => Ok(eval(a, vars, funcs)? / eval(b, vars, funcs)?),
         Expr::Var(name) => {
             // Searching variables backwards, e.g. shadowing
             if let Some((_, val)) = vars.iter().rev().find(|(var, _)| var == name){
@@ -142,9 +148,9 @@ fn eval<'src>(expr: &'src Expr<'src>, vars: &mut Vec<(&'src str, f64)>) -> Resul
             }
         },
         Expr::Let {name, rhs, then } => {
-            let rhs = eval(rhs, vars);
+            let rhs = eval(rhs, vars, funcs);
             vars.push((name, rhs?));
-            let output = eval(then, vars);
+            let output = eval(then, vars, funcs);
 
             // Strictly speaking not necessary when I write these lines as there's no nested
             // let expressions? Explanations:
@@ -158,6 +164,40 @@ fn eval<'src>(expr: &'src Expr<'src>, vars: &mut Vec<(&'src str, f64)>) -> Resul
             //  b;
             // a
             vars.pop();
+            output
+        },
+        Expr::Call(name, args) => {
+            if let Some((_, arg_names, body)) =
+                funcs.iter().rev().find(|(var, _, _)| var == name).copied()
+            {
+                if arg_names.len() == args.len() {
+                    let mut evaled_args = args
+                        .iter()
+                        .map(|arg| eval(arg, vars, funcs))
+                        .zip(arg_names.iter())
+                        .map(|(val, name)| Ok((*name, val?)))
+                        .collect::<Result<_, String>>()?;
+                    let old_vars = vars.len();
+                    vars.append(&mut evaled_args);
+                    let output = eval(body, vars, funcs);
+                    vars.truncate(old_vars);
+                    output
+                } else {
+                    Err(format!(
+                        "Wrong number of arguments for function `{}`: expected {}, found {}",
+                        name,
+                        arg_names.len(),
+                        args.len(),
+                    ))
+                }
+            } else {
+                Err(format!("Cannot find function `{}` in scope", name))
+            }
+        },
+        Expr::Fn {name, args, body, then} => {
+            funcs.push((name, args, body));
+            let output = eval(then, vars, funcs);
+            funcs.pop();
             output
         },
         _ => todo!(),
@@ -199,8 +239,9 @@ mod tests {
             a
         "#;
         let mut vars = vec![];
+        let mut funcs = vec![];
         let ast = parser().parse(s).into_result().unwrap();
-        assert_eq!(eval(&ast, &mut vars).unwrap(), 13.0);
+        assert_eq!(eval(&ast, &mut vars, &mut funcs).unwrap(), 13.0);
     }
 
     #[test]
@@ -211,8 +252,37 @@ mod tests {
             x
         "#;
         let mut vars = vec![];
+        let mut funcs = vec![];
         let ast = parser().parse(s).into_result().unwrap();
-        assert_eq!(eval(&ast, &mut vars).unwrap(), 8.0);
+        assert_eq!(eval(&ast, &mut vars, &mut funcs).unwrap(), 8.0);
+    }
+
+    #[test]
+    fn test_eval_fns(){
+        let s = r#"
+            fn linear x y = 5 * x + y;
+            linear(2, 3)
+        "#;
+        let mut vars = vec![];
+        let mut funcs = vec![];
+        let ast = parser().parse(s).into_result().unwrap();
+        assert_eq!(eval(&ast, &mut vars, &mut funcs).unwrap(), 13.0);
+    }
+
+    #[test]
+    fn test_fns_dynamic_scoping(){
+        // Technically a bug!!
+        // As usually one would expect lexical scoping
+        let s = r#"
+            let y = 5;
+            fn linear x = 5 * x + y;
+            let y = 6;
+            linear(2)
+        "#;
+        let mut vars = vec![];
+        let mut funcs = vec![];
+        let ast = parser().parse(s).into_result().unwrap();
+        assert_eq!(eval(&ast, &mut vars, &mut funcs).unwrap(), 16.0);
     }
 }
 
@@ -220,11 +290,12 @@ pub fn tutorial_main() {
     let src = std::fs::read_to_string(std::env::args().nth(1).unwrap()).unwrap();
 
     let mut variables = vec![];
+    let mut funcs = vec![];
 
     match parser().parse(&src).into_result() {
         Ok(ast) => {
             println!("{:?}", ast);
-            match eval(&ast, &mut variables){
+            match eval(&ast, &mut variables, &mut funcs){
                 Ok(output) => println!("{}", output),
                 Err(eval_err) => println!("Evaluation error {}", eval_err),
             }
