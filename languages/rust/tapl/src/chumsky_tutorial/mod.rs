@@ -19,12 +19,21 @@ pub enum Expr<'src> {
         rhs: Box<Expr<'src>>,
         then: Box<Expr<'src>>,
     },
-    Fn {
+    // Dynamic scoping
+    DynFn {
         name: &'src str,
         args: Vec<&'src str>,
         body: Box<Expr<'src>>,
         then: Box<Expr<'src>>,
-    }
+    },
+    // Lexical scoping
+    LexFn {
+        name: &'src str,
+        args: Vec<&'src str>,
+        closure: Vec<&'src str>,
+        body: Box<Expr<'src>>,
+        then: Box<Expr<'src>>,
+    },
 }
 
 fn parser<'src>() -> impl Parser<'src, &'src str, Expr<'src>> {
@@ -106,25 +115,65 @@ fn parser<'src>() -> impl Parser<'src, &'src str, Expr<'src>> {
                 rhs: Box::new(rhs),
                 then: Box::new(then),
             });
-
-        let r#fn = text::ascii::keyword("fn")
+        let dynfn = text::ascii::keyword("dynfn")
             .ignore_then(ident)
             .then(ident.repeated().collect::<Vec<_>>())
             .then_ignore(just('='))
             .then(expr.clone())
             .then_ignore(just(';'))
-            .then(decl)
-            .map(|(((name, args), body), then)| Expr::Fn {
+            .then(decl.clone())
+            .map(|(((name, args), body), then)| Expr::DynFn {
                 name,
                 args,
                 body: Box::new(body),
                 then: Box::new(then),
             });
 
-        r#let.or(r#fn).or(expr).padded()
+        let lexfn = text::ascii::keyword("lexfn")
+            .ignore_then(ident)
+            .then(ident.repeated().collect::<Vec<_>>())
+            // Optional closure
+            .then(
+                ident.repeated().collect::<Vec<_>>().delimited_by(just('[').padded(), just(']').padded()).or_not()
+            )
+            .then_ignore(just('='))
+            .then(expr.clone())
+            .then_ignore(just(';'))
+            .then(decl)
+            .map(|((((name, args), closure), body), then)| Expr::LexFn {
+                name,
+                args,
+                closure:closure.unwrap_or(vec![]),
+                body: Box::new(body),
+                then: Box::new(then),
+            });
+
+        r#let.or(dynfn).or(lexfn).or(expr).padded()
     });
 
     decl
+}
+
+mod functions {
+    use super::*;
+
+    enum Function<'src> {
+        DynFn {
+            name: &'src str,
+            args: &'src [&'src str],
+            body: &'src Expr<'src>
+        },
+        LexFn {
+            name: &'src str,
+            args: &'src [&'src str],
+            closure: &'src [&'src str],
+            body: &'src Expr<'src>
+        }
+    }
+
+    pub struct Functions<'src> {
+        functions: Vec<Function<'src>>
+    }
 }
 
 fn eval<'src>(
@@ -194,7 +243,7 @@ fn eval<'src>(
                 Err(format!("Cannot find function `{}` in scope", name))
             }
         },
-        Expr::Fn {name, args, body, then} => {
+        Expr::DynFn {name, args, body, then} => {
             funcs.push((name, args, body));
             let output = eval(then, vars, funcs);
             funcs.pop();
@@ -260,7 +309,7 @@ mod tests {
     #[test]
     fn test_eval_fns(){
         let s = r#"
-            fn linear x y = 5 * x + y;
+            dynfn linear x y = 5 * x + y;
             linear(2, 3)
         "#;
         let mut vars = vec![];
@@ -275,7 +324,7 @@ mod tests {
         // As usually one would expect lexical scoping
         let s = r#"
             let y = 5;
-            fn linear x = 5 * x + y;
+            dynfn linear x = 5 * x + y;
             let y = 6;
             linear(2)
         "#;
@@ -283,6 +332,17 @@ mod tests {
         let mut funcs = vec![];
         let ast = parser().parse(s).into_result().unwrap();
         assert_eq!(eval(&ast, &mut vars, &mut funcs).unwrap(), 16.0);
+    }
+
+    #[test]
+    fn test_fns_lexical_scoping(){
+        let s = r#"
+            let y = 5;
+            lexfn linear x [y] = 5 * x + y;
+            lexfn linear x = 5 * x + y;
+            linear(5)
+        "#;
+        parser().parse(s).into_result().unwrap();
     }
 }
 
