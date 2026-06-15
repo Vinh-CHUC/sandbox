@@ -154,10 +154,11 @@ fn parser<'src>() -> impl Parser<'src, &'src str, Expr<'src>> {
     decl
 }
 
-mod functions {
+mod helper {
     use super::*;
 
-    enum Function<'src> {
+    #[derive(Clone, Debug, PartialEq)]
+    pub enum Function<'src> {
         DynFn {
             name: &'src str,
             args: &'src [&'src str],
@@ -173,6 +174,25 @@ mod functions {
 
     pub struct Functions<'src> {
         functions: Vec<Function<'src>>
+
+    }
+
+    impl<'src> Functions<'src> {
+        pub fn new() -> Self {
+            Functions{functions: vec![]}
+        }
+
+        pub fn find(&self, fn_name: &'src str) -> Option<Function<'src>>{
+            self.functions.iter().rev().find(|func|
+                match func {
+                    Function::DynFn { name, args, body } if *name == fn_name => { true },
+                    Function::LexFn { name, args, closure, body } if *name == fn_name => {
+                        true
+                    },
+                    _ => { false }
+                }
+            ).cloned()
+        }
     }
 }
 
