@@ -171,7 +171,7 @@ mod helper {
         LexFn {
             name: &'src str,
             args: &'src [&'src str],
-            closure: &'src [&'src str],
+            closure: Vec<(&'src str, f64)>,
             body: &'src Expr<'src>,
         },
     }
@@ -270,6 +270,30 @@ fn eval<'src>(
                     ))
                 }
             }
+            Some(helper::Function::LexFn { name, args: arg_names, closure, body }) => {
+                if arg_names.len() == args.len() {
+                    let mut evaled_args = args
+                        .iter()
+                        .map(|arg| eval(arg, vars, funcs))
+                        .zip(arg_names.iter())
+                        .map(|(val, name)| Ok((*name, val?)))
+                        .collect::<Result<_, String>>()?;
+                    let old_vars = vars.len();
+                    vars.append(&mut evaled_args);
+                    println!("{:?}", closure);
+                    vars.append(&mut closure.clone());
+                    let output = eval(body, vars, funcs);
+                    vars.truncate(old_vars);
+                    output
+                } else {
+                    Err(format!(
+                        "Wrong number of arguments for function `{}`: expected {}, found {}",
+                        name,
+                        arg_names.len(),
+                        args.len(),
+                    ))
+                }
+            },
             None => Err(format!("Cannot find function `{}` in scope", name)),
             _ => {
                 todo!()
@@ -285,7 +309,28 @@ fn eval<'src>(
             let output = eval(then, vars, funcs);
             funcs.functions.pop();
             output
-        }
+        },
+        Expr::LexFn { name, args, closure, body, then } => {
+            // Building the closure
+            let evaled_closure = closure.iter().map(
+                |var_name| {
+                    if let Some((_, val)) = vars.iter().rev().find(|(var, _)| var == var_name) {
+                        Some((*var_name, *val))
+                    } else {
+                        None
+                    }
+                }
+            ).flatten().collect::<Vec<_>>();
+
+            if evaled_closure.len() != closure.len() {
+                return Err("Some closure bindings not found".to_owned())
+            }
+
+            funcs.functions.push(helper::Function::LexFn { name, args, closure: evaled_closure, body });
+            let output = eval(then, vars, funcs);
+            funcs.functions.pop();
+            output
+        },
         _ => todo!(),
     }
 }
@@ -325,9 +370,8 @@ mod tests {
             a
         "#;
         let mut vars = vec![];
-        let mut funcs = vec![];
         let ast = parser().parse(s).into_result().unwrap();
-        assert_eq!(eval(&ast, &mut vars, &mut funcs).unwrap(), 13.0);
+        assert_eq!(eval(&ast, &mut vars, &mut helper::Functions::new()).unwrap(), 13.0);
     }
 
     #[test]
@@ -338,9 +382,8 @@ mod tests {
             x
         "#;
         let mut vars = vec![];
-        let mut funcs = vec![];
         let ast = parser().parse(s).into_result().unwrap();
-        assert_eq!(eval(&ast, &mut vars, &mut funcs).unwrap(), 8.0);
+        assert_eq!(eval(&ast, &mut vars, &mut helper::Functions::new()).unwrap(), 8.0);
     }
 
     #[test]
@@ -350,9 +393,8 @@ mod tests {
             linear(2, 3)
         "#;
         let mut vars = vec![];
-        let mut funcs = vec![];
         let ast = parser().parse(s).into_result().unwrap();
-        assert_eq!(eval(&ast, &mut vars, &mut funcs).unwrap(), 13.0);
+        assert_eq!(eval(&ast, &mut vars, &mut helper::Functions::new()).unwrap(), 13.0);
     }
 
     #[test]
@@ -380,18 +422,42 @@ mod tests {
         "#;
         parser().parse(s).into_result().unwrap();
     }
+
+    #[test]
+    fn test_fns_dynamic_scoping_eval() {
+        let s = r#"
+            let y = 5;
+            lexfn linear x [y] = 5 * x + y;
+            let y = 6;
+            linear(2)
+        "#;
+        let mut vars = vec![];
+        let ast = parser().parse(s).into_result().unwrap();
+        assert_eq!(eval(&ast, &mut vars, &mut helper::Functions::new()).unwrap(), 15.0);
+
+        let s = r#"
+            let y = 5;
+            let z = 5;
+            lexfn linear x [y z] = 5 * x + y + z;
+            let y = 6;
+            let z = 1000;
+            linear(2)
+        "#;
+        let mut vars = vec![];
+        let ast = parser().parse(s).into_result().unwrap();
+        assert_eq!(eval(&ast, &mut vars, &mut helper::Functions::new()).unwrap(), 20.0);
+    }
 }
 
 pub fn tutorial_main() {
     let src = std::fs::read_to_string(std::env::args().nth(1).unwrap()).unwrap();
 
     let mut variables = vec![];
-    let mut funcs = vec![];
 
     match parser().parse(&src).into_result() {
         Ok(ast) => {
             println!("{:?}", ast);
-            match eval(&ast, &mut variables, helper::Functions::new()) {
+            match eval(&ast, &mut variables, &mut helper::Functions::new()) {
                 Ok(output) => println!("{}", output),
                 Err(eval_err) => println!("Evaluation error {}", eval_err),
             }
