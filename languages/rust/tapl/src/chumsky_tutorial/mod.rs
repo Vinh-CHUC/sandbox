@@ -270,6 +270,8 @@ fn eval<'src>(
                     ))
                 }
             }
+            // TODO to be pedantic one should build a new vars object at this point
+            // As the function still has access to other variables
             Some(helper::Function::LexFn { name, args: arg_names, closure, body }) => {
                 if arg_names.len() == args.len() {
                     let mut evaled_args = args
@@ -295,9 +297,6 @@ fn eval<'src>(
                 }
             },
             None => Err(format!("Cannot find function `{}` in scope", name)),
-            _ => {
-                todo!()
-            }
         },
         Expr::DynFn {
             name,
@@ -421,6 +420,76 @@ mod tests {
             linear(5)
         "#;
         parser().parse(s).into_result().unwrap();
+    }
+
+    // ---------------------------------------------------------------------
+    // Known-failing tests: these encode *correct* lexical-scoping behaviour
+    // that the current evaluator does not yet implement. They are #[ignore]d
+    // so the suite stays green; run them with `cargo test -- --ignored`.
+    //
+    // Root cause: the `LexFn` arm of `Expr::Call` evaluates the body against
+    // the caller's live `vars` stack (closure/args merely appended on top),
+    // instead of a fresh environment of (closure + args). Fix: build a fresh
+    // env, closure first then args, and eval the body against that.
+    // ---------------------------------------------------------------------
+
+    #[test]
+    #[ignore = "BUG: uncaptured free var leaks from caller's dynamic scope; \
+                lexical scoping should leave it unbound -> error"]
+    fn test_lexfn_uncaptured_var_is_unbound() {
+        // `y` is not in the closure list, so the body has no business seeing
+        // it. Under lexical scoping this must be an unbound-variable error.
+        // Currently it resolves `y` from the caller's stack and returns 16.0.
+        let s = r#"
+            let y = 5;
+            lexfn linear x = 5 * x + y;
+            let y = 6;
+            linear(2)
+        "#;
+        let mut vars = vec![];
+        let ast = parser().parse(s).into_result().unwrap();
+        assert!(
+            eval(&ast, &mut vars, &mut helper::Functions::new()).is_err(),
+            "uncaptured `y` should be unbound inside `linear`",
+        );
+    }
+
+    #[test]
+    #[ignore = "BUG: closure is appended after args, so it shadows the \
+                parameter; arguments should win over captured variables"]
+    fn test_lexfn_arg_shadows_closure() {
+        // Parameter `x` collides with closure capture `x`. The parameter
+        // (value 2) must win; currently the closure (value 100) shadows it.
+        let s = r#"
+            let x = 100;
+            lexfn f x [x] = x;
+            f(2)
+        "#;
+        let mut vars = vec![];
+        let ast = parser().parse(s).into_result().unwrap();
+        assert_eq!(
+            eval(&ast, &mut vars, &mut helper::Functions::new()).unwrap(),
+            2.0,
+        );
+    }
+
+    #[test]
+    #[ignore = "BUG: body sees the caller's whole `vars` stack, so a binding \
+                from the call site leaks into the function body"]
+    fn test_lexfn_callsite_binding_does_not_leak() {
+        // `w` exists only at the call site, is never captured, and is not a
+        // parameter. A lexically-scoped body must not see it.
+        let s = r#"
+            lexfn f x = x + w;
+            let w = 99;
+            f(1)
+        "#;
+        let mut vars = vec![];
+        let ast = parser().parse(s).into_result().unwrap();
+        assert!(
+            eval(&ast, &mut vars, &mut helper::Functions::new()).is_err(),
+            "call-site binding `w` should not be visible inside `f`",
+        );
     }
 
     #[test]
