@@ -16,9 +16,7 @@ pub fn map_parser<'src>() -> impl Parser<'src, &'src str, String> {
 }
 
 /// Trying to emulate the <*> megaparsec in Haskell
-pub fn applicative_parser<'src>(
-    a: char, b: char
-) -> impl Parser<'src, &'src str, String> {
+pub fn applicative_parser<'src>(a: char, b: char) -> impl Parser<'src, &'src str, String> {
     just(a).then(just(b)).map(|(x, y)| format!("{x}{y}"))
 }
 
@@ -61,7 +59,15 @@ pub fn count_parser<'src>() -> impl Parser<'src, &'src str, usize> {
 /// `unwrapped` unwraps an `Option` or `Result` output.
 /// NOTE: In Chumsky 0.13.0, this panics if the value is `None` or `Err`.
 pub fn unwrapped_parser<'src>() -> impl Parser<'src, &'src str, char> {
-    any().map(|c: char| if c.is_ascii_lowercase() { Some(c) } else { None }).unwrapped()
+    any()
+        .map(|c: char| {
+            if c.is_ascii_lowercase() {
+                Some(c)
+            } else {
+                None
+            }
+        })
+        .unwrapped()
 }
 
 /// `then_with_ctx` allows for monadic-like dependency between parsers (like `>>=` in Haskell, or megaparsec's monad).
@@ -74,7 +80,7 @@ pub fn then_with_parser<'src>() -> impl Parser<'src, &'src str, String> {
             just('a')
                 .repeated()
                 .configure(|cfg, n: &usize| cfg.exactly(*n))
-                .collect::<String>()
+                .collect::<String>(),
         )
         .map(|(_n, s)| s)
 }
@@ -85,7 +91,10 @@ mod tests {
 
     #[test]
     fn test_map_parser() {
-        assert_eq!(map_parser().parse("a").into_result(), Ok("got: a".to_string()));
+        assert_eq!(
+            map_parser().parse("a").into_result(),
+            Ok("got: a".to_string())
+        );
     }
 
     #[test]
@@ -94,9 +103,7 @@ mod tests {
             applicative_parser('m', 'n').parse("mn").into_result(),
             Ok("mn".to_string())
         );
-        assert!(
-            applicative_parser('m', 'n').parse("mo").has_errors()
-        )
+        assert!(applicative_parser('m', 'n').parse("mo").has_errors())
     }
 
     #[test]
@@ -124,12 +131,18 @@ mod tests {
 
     #[test]
     fn test_collect_parser() {
-        assert_eq!(collect_parser().parse("aaa").into_result(), Ok(vec!['a', 'a', 'a']));
+        assert_eq!(
+            collect_parser().parse("aaa").into_result(),
+            Ok(vec!['a', 'a', 'a'])
+        );
     }
 
     #[test]
     fn test_collect_exactly_parser() {
-        assert_eq!(collect_exactly_parser().parse("aaa").into_result(), Ok(['a', 'a', 'a']));
+        assert_eq!(
+            collect_exactly_parser().parse("aaa").into_result(),
+            Ok(['a', 'a', 'a'])
+        );
         assert!(collect_exactly_parser().parse("aa").has_errors());
         assert!(collect_exactly_parser().parse("aaaa").has_errors());
     }
@@ -153,8 +166,14 @@ mod tests {
 
     #[test]
     fn test_then_with_parser() {
-        assert_eq!(then_with_parser().parse("3aaa").into_result(), Ok("aaa".to_string()));
-        assert_eq!(then_with_parser().parse("0").into_result(), Ok("".to_string()));
+        assert_eq!(
+            then_with_parser().parse("3aaa").into_result(),
+            Ok("aaa".to_string())
+        );
+        assert_eq!(
+            then_with_parser().parse("0").into_result(),
+            Ok("".to_string())
+        );
         assert!(then_with_parser().parse("2a").has_errors());
     }
 }

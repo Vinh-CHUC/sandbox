@@ -1,4 +1,4 @@
-use crate::parsers::untyped_arithmetic::{Term};
+use crate::parsers::untyped_arithmetic::Term;
 
 // We have to have a way to signal that the evaluation "did not do anything"
 // The caller (eval) can then detect that and just return the argument if this return None
@@ -14,35 +14,22 @@ pub fn eval_step(t: Term) -> Option<Term> {
             match inner {
                 Term::Zero => Some(Term::Zero),
                 Term::Succ(inner2) => Some(*inner2),
-                term  => {
-                    eval_step(term.clone()).map_or(
-                        None,
-                        |t| Some(Term::Pred (Box::new(t)))
-                    )
-                }
+                term => eval_step(term.clone()).map_or(None, |t| Some(Term::Pred(Box::new(t)))),
             }
         }
         Term::Succ(b) => {
             let term = *b;
-            eval_step(term.clone()).map_or(
-                None,
-                |t| Some(Term::Succ (Box::new(t)))
-            )
+            eval_step(term.clone()).map_or(None, |t| Some(Term::Succ(Box::new(t))))
         }
         Term::IsZero(b) => {
             let inner = *b;
             match inner {
                 Term::Zero => Some(Term::True),
                 Term::Succ(_) => Some(Term::False),
-                term  => {
-                    eval_step(term.clone()).map_or(
-                        None,
-                        |t| Some(Term::IsZero (Box::new(t)))
-                    )
-                }
+                term => eval_step(term.clone()).map_or(None, |t| Some(Term::IsZero(Box::new(t)))),
             }
         }
-        _ => None
+        _ => None,
     }
 }
 
@@ -53,8 +40,8 @@ pub fn eval(t: Term) -> Term {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::parsers::untyped_arithmetic::parse_term;
     use chumsky::prelude::*;
-    use crate::parsers::untyped_arithmetic::{parse_term};
 
     fn parse_unwrap<T: AsRef<str>>(s: T) -> Term {
         parse_term().parse(s.as_ref()).into_result().unwrap()

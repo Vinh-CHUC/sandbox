@@ -43,9 +43,11 @@ use chumsky::prelude::*;
 // }
 
 // Solution for the simple infinite_parser
-pub fn infinite_parser<'src>() -> impl Parser<'src, &'src str, String>{
+pub fn infinite_parser<'src>() -> impl Parser<'src, &'src str, String> {
     recursive(|p| {
-        just("yo").then(p).map(|(x, y)| format!("{x}{y}"))
+        just("yo")
+            .then(p)
+            .map(|(x, y)| format!("{x}{y}"))
             .or(just("yo").map(|s| s.to_string()))
     })
 }
@@ -55,11 +57,7 @@ pub fn a_parser<'src>() -> impl Parser<'src, &'src str, i32> + Clone {
     recursive(|a_parser| {
         let int = text::int(10).map(|s: &str| s.parse().unwrap());
 
-        let atom = choice((
-            int,
-            a_parser.delimited_by(just('('), just(')')),
-        ))
-            .padded();
+        let atom = choice((int, a_parser.delimited_by(just('('), just(')')))).padded();
 
         atom.clone().foldl(
             just('+').padded().ignore_then(atom).repeated(),
@@ -73,13 +71,13 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_recursive(){
+    fn test_recursive() {
         assert!(!infinite_parser().parse("yo").has_errors());
         assert!(!infinite_parser().parse("yoyo").has_errors());
     }
 
     #[test]
-    fn test_recursive_arith_parser(){
+    fn test_recursive_arith_parser() {
         assert_eq!(a_parser().parse("2 + (1 + 3)").into_result(), Ok(6));
         assert_eq!(a_parser().parse("2 + 1 + 3").into_result(), Ok(6));
     }

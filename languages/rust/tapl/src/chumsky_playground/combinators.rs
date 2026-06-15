@@ -50,20 +50,18 @@ pub fn or_not_parser<'src>() -> impl Parser<'src, &'src str, Option<char>> {
 }
 
 pub fn foldl_parser<'src>() -> impl Parser<'src, &'src str, i32> {
-    just('1').to(1)
-        .foldl(
-            just('+').ignore_then(just('1').to(1)).repeated(),
-            |a, b| a + b
-        )
+    just('1')
+        .to(1)
+        .foldl(just('+').ignore_then(just('1').to(1)).repeated(), |a, b| {
+            a + b
+        })
 }
 
 pub fn foldr_parser<'src>() -> impl Parser<'src, &'src str, i32> {
-    just('1').to(1)
+    just('1')
+        .to(1)
         .repeated()
-        .foldr(
-            just('0').to(0),
-            |a, b| a + b + 1
-        )
+        .foldr(just('0').to(0), |a, b| a + b + 1)
 }
 
 #[cfg(test)]
@@ -112,14 +110,23 @@ mod tests {
 
     #[test]
     fn test_repeated_parser() {
-        assert_eq!(repeated_parser().parse("aaa").into_result(), Ok(vec!['a', 'a', 'a']));
+        assert_eq!(
+            repeated_parser().parse("aaa").into_result(),
+            Ok(vec!['a', 'a', 'a'])
+        );
         assert_eq!(repeated_parser().parse("").into_result(), Ok(vec![]));
     }
 
     #[test]
     fn test_separated_by_parser() {
-        assert_eq!(separated_by_parser().parse("a,a,a").into_result(), Ok(vec!['a', 'a', 'a']));
-        assert_eq!(separated_by_parser().parse("a").into_result(), Ok(vec!['a']));
+        assert_eq!(
+            separated_by_parser().parse("a,a,a").into_result(),
+            Ok(vec!['a', 'a', 'a'])
+        );
+        assert_eq!(
+            separated_by_parser().parse("a").into_result(),
+            Ok(vec!['a'])
+        );
         assert_eq!(separated_by_parser().parse("").into_result(), Ok(vec![]));
     }
 

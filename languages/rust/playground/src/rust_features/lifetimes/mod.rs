@@ -105,8 +105,8 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::TiedStruct;
     use super::IndependentStruct;
+    use super::TiedStruct;
     use super::independent_lifetimes;
     use super::tied_lifetimes;
 

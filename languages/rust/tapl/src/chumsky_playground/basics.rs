@@ -31,7 +31,7 @@ use chumsky::prelude::*;
 // 'src : lifetime of the input
 // &'src str : the input type
 // (): output type
-pub fn noop_parser<'src>() -> impl Parser<'src, &'src str, ()>{
+pub fn noop_parser<'src>() -> impl Parser<'src, &'src str, ()> {
     end()
 }
 
@@ -68,7 +68,10 @@ pub fn empty_parser<'src>() -> impl Parser<'src, &'src str, ()> {
     empty()
 }
 
-pub fn choice_parser<'src>(s1: &'src str, s2: &'src str) -> impl Parser<'src, &'src str, &'src str> {
+pub fn choice_parser<'src>(
+    s1: &'src str,
+    s2: &'src str,
+) -> impl Parser<'src, &'src str, &'src str> {
     choice((just(s1), just(s2)))
 }
 
@@ -83,7 +86,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_noop_parser(){
+    fn test_noop_parser() {
         assert_eq!(noop_parser().parse("").into_result(), Ok(()));
         assert!(noop_parser().parse("yo").has_errors());
     }
@@ -91,7 +94,10 @@ mod tests {
     #[test]
     fn test_just_parsers() {
         assert_eq!(just_char_parser('h').parse("h").into_result(), Ok('h'));
-        assert_eq!(just_str_parser("hello").parse("hello").into_result(), Ok("hello"));
+        assert_eq!(
+            just_str_parser("hello").parse("hello").into_result(),
+            Ok("hello")
+        );
 
         assert!(just_char_parser('h').parse("x").has_errors());
         assert!(just_str_parser("hello").parse("world").has_errors());
@@ -132,8 +138,18 @@ mod tests {
 
     #[test]
     fn test_choice_parser() {
-        assert_eq!(choice_parser("hello", "goodbye").parse("hello").into_result(), Ok("hello"));
-        assert_eq!(choice_parser("hello", "goodbye").parse("goodbye").into_result(), Ok("goodbye"));
+        assert_eq!(
+            choice_parser("hello", "goodbye")
+                .parse("hello")
+                .into_result(),
+            Ok("hello")
+        );
+        assert_eq!(
+            choice_parser("hello", "goodbye")
+                .parse("goodbye")
+                .into_result(),
+            Ok("goodbye")
+        );
         assert!(choice_parser("hello", "goodbye").parse("ciao").has_errors());
     }
 
@@ -141,6 +157,11 @@ mod tests {
     fn test_owned_string_pattern() {
         let pattern = String::from("owned");
         // Note: The parser now returns a String, not a &str
-        assert_eq!(owned_string_pattern_parser(pattern).parse("owned").into_result(), Ok(String::from("owned")));
+        assert_eq!(
+            owned_string_pattern_parser(pattern)
+                .parse("owned")
+                .into_result(),
+            Ok(String::from("owned"))
+        );
     }
 }

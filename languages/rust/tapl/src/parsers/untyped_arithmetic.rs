@@ -15,7 +15,7 @@ pub enum Term {
     If(If),
     Pred(Box<Term>),
     IsZero(Box<Term>),
-    Succ(Box<Term>)
+    Succ(Box<Term>),
 }
 
 fn parse_atom<'src>() -> impl Parser<'src, &'src str, Term> {
@@ -122,18 +122,7 @@ mod tests {
             }))
         );
 
-        let parse = parse_term()
-            .parse("succ (succ zero)")
-            .into_result();
-        assert_eq!(
-            parse,
-            Ok(
-                Term::Succ (
-                    Term::Succ (
-                        Term::Zero.into()
-                    ).into()
-                )
-            )
-        );
+        let parse = parse_term().parse("succ (succ zero)").into_result();
+        assert_eq!(parse, Ok(Term::Succ(Term::Succ(Term::Zero.into()).into())));
     }
 }

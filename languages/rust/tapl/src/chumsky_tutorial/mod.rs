@@ -110,7 +110,7 @@ fn parser<'src>() -> impl Parser<'src, &'src str, Expr<'src>> {
             .then(expr.clone())
             .then_ignore(just(';'))
             .then(decl.clone())
-            .map(|((name, rhs), then) | Expr::Let {
+            .map(|((name, rhs), then)| Expr::Let {
                 name,
                 rhs: Box::new(rhs),
                 then: Box::new(then),
@@ -134,7 +134,11 @@ fn parser<'src>() -> impl Parser<'src, &'src str, Expr<'src>> {
             .then(ident.repeated().collect::<Vec<_>>())
             // Optional closure
             .then(
-                ident.repeated().collect::<Vec<_>>().delimited_by(just('[').padded(), just(']').padded()).or_not()
+                ident
+                    .repeated()
+                    .collect::<Vec<_>>()
+                    .delimited_by(just('[').padded(), just(']').padded())
+                    .or_not(),
             )
             .then_ignore(just('='))
             .then(expr.clone())
@@ -143,7 +147,7 @@ fn parser<'src>() -> impl Parser<'src, &'src str, Expr<'src>> {
             .map(|((((name, args), closure), body), then)| Expr::LexFn {
                 name,
                 args,
-                closure:closure.unwrap_or(vec![]),
+                closure: closure.unwrap_or(vec![]),
                 body: Box::new(body),
                 then: Box::new(then),
             });
@@ -162,36 +166,40 @@ mod helper {
         DynFn {
             name: &'src str,
             args: &'src [&'src str],
-            body: &'src Expr<'src>
+            body: &'src Expr<'src>,
         },
         LexFn {
             name: &'src str,
             args: &'src [&'src str],
             closure: &'src [&'src str],
-            body: &'src Expr<'src>
-        }
+            body: &'src Expr<'src>,
+        },
     }
 
     pub struct Functions<'src> {
-        functions: Vec<Function<'src>>
-
+        pub functions: Vec<Function<'src>>,
     }
 
     impl<'src> Functions<'src> {
         pub fn new() -> Self {
-            Functions{functions: vec![]}
+            Functions { functions: vec![] }
         }
 
-        pub fn find(&self, fn_name: &'src str) -> Option<Function<'src>>{
-            self.functions.iter().rev().find(|func|
-                match func {
-                    Function::DynFn { name, args, body } if *name == fn_name => { true },
-                    Function::LexFn { name, args, closure, body } if *name == fn_name => {
-                        true
-                    },
-                    _ => { false }
-                }
-            ).cloned()
+        pub fn find(&self, fn_name: &'src str) -> Option<Function<'src>> {
+            self.functions
+                .iter()
+                .rev()
+                .find(|func| match func {
+                    Function::DynFn { name, args, body } if *name == fn_name => true,
+                    Function::LexFn {
+                        name,
+                        args,
+                        closure,
+                        body,
+                    } if *name == fn_name => true,
+                    _ => false,
+                })
+                .cloned()
         }
     }
 }
@@ -199,7 +207,7 @@ mod helper {
 fn eval<'src>(
     expr: &'src Expr<'src>,
     vars: &mut Vec<(&'src str, f64)>,
-    funcs: &mut Vec<(&'src str, &'src [&'src str], &'src Expr<'src>)>,
+    funcs: &mut helper::Functions<'src>,
 ) -> Result<f64, String> {
     match expr {
         Expr::Num(x) => Ok(*x),
@@ -210,13 +218,13 @@ fn eval<'src>(
         Expr::Div(a, b) => Ok(eval(a, vars, funcs)? / eval(b, vars, funcs)?),
         Expr::Var(name) => {
             // Searching variables backwards, e.g. shadowing
-            if let Some((_, val)) = vars.iter().rev().find(|(var, _)| var == name){
+            if let Some((_, val)) = vars.iter().rev().find(|(var, _)| var == name) {
                 Ok(*val)
             } else {
                 Err(format!("Cannot find variable `{}` in scope", name))
             }
-        },
-        Expr::Let {name, rhs, then } => {
+        }
+        Expr::Let { name, rhs, then } => {
             let rhs = eval(rhs, vars, funcs);
             vars.push((name, rhs?));
             let output = eval(then, vars, funcs);
@@ -234,11 +242,13 @@ fn eval<'src>(
             // a
             vars.pop();
             output
-        },
-        Expr::Call(name, args) => {
-            if let Some((_, arg_names, body)) =
-                funcs.iter().rev().find(|(var, _, _)| var == name).copied()
-            {
+        }
+        Expr::Call(name, args) => match funcs.find(name) {
+            Some(helper::Function::DynFn {
+                name,
+                args: arg_names,
+                body,
+            }) => {
                 if arg_names.len() == args.len() {
                     let mut evaled_args = args
                         .iter()
@@ -259,16 +269,23 @@ fn eval<'src>(
                         args.len(),
                     ))
                 }
-            } else {
-                Err(format!("Cannot find function `{}` in scope", name))
+            }
+            None => Err(format!("Cannot find function `{}` in scope", name)),
+            _ => {
+                todo!()
             }
         },
-        Expr::DynFn {name, args, body, then} => {
-            funcs.push((name, args, body));
+        Expr::DynFn {
+            name,
+            args,
+            body,
+            then,
+        } => {
+            funcs.functions.push(helper::Function::DynFn{name, args, body});
             let output = eval(then, vars, funcs);
-            funcs.pop();
+            funcs.functions.pop();
             output
-        },
+        }
         _ => todo!(),
     }
 }
@@ -278,12 +295,12 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_parser_arithmetic_expressions(){
+    fn test_parser_arithmetic_expressions() {
         assert!(!parser().parse("(2+3)*3+4*(---5)").has_errors());
     }
 
     #[test]
-    fn test_parser_let_expressions(){
+    fn test_parser_let_expressions() {
         let s = r#"
             let yo = 5 + 3;
             let a = 5 + a;
@@ -293,7 +310,7 @@ mod tests {
     }
 
     #[test]
-    fn test_parser_let_expressions_need_a_tail_value(){
+    fn test_parser_let_expressions_need_a_tail_value() {
         let s = r#"
             let yo = 5 + 3;
         "#;
@@ -301,7 +318,7 @@ mod tests {
     }
 
     #[test]
-    fn test_eval(){
+    fn test_eval() {
         let s = r#"
             let yo = 5 + 3;
             let a = 5 + yo;
@@ -314,7 +331,7 @@ mod tests {
     }
 
     #[test]
-    fn test_eval_2(){
+    fn test_eval_2() {
         let s = r#"
             let x = 5;
             let x = 3 + x;
@@ -327,7 +344,7 @@ mod tests {
     }
 
     #[test]
-    fn test_eval_fns(){
+    fn test_eval_fns() {
         let s = r#"
             dynfn linear x y = 5 * x + y;
             linear(2, 3)
@@ -339,7 +356,7 @@ mod tests {
     }
 
     #[test]
-    fn test_fns_dynamic_scoping(){
+    fn test_fns_dynamic_scoping() {
         // Technically a bug!!
         // As usually one would expect lexical scoping
         let s = r#"
@@ -349,13 +366,12 @@ mod tests {
             linear(2)
         "#;
         let mut vars = vec![];
-        let mut funcs = vec![];
         let ast = parser().parse(s).into_result().unwrap();
-        assert_eq!(eval(&ast, &mut vars, &mut funcs).unwrap(), 16.0);
+        assert_eq!(eval(&ast, &mut vars, &mut helper::Functions::new()).unwrap(), 16.0);
     }
 
     #[test]
-    fn test_fns_lexical_scoping(){
+    fn test_fns_lexical_scoping() {
         let s = r#"
             let y = 5;
             lexfn linear x [y] = 5 * x + y;
@@ -375,11 +391,13 @@ pub fn tutorial_main() {
     match parser().parse(&src).into_result() {
         Ok(ast) => {
             println!("{:?}", ast);
-            match eval(&ast, &mut variables, &mut funcs){
+            match eval(&ast, &mut variables, helper::Functions::new()) {
                 Ok(output) => println!("{}", output),
                 Err(eval_err) => println!("Evaluation error {}", eval_err),
             }
         }
-        Err(parse_errs) => parse_errs.into_iter().for_each(|e| println!("Parse error: {}", e)),
+        Err(parse_errs) => parse_errs
+            .into_iter()
+            .for_each(|e| println!("Parse error: {}", e)),
     }
 }
