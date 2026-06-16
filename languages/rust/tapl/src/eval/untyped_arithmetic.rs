@@ -114,3 +114,62 @@ mod tests {
         assert!(matches!(eval_str("if 0 then true else false"), Err(EvalError::TypeError)));
     }
 }
+
+#[cfg(test)]
+mod arithmetic_tests {
+    use super::*;
+    use crate::lexers::untyped_arithmetic::lexer;
+    use crate::parsers::untyped_arithmetic::parser;
+
+    fn eval_str(src: &str) -> Result<Value, EvalError> {
+        let tokens = lexer().parse(src).into_result().map_err(|_| EvalError::InternalError)?;
+        let ast = parser().parse(&tokens).into_result().map_err(|_| EvalError::InternalError)?;
+        eval(ast)
+    }
+
+    fn build_number(i: i32) -> String {
+        if (i < 0) { panic!("Expected a positive number") }
+        (0..i).into_iter().fold(
+            "0".to_owned(),
+            |acc, _| "succ ".to_owned() + &acc
+        )
+    }
+
+    fn substract(i: i32, s: &str) -> String {
+        (0..i).into_iter().fold(
+            s.to_owned(),
+            |acc, _| "pred ".to_owned() + &acc
+        )
+    }
+
+    fn eval_number(val: &Value) -> Result<i32, EvalError> {
+        let mut r = 0;
+        let mut mval : &Value = val;
+        // loop (as there's no break) guaranteed to never finish (hence we never move past it)
+        // so it's "type" is the return type of something inside
+        loop {
+            match mval {
+                Value::Succ(inner_v) => {
+                    r += 1;
+                    mval = inner_v ;
+                },
+                Value::Zero => return Ok(r),
+                _ => return Err(EvalError::TypeError)
+            }
+        }
+    }
+
+    #[test]
+    fn test_number() {
+        let number_str = substract(5, &build_number(10));
+        let value = eval_str(&number_str).unwrap();
+        assert_eq!(eval_number(&value).unwrap(), 5);
+    }
+
+    #[test]
+    fn test_no_negative_number() {
+        let number_str = substract(11, &build_number(10));
+        let value = eval_str(&number_str).unwrap();
+        assert_eq!(eval_number(&value).unwrap(), 0);
+    }
+}
