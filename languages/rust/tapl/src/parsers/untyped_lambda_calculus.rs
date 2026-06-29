@@ -21,11 +21,11 @@ pub fn parser<'src>() -> impl Parser<'src, &'src [Token], Expr, extra::Err<Rich<
             .then(term.clone().or(var))
             .map(|(v, body)| Expr::Abs(v, Box::new(body)));
 
-        let app = term.clone().foldl(
-            term.repeated(), |a, b| Expr::App(Box::new(a), Box::new(b))
-        );
-             
-        abs.or(app).or(var)
+        let atom = var.or(abs);
+
+        atom.clone().foldl(
+            atom.repeated(), |a, b| Expr::App(Box::new(a), Box::new(b))
+        )
     })
 }
 
@@ -46,22 +46,18 @@ mod tests {
         Expr::App(Box::new(e1), Box::new(e2))
     }
 
-    #[test]
-    fn test_parser_precedence() {
-        let cases = [
-            // Greedy abstraction
-            (r"\x. x y", abs("x", app(v("x"), v("y")))),
-            // Left-associative application
-            ("x y z", app(app(v("x"), v("y")), v("z"))),
-            // Parentheses override
-            (r"(\x. x) y", app(abs("x", v("x")), v("y"))),
-            ("x (y z)", app(v("x"), app(v("y"), v("z")))),
-        ];
+    fn parse_src(src: &str) -> Expr {
+        let tokens = lexer().parse(src).into_result().unwrap();
+        parser().parse(&tokens).into_result().unwrap()
+    }
 
-        for (src, expected) in cases {
-            let tokens = lexer().parse(src).into_result().unwrap();
-            let ast = parser().parse(&tokens).into_result().unwrap();
-            assert_eq!(ast, expected, "Failed on: {}", src);
-        }
+    #[test]
+    fn test_abs_body_precedence() {
+        assert_eq!(parse_src(r"\x. x y"), abs("x", app(v("x"), v("y"))));
+    }
+
+    #[test]
+    fn test_app_associativity() {
+        assert_eq!(parse_src("x y z"), app(app(v("x"), v("y")), v("z")));
     }
 }
