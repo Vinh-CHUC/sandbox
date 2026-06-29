@@ -10,7 +10,7 @@ pub enum Expr {
 use super::super::lexers::untyped_lambda_calculus::Token;
 
 pub fn parser<'src>() -> impl Parser<'src, &'src [Token], Expr, extra::Err<Rich<'src, Token>>> {
-    let inner_term = recursive(|term| {
+    recursive(|term| {
         // Roughly equivalent to
         // any().try_map(|..| match {} )
         let var = select! { Token::Var(v) => Expr::Var(v) };
@@ -18,27 +18,16 @@ pub fn parser<'src>() -> impl Parser<'src, &'src [Token], Expr, extra::Err<Rich<
         let abs = just(Token::Lambda)
             .ignore_then(select! { Token::Var(v) => v })
             .then_ignore(just(Token::Dot))
-            .then(term.clone().or(var))
+            .then(term.clone())
             .map(|(v, body)| Expr::Abs(v, Box::new(body)));
 
         let atom = var.or(abs);
 
         atom.clone().foldl(
-            atom.repeated(), |a, b| Expr::App(Box::new(a), Box::new(b))
+            atom.repeated(),
+            |a, b| Expr::App(Box::new(a), Box::new(b))
         )
-    });
-
-    // Not a must-have but ensuring that the top level term is "executable"
-    // Not just some unbound variable
-    let abs = just(Token::Lambda)
-        .ignore_then(select! { Token::Var(v) => v })
-        .then_ignore(just(Token::Dot))
-        .then(inner_term)
-        .map(|(v, body)| Expr::Abs(v, Box::new(body)));
-
-    abs.clone().foldl(
-        abs.repeated(), |a, b| Expr::App(Box::new(a), Box::new(b))
-    )
+    })
 }
 
 #[cfg(test)]
@@ -69,17 +58,15 @@ mod tests {
     }
 
     #[test]
-    fn test_top_level_must_be_abstraction() {
-        // Abstractions are allowed
+    fn test_basics() {
         assert!(try_parse_src(r"\x. x").is_ok());
         assert!(try_parse_src(r"\x. \y. x y").is_ok());
-        // Will fail evaluation but ok parsing wise
         assert!(try_parse_src(r"\x. x y").is_ok());
 
-        // Dangling variables/applications at top level should fail
-        assert!(try_parse_src("x").is_err());
-        assert!(try_parse_src("x y").is_err());
-        assert!(try_parse_src(r"x \y. y").is_err());
+        // These wouldn't eval correctly but are valid as far as the parser is concerned
+        assert!(try_parse_src("x").is_ok());
+        assert!(try_parse_src("x y").is_ok());
+        assert!(try_parse_src(r"x \y. y").is_ok());
     }
 
     #[test]
