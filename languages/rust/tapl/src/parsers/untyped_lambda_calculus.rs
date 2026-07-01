@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use chumsky::prelude::*;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -29,6 +31,29 @@ pub fn parser<'src>() -> impl Parser<'src, &'src [Token], Expr, extra::Err<Rich<
         )
     })
 }
+
+pub fn free_vars_rec<'a>(expr: &'a Expr, fvs: &mut HashSet<&'a str>) {
+    match expr {
+        Expr::Var(s) => {
+            // We need the lifetime annotation here
+            // As Rust equires the lifetime of a.as_str outlives fvs
+            fvs.insert(s.as_str());
+            ()
+        }
+        Expr::Abs(s, expr) => {
+            free_vars_rec(expr, fvs);
+            fvs.remove(s.as_str());
+        },
+        Expr::App(_, _) => {}
+    };
+}
+
+pub fn free_vars(expr: &Expr) -> HashSet<&str> {
+    let mut fvs = HashSet::new();
+    free_vars_rec(expr, &mut fvs);
+    fvs
+}
+
 
 #[cfg(test)]
 mod tests {
@@ -94,5 +119,13 @@ mod tests {
     #[test]
     fn test_abs_body_precedence() {
         assert_eq!(parse_src(r"\x. x y"), abs("x", app(v("x"), v("y"))));
+    }
+
+    #[test]
+    fn test_free_vars() {
+        assert_eq!(
+            free_vars(&parse_src(r"\x. y")),
+            HashSet::from(["y"])
+        )
     }
 }
