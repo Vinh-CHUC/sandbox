@@ -44,7 +44,10 @@ pub fn free_vars_rec<'a>(expr: &'a Expr, fvs: &mut HashSet<&'a str>) {
             free_vars_rec(expr, fvs);
             fvs.remove(s.as_str());
         },
-        Expr::App(_, _) => {}
+        Expr::App(t1, t2) => {
+            free_vars_rec(t1, fvs);
+            free_vars_rec(t2, fvs);
+        }
     };
 }
 
@@ -123,9 +126,28 @@ mod tests {
 
     #[test]
     fn test_free_vars() {
+        // Simple free variable
         assert_eq!(
             free_vars(&parse_src(r"\x. y")),
             HashSet::from(["y"])
-        )
+        );
+
+        // Multiple free variables in an application
+        assert_eq!(
+            free_vars(&parse_src(r"\x. x y z")),
+            HashSet::from(["y", "z"])
+        );
+
+        // Shadowing with nested lambda
+        assert_eq!(
+            free_vars(&parse_src(r"\x. \x. x y")),
+            HashSet::from(["y"])
+        );
+
+        // Closed term (no free variables)
+        assert_eq!(
+            free_vars(&parse_src(r"\x. \y. x")),
+            HashSet::new()
+        );
     }
 }
