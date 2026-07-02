@@ -1,5 +1,3 @@
-use chumsky::prelude::*;
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Value {
     True,
@@ -133,6 +131,7 @@ pub fn eval_small_step(mut expr: Expr) -> Result<Value, EvalError> {
 mod tests {
     use super::*;
     use crate::lexers::untyped_arithmetic::lexer;
+    use chumsky::prelude::*;
     use crate::parsers::untyped_arithmetic::parser;
 
     fn eval_str_single_step(src: &str) -> Result<Option<Expr>, EvalError>  {
@@ -239,6 +238,7 @@ mod tests {
 #[cfg(test)]
 mod arithmetic_tests {
     use super::*;
+    use chumsky::prelude::*;
     use crate::lexers::untyped_arithmetic::lexer;
     use crate::parsers::untyped_arithmetic::parser;
 

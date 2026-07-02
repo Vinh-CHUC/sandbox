@@ -1,5 +1,3 @@
-use chumsky::prelude::*;
-
 pub use super::super::parsers::untyped_lambda_calculus::{Expr, free_vars};
 
 fn substitute(from: &str, to: &Expr, e: &mut Expr) {
@@ -47,6 +45,7 @@ pub fn eval(expr: &Expr) -> Result<Expr, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use chumsky::prelude::*;
     use crate::lexers::untyped_lambda_calculus::lexer;
     use crate::parsers::untyped_lambda_calculus::parser;
 
