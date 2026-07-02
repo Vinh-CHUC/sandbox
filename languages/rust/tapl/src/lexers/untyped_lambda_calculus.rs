@@ -5,6 +5,8 @@ pub enum Token {
     Lambda,
     Dot,
     Var(String),
+    OpenParen,
+    CloseParen,
 }
 
 pub fn lexer<'src>() -> impl Parser<'src, &'src str, Vec<Token>, extra::Err<Rich<'src, char>>> {
@@ -15,6 +17,8 @@ pub fn lexer<'src>() -> impl Parser<'src, &'src str, Vec<Token>, extra::Err<Rich
         ))
         .to(Token::Lambda),
         just('.').to(Token::Dot),
+        just('(').to(Token::OpenParen),
+        just(')').to(Token::CloseParen),
         text::ident().map(|s: &str| Token::Var(s.to_string())),
     ));
 
@@ -30,7 +34,7 @@ mod tests {
 
     #[test]
     fn test_lexer() {
-        let src = r"lambda x. \y. \ z. x y z";
+        let src = r"lambda x. \y. \ z. (x y) z";
         let tokens = lexer().parse(src).into_result().unwrap();
         assert_eq!(
             tokens,
@@ -44,8 +48,10 @@ mod tests {
                 Token::Lambda,
                 Token::Var("z".to_string()),
                 Token::Dot,
+                Token::OpenParen,
                 Token::Var("x".to_string()),
                 Token::Var("y".to_string()),
+                Token::CloseParen,
                 Token::Var("z".to_string()),
             ]
         );

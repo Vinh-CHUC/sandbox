@@ -2,18 +2,16 @@ use chumsky::prelude::*;
 
 pub use super::super::parsers::untyped_lambda_calculus::{Expr, free_vars};
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-struct Value {
-    var: String,
-    term: Expr
-}
-
 fn substitute(from: &str, to: &Expr, e: &mut Expr) {
     match e {
         Expr::Var(s) if s == from => {
             *e = to.clone();
         },
         Expr::Var(_) => {},
+        // if s != from, do not change bindings within subterms
+        //
+        // !free_vars(to)....  do not accidentally capture a free var inside the terms that is
+        // substituted in
         Expr::Abs(s, t) if s != from && !free_vars(to).contains(s.as_str()) => {
             substitute(from, to, t);
         },
@@ -25,7 +23,7 @@ fn substitute(from: &str, to: &Expr, e: &mut Expr) {
     }
 }
 
-fn eval(expr: &Expr) -> Result<Expr, String> {
+pub fn eval(expr: &Expr) -> Result<Expr, String> {
     match expr {
         Expr::Abs(_, _) => Ok(expr.clone()),
         Expr::App(t1, t2) => {
@@ -34,8 +32,8 @@ fn eval(expr: &Expr) -> Result<Expr, String> {
 
             if let Expr::Abs(s, t) = v1 {
                 let mut e = t.clone();
-                substitute(s.as_str(), &v2, &mut e); 
-                Ok(*e)
+                substitute(s.as_str(), &v2, &mut e);
+                eval(&e)
             } else {
                 Err("Value is not an abstraction".to_string())
             }
@@ -98,5 +96,26 @@ mod tests {
         let mut e = parse_src(r"\x. \y. z");
         substitute("z", &v("a"), &mut e);
         assert_eq!(e, parse_src(r"\x. \y. a"));
+    }
+
+    #[test]
+    fn test_eval() {
+        let e = parse_src(r"\x. x");
+        assert_eq!(e, eval(&e).unwrap());
+
+        let e = parse_src(r"(\x. x) (\x. x)");
+        assert_eq!(eval(&e).unwrap(), abs("x", v("x")));
+
+        let e = parse_src(r"(\y. y (\y. y)) (\x. x)");
+        assert_eq!(
+            eval(&e).unwrap(),
+            abs("y", v("y"))
+        );
+
+        let e = parse_src(r"(\y. \y. y z) (\x. x)");
+        assert_eq!(
+            eval(&e).unwrap(),
+            abs("y", app(v("y"), v("z")))
+        );
     }
 }

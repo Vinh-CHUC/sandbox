@@ -23,7 +23,12 @@ pub fn parser<'src>() -> impl Parser<'src, &'src [Token], Expr, extra::Err<Rich<
             .then(term.clone())
             .map(|(v, body)| Expr::Abs(v, Box::new(body)));
 
-        let atom = var.or(abs);
+        let atom = var
+            .or(abs)
+            .or(term.clone().delimited_by(
+                just(Token::OpenParen),
+                just(Token::CloseParen),
+            ));
 
         atom.clone().foldl(
             atom.repeated(),
@@ -148,6 +153,24 @@ mod tests {
         assert_eq!(
             free_vars(&parse_src(r"\x. \y. x")),
             HashSet::new()
+        );
+    }
+
+    #[test]
+    fn test_parentheses() {
+        assert_eq!(
+            parse_src(r"(x y) z"),
+            app(app(v("x"), v("y")), v("z"))
+        );
+
+        assert_eq!(
+            parse_src(r"x (y z)"),
+            app(v("x"), app(v("y"), v("z")))
+        );
+
+        assert_eq!(
+            parse_src(r"(\x. x) y"),
+            app(abs("x", v("x")), v("y"))
         );
     }
 }
