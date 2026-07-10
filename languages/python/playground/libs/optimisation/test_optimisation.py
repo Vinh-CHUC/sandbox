@@ -1,10 +1,10 @@
 import numpy as np
-from libs.optimisation import ProblemA
+from libs.optimisation import TowerDefense
 
 
 def test_oo_problem_optimization():
     # Solve standard OO problem
-    res = ProblemA.solve(seed=42)
+    res = TowerDefense.solve(seed=42)
 
     assert res.X is not None
     assert res.F is not None
