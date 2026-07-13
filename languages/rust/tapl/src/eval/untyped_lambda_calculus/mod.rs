@@ -1,5 +1,7 @@
 pub use super::super::parsers::untyped_lambda_calculus::{Expr, free_vars};
 
+pub mod nameless;
+
 fn substitute(from: &str, to: &Expr, e: &mut Expr) {
     match e {
         Expr::Var(s) if s == from => {
