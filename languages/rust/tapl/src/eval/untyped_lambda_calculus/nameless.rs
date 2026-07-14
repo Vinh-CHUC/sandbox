@@ -1,4 +1,6 @@
 pub use crate::parsers::untyped_lambda_calculus::nameless::Expr;
+pub use crate::eval::NAMES;
+use crate::parsers::untyped_lambda_calculus::Expr as ExprWithName;
 
 pub fn shift(d: i32, cutoff: i32, expr: &mut Expr) {
     match expr {
@@ -50,6 +52,50 @@ pub fn eval(expr: &Expr) -> Result<Expr, String> {
         },
         Expr::Var(i) => {
             Err(format!("Unbound variable: {}", i))
+        }
+    }
+}
+
+pub fn remove_names(expr: &ExprWithName, names: &mut Vec<char>) -> Result<Expr, String> {
+    match expr {
+        ExprWithName::Var(i) => {
+            let idx = names.iter().rposition(|c| c.to_string() == *i).unwrap();
+            Ok(Expr::Var((names.len() - 1 - idx) as i32))
+        },
+        ExprWithName::App(t1, t2) => {
+            Ok(Expr::App(
+                Box::new(remove_names(t1, names)?),
+                Box::new(remove_names(t2, names)?),
+            ))
+        },
+        ExprWithName::Abs(name, t) => {
+            names.push(name.chars().next().unwrap());
+            let res = Expr::Abs(Box::new(remove_names(t, names)?));
+            names.pop();
+            Ok(res)
+        }
+    }
+}
+
+pub fn add_names(expr: &Expr, name_idx: u8) -> Result<ExprWithName, String> {
+    match expr {
+        Expr::Var(i) => {
+            let c = NAMES[(name_idx as i32 - 1 - *i) as usize];
+            Ok(ExprWithName::Var(c.to_string()))
+        },
+        Expr::App(t1, t2) => {
+            Ok(ExprWithName::App(
+                Box::new(add_names(t1, name_idx)?),
+                Box::new(add_names(t2, name_idx)?),
+            ))
+        },
+        Expr::Abs(t) => {
+            let c = NAMES[name_idx as usize];
+            let name_idx = name_idx + 1;
+            Ok(ExprWithName::Abs(
+                c.to_string(),
+                Box::new(add_names(&t, name_idx)?)
+            ))
         }
     }
 }
@@ -122,5 +168,55 @@ mod tests {
         // The free var 3 gets incremented twice during substitution
         // But then gets dropped once as we lose the abstraction when we evaluate
         assert_eq!(eval(&e), Ok(parse_src(r"\. \. 4")));
+    }
+
+    #[test]
+    fn test_add_names() {
+        use crate::lexers::untyped_lambda_calculus::lexer as named_lexer;
+        use crate::parsers::untyped_lambda_calculus::parser as named_parser;
+
+        fn parse_named_src(src: &str) -> ExprWithName {
+            let tokens = named_lexer().parse(src).into_result().unwrap();
+            named_parser().parse(&tokens).into_result().unwrap()
+        }
+
+        let e = parse_src(r"\. 0");
+        let named = add_names(&e, 0).unwrap();
+        // The name will be 'x' (0), and the var will be 'x' (0)
+        assert_eq!(named, parse_named_src(r"\x. x"));
+
+        // \. \. 1 0 => \x. \y. x y
+        let e2 = parse_src(r"\. \. 1 0");
+        let named2 = add_names(&e2, 0).unwrap();
+        assert_eq!(named2, parse_named_src(r"\x. \y. x y"));
+    }
+
+    #[test]
+    fn test_remove_names_roundtrip() {
+        // Test that turning a nameless expression to named and back yields the original
+
+        // Roundtrip 1: \. 0 -> \x. x -> \. 0
+        let e1 = parse_src(r"\. 0");
+        let named1 = add_names(&e1, 0).unwrap();
+        let unnamed1 = remove_names(&named1, &mut Vec::new()).unwrap();
+        assert_eq!(e1, unnamed1);
+
+        // Roundtrip 2: \. \. 1 0 -> \x. \y. x y -> \. \. 1 0
+        let e2 = parse_src(r"\. \. 1 0");
+        let named2 = add_names(&e2, 0).unwrap();
+        let unnamed2 = remove_names(&named2, &mut Vec::new()).unwrap();
+        assert_eq!(e2, unnamed2);
+
+        // Roundtrip 3: \. \. \. 2 1 0 (deeper nesting)
+        let e3 = parse_src(r"\. \. \. 2 1 0");
+        let named3 = add_names(&e3, 0).unwrap();
+        let unnamed3 = remove_names(&named3, &mut Vec::new()).unwrap();
+        assert_eq!(e3, unnamed3);
+
+        // Roundtrip 4: application of abstractions
+        let e4 = parse_src(r"(\. 0) (\. 0)");
+        let named4 = add_names(&e4, 0).unwrap();
+        let unnamed4 = remove_names(&named4, &mut Vec::new()).unwrap();
+        assert_eq!(e4, unnamed4);
     }
 }
