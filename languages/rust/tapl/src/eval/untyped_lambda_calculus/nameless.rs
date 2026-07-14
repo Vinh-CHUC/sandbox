@@ -59,7 +59,7 @@ pub fn eval(expr: &Expr) -> Result<Expr, String> {
 pub fn remove_names(expr: &ExprWithName, names: &mut Vec<char>) -> Result<Expr, String> {
     match expr {
         ExprWithName::Var(i) => {
-            let idx = names.iter().rposition(|c| c.to_string() == *i).unwrap();
+            let idx = names.iter().rposition(|c: &char| *i == c.to_string()).unwrap();
             Ok(Expr::Var((names.len() - 1 - idx) as i32))
         },
         ExprWithName::App(t1, t2) => {
