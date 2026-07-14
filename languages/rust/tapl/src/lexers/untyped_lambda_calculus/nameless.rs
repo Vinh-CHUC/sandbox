@@ -4,7 +4,7 @@ use chumsky::prelude::*;
 pub enum Token {
     Lambda,
     Dot,
-    Var(u32),
+    Var(i32),
     OpenParen,
     CloseParen,
 }
@@ -20,7 +20,7 @@ pub fn lexer<'src>() -> impl Parser<'src, &'src str, Vec<Token>, extra::Err<Rich
         just('(').to(Token::OpenParen),
         just(')').to(Token::CloseParen),
         text::int(10).try_map(|s: &str, span| {
-            s.parse::<u32>()
+            s.parse::<i32>()
                 .map(Token::Var)
                 .map_err(|e| Rich::custom(span, e.to_string()))
         }),

@@ -2,7 +2,7 @@ use chumsky::prelude::*;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Expr {
-    Var(u32),
+    Var(i32),
     Abs(Box<Expr>),
     App(Box<Expr>, Box<Expr>),
 }
@@ -37,7 +37,7 @@ mod tests {
     use super::*;
     use crate::lexers::untyped_lambda_calculus::nameless::lexer;
 
-    fn v(u: u32) -> Expr {
+    fn v(u: i32) -> Expr {
         Expr::Var(u)
     }
 
