@@ -33,10 +33,20 @@ pub fn eval(expr: &Expr) -> Result<Expr, String> {
     match expr {
         Expr::Abs(_) => {Ok(expr.clone())},
         Expr::App(t1, t2) => {
-            let mut v1 = eval(&t1)?;
-            substitute(0, eval(&t2)?, &mut v1);
-            shift(-1, 0, &mut v1);
-            Ok(v1.clone())
+            let v1 = eval(&t1)?;
+            let mut v2 = eval(&t2)?;
+
+            if let Expr::Abs(mut inner) = v1 {
+                // v2 is being substited inside an abstraction, so we have to shift its free
+                // variable
+                shift(1, 0, &mut v2);
+                substitute(0, v2, &mut inner);
+                // We lose an abstraction we have to drop free vars by 1
+                shift(-1, 0, &mut inner);
+                Ok(*inner)
+            } else {
+                Err("Value is not an abstraction".to_string())
+            }
         },
         Expr::Var(i) => {
             Err(format!("Unbound variable: {}", i))
@@ -94,6 +104,13 @@ mod tests {
         let mut e = parse_src(r"\. 1");
         substitute(0, v(42), &mut e);
         assert_eq!(e, abs(v(43)));
+
+        // A bit more involved, we substitute 0 for \. 2
+        // But end up actually substituting 1 (as we traverse an abstraction)
+        // We also have to "bump up" the free var 2 to 3
+        let mut e = parse_src(r"\. 1");
+        substitute(0, abs(v(2)), &mut e);
+        assert_eq!(e, parse_src(r"\. \. 3"));
     }
 
     #[test]
@@ -101,7 +118,9 @@ mod tests {
         let e = parse_src(r"(\. 0) (\. 0)");
         assert_eq!(eval(&e), Ok(parse_src(r"\. 0")));
 
-        let e = parse_src(r"(\. \. 1) (\. 0)");
-        assert_eq!(eval(&e), Ok(parse_src(r"\. \. 0")));
+        let e = parse_src(r"(\. \. 1) (\. 3)");
+        // The free var 3 gets incremented twice during substitution
+        // But then gets dropped once as we lose the abstraction when we evaluate
+        assert_eq!(eval(&e), Ok(parse_src(r"\. \. 4")));
     }
 }
