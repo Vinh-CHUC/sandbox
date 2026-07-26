@@ -3,9 +3,9 @@ name = "dagster_playground"
 requires-python = ">=3.13,<3.14"
 version = "0.1.0"
 dependencies = [
-    "dagster>=1.12.4",
-    "dagster-k8s>=0.28.4",
-    "dagster-postgres>=0.28.4",
+    "dagster>=1.13.13",
+    "dagster-k8s>=0.29.13",
+    "dagster-postgres>=0.29.13",
     "geopandas>=1.0.1",
     "pandas>=2.3.3",
     "pyarrow>=21.0.0",

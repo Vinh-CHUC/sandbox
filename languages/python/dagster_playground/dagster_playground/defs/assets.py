@@ -7,14 +7,13 @@ from pathlib import Path
 import dagster as dg
 
 from dagster_playground.defs.config import DataGenConfig
-from dagster_playground.defs.jobs import DAGSTER_DEFAULT_OUTPUT_FOLDER
+from dagster_playground.defs.jobs import DAGSTER_DEFAULT_OUTPUT_FOLDER, id_partitions
 
 """
 Only one configuration object per asset that **has to be named config**
 """
 
 RNG = np.random.default_rng(seed=0)
-id_partitions = dg.StaticPartitionsDefinition([str(i) for i in range(10)])
 
 
 @dg.asset(io_manager_key="parquet_io_manager")
@@ -34,9 +33,11 @@ def processed_data(config: DataGenConfig):
 def splitter(df: pd.DataFrame):
     chunk_size = 300
     number_of_parts = (len(df.index) // chunk_size) or 1
-    df_chunks = np.array_split(df, number_of_parts)
-    for idx, c in enumerate(df_chunks):
-        yield dg.DynamicOutput(c, mapping_key=str(idx))
+    # np.array_split(df, n) returns ndarrays (not DataFrames) as of
+    # numpy 2.5 / pandas 3.0, so split positions and slice instead
+    position_chunks = np.array_split(np.arange(len(df.index)), number_of_parts)
+    for idx, positions in enumerate(position_chunks):
+        yield dg.DynamicOutput(df.iloc[positions], mapping_key=str(idx))
 
 
 @dg.op(out=dg.Out(io_manager_key="parquet_io_manager"))
@@ -88,3 +89,21 @@ def assetA(processed_data: pd.DataFrame):
 @dg.graph_asset
 def assetB(processed_data: pd.DataFrame):
     return concat_csv(splitter(processed_data).map(save_chunk_to_csv).collect())
+
+
+@dg.asset(io_manager_key="parquet_io_manager", partitions_def=id_partitions)
+def partitioned_data(
+    context: dg.AssetExecutionContext, config: DataGenConfig
+) -> pd.DataFrame:
+    partition_id = int(context.partition_key)
+    return pd.DataFrame(
+        {
+            "some_id": np.full(config.count, partition_id),
+            "dummy_int": np.arange(config.count),
+        }
+    )
+
+
+@dg.asset(io_manager_key="csv_io_manager", partitions_def=id_partitions)
+def partitioned_doubled(partitioned_data: pd.DataFrame) -> pd.DataFrame:
+    return partitioned_data.assign(dummy_int=partitioned_data.dummy_int * 2)

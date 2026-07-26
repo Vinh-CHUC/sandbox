@@ -7,6 +7,8 @@ DAGSTER_DEFAULT_OUTPUT_FOLDER = (
     Path(__file__).parent.parent.parent.parent / "jobs_output"
 )
 
+id_partitions = dg.StaticPartitionsDefinition([str(i) for i in range(10)])
+
 
 def build_io_manager_config(io_manager_base_path: Path) -> dict:
     return {
@@ -44,3 +46,12 @@ def job_builder(
 
 jobA = job_builder("jobA", "assetA", DAGSTER_DEFAULT_OUTPUT_FOLDER, 1_000)
 jobB = job_builder("jobB", "assetB", DAGSTER_DEFAULT_OUTPUT_FOLDER, 1_000)
+
+# NB: no `config=` here. For a partitioned job, define_asset_job wraps a dict
+# config into a PartitionedConfig, which `dg launch` ignores (it only forwards
+# CLI config + partition tags) — so config must be passed at launch time.
+jobC = dg.define_asset_job(
+    name="jobC",
+    selection=dg.AssetSelection.assets("partitioned_doubled").upstream(),
+    executor_def=dg.in_process_executor,
+)
