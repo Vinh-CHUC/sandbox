@@ -55,3 +55,10 @@ jobC = dg.define_asset_job(
     selection=dg.AssetSelection.assets("partitioned_doubled").upstream(),
     executor_def=dg.in_process_executor,
 )
+
+# partitioned asset backed by a dynamic graph: partition suffix + mapping key
+jobD = dg.define_asset_job(
+    name="jobD",
+    selection=dg.AssetSelection.assets("assetD").upstream(),
+    executor_def=dg.in_process_executor,
+)

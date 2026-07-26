@@ -108,3 +108,43 @@ def test_jobC():
         DAGSTER_DEFAULT_OUTPUT_FOLDER / "partitioned_data_part3.parquet"
     )
     assert (df.dummy_int == upstream.dummy_int * 2).all()
+
+
+def test_jobD():
+    """Partitioned graph_asset with a dynamic graph inside: intermediate
+    chunks are named with both the mapping key and the partition suffix.
+    """
+    shutil.rmtree(DAGSTER_DEFAULT_OUTPUT_FOLDER, ignore_errors=True)
+
+    run_config = {
+        "resources": build_io_manager_config(DAGSTER_DEFAULT_OUTPUT_FOLDER),
+        "ops": {"partitioned_data": {"config": {"count": 1_000}}},
+    }
+    subprocess.run(
+        [
+            "dg",
+            "launch",
+            "--job",
+            "jobD",
+            "--partition",
+            "3",
+            "--config-json",
+            json.dumps(run_config),
+        ],
+        check=True,
+    )
+
+    _assert_files_exist(
+        [
+            "partitioned_data_part3.parquet",
+            *[f"assetD.splitter[{i}]_part3.parquet" for i in range(3)],
+            *[f"assetD.process_chunk[{i}]_part3.parquet" for i in range(3)],
+            "assetD_part3.csv",
+            "assetD_part3.parquet",
+        ]
+    )
+
+    df = pd.read_parquet(DAGSTER_DEFAULT_OUTPUT_FOLDER / "assetD_part3.parquet")
+    assert len(df) == 1_000
+    assert (df.some_id == 3).all()
+    assert "another_dummy_str" in df.columns

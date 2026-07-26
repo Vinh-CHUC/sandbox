@@ -100,6 +100,7 @@ def partitioned_data(
         {
             "some_id": np.full(config.count, partition_id),
             "dummy_int": np.arange(config.count),
+            "dummy_str": [f"Hello {x}" for x in np.arange(config.count)],
         }
     )
 
@@ -107,3 +108,12 @@ def partitioned_data(
 @dg.asset(io_manager_key="csv_io_manager", partitions_def=id_partitions)
 def partitioned_doubled(partitioned_data: pd.DataFrame) -> pd.DataFrame:
     return partitioned_data.assign(dummy_int=partitioned_data.dummy_int * 2)
+
+
+@dg.graph_asset(partitions_def=id_partitions)
+def assetD(partitioned_data: pd.DataFrame):
+    """Partitioned asset with a dynamic graph inside: the intermediate chunks
+    get both a mapping key and a partition suffix, e.g.
+    assetD.splitter[0]_part3.parquet
+    """
+    return concat_chunks(splitter(partitioned_data).map(process_chunk).collect())
