@@ -93,7 +93,12 @@ def assetB(processed_data: pd.DataFrame):
 
 @dg.asset(io_manager_key="parquet_io_manager", partitions_def=id_partitions)
 def partitioned_data(
-    context: dg.AssetExecutionContext, config: DataGenConfig
+    # The first spot in the args is reserved for dg.AssetExecutionContext, has to be named "context"
+    # config has to be named config
+    # resources have to be typed appropriately
+    # rest are upstream asset names
+    context: dg.AssetExecutionContext,
+    config: DataGenConfig,
 ) -> pd.DataFrame:
     partition_id = int(context.partition_key)
     return pd.DataFrame(
