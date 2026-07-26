@@ -3,19 +3,19 @@ name = "playground"
 version = "0.1.0"
 description = ""
 authors = [{ name = "Vinh Chuc", email = "vinh.chuc@gmail.com" }]
-requires-python = ">=3.13, <3.14"
+requires-python = ">=3.14, <3.15"
 readme = "README.md"
 dependencies = [
-    "altair>=6.0.0",
-    "capstone>=5.0.7",
-    "debugpy>=1.8.20",
-    "geopandas>=1.1.2",
-    "numba>=0.64.0",
-    "pandas>=3.0.1",
-    "pydantic>=2.12.5",
+    "altair>=6.2.2",
+    "capstone>=5.0.9",
+    "debugpy>=1.8.21",
+    "geopandas>=1.1.4",
+    "numba>=0.66.0",
+    "pandas>=3.0.5",
+    "pydantic>=2.13.4",
     "pymoo>=0.6.2",
     "pytest-xdist>=3.8.0",
-    "scipy>=1.17.0",
+    "scipy>=1.18.0",
 ]
 
 [build-system]
@@ -24,10 +24,11 @@ build-backend = "hatchling.build"
 
 [dependency-groups]
 dev = [
-    "ipython>=9.10.0",
-    "hypothesis>=6.151.9",
-    "pyright>=1.1.408",
-    "pytest>=9.0.2",
-    "ruff>=0.15.2",
+    "ipython>=9.15.0",
+    "hypothesis>=6.161.5",
+    "pyright>=1.1.411",
+    "pytest>=9.1.1",
+    "ruff>=0.16.0",
     "pytest-benchmark>=5.2.3",
+    "scalene>=2.3.0",
 ]
