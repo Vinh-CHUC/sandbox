@@ -1,3 +1,14 @@
+//! Iterator and closure examples.
+//!
+//! `|&x|` destructures the reference the closure receives. This works for `Copy`
+//! types but fails to compile for non-`Copy` types like `String`, since you can't
+//! move out of a borrowed reference:
+//!
+//! ```compile_fail
+//! let l = |&s| -> String { s };
+//! l(&String::from("hello"));
+//! ```
+
 mod tests {
     #[cfg(test)]
     pub fn vec_factory() -> Vec<Vec<i32>> {
@@ -24,7 +35,22 @@ mod tests {
     }
 
     #[test]
-    fn lambda_captures() {
+    fn lambda_ref_matching() {
+        let l = |x: u32| -> u32 { x + 1 };
+        l(5); // Move/copies
+
+        // Contrast these two
+        let l = |x: &u32| -> u32 { x + 1 };
+        l(&5);
+
+        // This will attempt to match from under the &
+        // Here it works as it's copy
+        let l = |&x| -> i32 { x + 1 };
+        l(&5);
+    }
+
+    #[test]
+    fn lambda_infers_param_ref_or_move() {
         // Note Rust is smart and will guess the type of capture!!!!
 
         // Move by default as usual
@@ -73,26 +99,40 @@ mod tests {
         {
             let list = vec![1, 2, 3];
             let borrows = || println!("From closure: {:?}", list);
-
-            println!("Before calling closure: {:?}", list);
-            // list.push(5);  // Would not work if we had let mut list
-
-            borrows(); // Note that the lifetimes of list and the closure capture do overlap
-            println!("After calling closure: {:?}", list);
+            borrows();
+            println!("{:?}", list);
         }
         // Mutable reference
         {
             let mut list = vec![1, 2, 3];
             let mut borrows_mut = || list.push(5);
-            borrows_mut(); // Note that the lifetimes of list and the closure capture do overlap
-            // Another access to "list" here would have been forbidden
+            // This would not work as the closure technically borrows the list as mutable
+            // println!("{:?}", list);
+            borrows_mut();
         }
-        // Move
+        // Moves list inside the closure, it then lends it at every call?
         {
             let list = vec![1, 2, 3];
             let moves = move || println!("{:?}", list);
-            moves(); // Note that the lifetimes of list and the closure capture do overlap
-            // Cant access list here
+            moves();
+            // At lambda definition time, the closure has moved inside the lambda
+            // But at every call time list is conceptually borrowed a la &self
+            // LSP might not show the & type though?
+            moves();
+            // Doesn't compile
+            // println!("{:?}", list);
+        }
+        // Moves list inside the closure, it then lends it at every call?
+        {
+            let list = vec![1, 2, 3];
+            let moves = move || {
+                let l2 = list;
+                println!("{:?}", l2);
+            };
+            moves();
+            // This would fail as one attempts to move out of closure variables more than once
+            // It's just like moving out of Self, it's not valid anymore
+            // moves();
         }
     }
 

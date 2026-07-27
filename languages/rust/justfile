@@ -1,0 +1,93 @@
+# Typing practice over the `touch_typing` crate.
+#
+# Snippets live as real functions inside topic modules, so `just check` (i.e.
+# `cargo check`) guarantees every snippet you practice actually compiles.
+# The recipes below extract the *typeable* part of each snippet via
+# touch_typing/snippets.awk: fn signature and `// @hide` setup lines are
+# dropped, bodies are dedented, and snippets stay separated by blank lines.
+
+crate := "touch_typing"
+src := crate / "src"
+out := "/tmp/ttyper_rust.txt"
+
+_default:
+    @just --list
+
+# Type-check every snippet. Run this after editing any topic module.
+check:
+    cargo check -p {{crate}}
+
+# List available topics (one module per topic).
+topics:
+    @ls {{src}}/*.rs | xargs -n1 basename | sed 's/\.rs$//' | grep -v '^lib$'
+
+# Random sample of N snippets (default 8), optionally restricted to one topic.
+#   just practice            -> 8 random across all topics
+#   just practice 12         -> 12 random across all topics
+#   just practice 8 option   -> 8 random from the `option` topic
+practice n="8" topic="":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    # Stage 1 — extract snippets (see touch_typing/snippets.awk).
+    #
+    # Stage 2 — awk flatten: RS="" is "paragraph mode", so records split on
+    #   blank lines and each snippet becomes one record. gsub turns its internal
+    #   newlines into \x1f (unit separator) so the snippet fits on a single line
+    #   and shuf can move it around as one atomic unit.
+    #
+    # Stage 3 — shuf -n: pick N of those single-line snippets at random.
+    #
+    # Stage 4 — tr '\037' '\n': restore newlines so each snippet regains its
+    #   multi-line shape. (Octal \037, not \x1f — GNU tr doesn't parse \x.)
+    #
+    # Stage 5 — sed '/^$/d': drop the blank separators, since ttyper treats each
+    #   line as a token and empty tokens are noise.
+    # NOTE: keep the pipeline a single `\`-continued chain — bash joins those
+    # lines before parsing comments, so a `#` line between stages would swallow
+    # the continuation and the next `|` would start a new (broken) command.
+    just _extract '{{topic}}' \
+    | awk 'BEGIN{RS=""} {gsub(/\n/, "\x1f"); print}' \
+    | shuf -n {{n}} \
+    | tr '\037' '\n' \
+    | sed '/^$/d' > {{out}}
+    ttyper {{out}}
+
+# Drill every snippet in one topic, in module order (no shuffle).
+#   just drill option
+drill topic:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    just _extract '{{topic}}' | sed '/^$/d' > {{out}}
+    ttyper {{out}}
+
+# Practice every snippet of every topic, in order.
+all:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    just _extract | sed '/^$/d' > {{out}}
+    ttyper {{out}}
+
+# Print the extracted snippets without launching ttyper (useful for debugging
+# a new snippet's markers, or for diffing after a refactor).
+show topic="":
+    @just _extract '{{topic}}'
+
+# Resolve a topic (empty = all topics) to module files and extract snippets.
+[private]
+_extract topic="":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if [ -n '{{topic}}' ]; then
+        module='{{src}}/{{topic}}.rs'
+        if [ ! -f "$module" ]; then
+            echo "unknown topic '{{topic}}' — see: just topics" >&2
+            exit 1
+        fi
+        modules=("$module")
+    else
+        modules=()
+        for module in {{src}}/*.rs; do
+            [ "$(basename "$module")" = lib.rs ] || modules+=("$module")
+        done
+    fi
+    awk -f {{crate}}/snippets.awk "${modules[@]}"

@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["playground", "tapl"]
+members = ["playground", "tapl", "touch_typing"]
 
 [workspace.package]
 edition = "2024"
