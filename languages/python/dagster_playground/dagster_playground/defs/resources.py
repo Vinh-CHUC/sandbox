@@ -105,7 +105,7 @@ class TeeIOManager(dg.ConfigurableIOManager):
 
 
 DAGSTER_DEFAULT_OUTPUT_FOLDER = (
-    Path(__file__).parent.parent.parent.parent / "assets_output"
+    Path(__file__).parent.parent.parent / "assets_output"
 )
 
 defs = dg.Definitions(

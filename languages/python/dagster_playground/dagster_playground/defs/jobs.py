@@ -4,7 +4,7 @@ import dagster as dg
 
 
 DAGSTER_DEFAULT_OUTPUT_FOLDER = (
-    Path(__file__).parent.parent.parent.parent / "jobs_output"
+    Path(__file__).parent.parent.parent / "jobs_output"
 )
 
 id_partitions = dg.StaticPartitionsDefinition([str(i) for i in range(10)])

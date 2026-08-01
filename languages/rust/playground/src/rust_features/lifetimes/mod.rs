@@ -72,6 +72,12 @@ pub struct IndependentStruct<'a, 'b> {
     pub y: &'b String,
 }
 
+// Going back to basics
+// let a: &'a String = &b;
+// Then we have to have 'b : 'a;
+//
+// Generalising for structs, if a struct contains any reference, then such lifetimes has to extend
+// the struct's own!!
 #[derive(Debug)]
 pub struct TiedStruct<'a> {
     pub x: &'a String,
