@@ -37,15 +37,27 @@ y = f(x)
 plotting.twod([x, y], mark="line")
 
 # %%
+x = np.linspace(-10, 10, 20)
+y = np.tanh(x)
+plotting.twod([x, y], mark="line")
+
+# %%
 from maths.deep_learning.karpathy_zero_to_hero.micrograd import Value
 from maths.deep_learning.karpathy_zero_to_hero.micrograd.visualisation import GraphVizRenderer
 r = GraphVizRenderer()
-a = Value(3.0)
-b = Value(2.0)
-c = Value(1.0)
-d = Value(4.0)
-e = Value(5.0)
-f = Value(6.0)
-g = Value(7.0)
-v = ((a + b) * (c + d)) * (e + f) + g
+a = Value(665.0, label="a")
+b = Value(2.0, label="b")
+c = Value(1.0, label="c")
+d = Value(2.0, label="d")
+e = Value(5.0, label="e")
+f = Value(6.0, label="f")
+g = Value(7.0, label="g")
+v = (((ab := a + b) * (cd := c + d)) * (ef := e + f)) + g
+ab.label = "a+b"
+ef.label = "e+f"
+
+v.grad = 1
+v._backward()
 r.generate_graph(v)
+
+# %%

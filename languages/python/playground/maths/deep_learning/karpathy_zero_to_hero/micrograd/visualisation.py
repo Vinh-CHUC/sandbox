@@ -38,7 +38,7 @@ class GraphVizRenderer:
     def _add_value_subgraph(dot: Digraph, v: Value) -> str | tuple[str, str]:
         dot.node(
             name=(value_node_id := node_id(v) + "_value"),
-            label=f"data={v.data}",
+            label=f"{{{v.label or ""} | data={v.data} | grad={v.grad} }}",
             shape="record"
         )
         if v.op is not None:
@@ -105,7 +105,7 @@ class ManimRenderer(Scene):
         parent_id: str | None,
     ) -> None:
         value_id = node_id(v) + "_value"
-        vertices[value_id] = {"label": f"data={v.data}", "is_op": False}
+        vertices[value_id] = {"label": v.label or f"data={v.data}", "is_op": False}
 
         if v.op is not None:
             op_id = node_id(v)
