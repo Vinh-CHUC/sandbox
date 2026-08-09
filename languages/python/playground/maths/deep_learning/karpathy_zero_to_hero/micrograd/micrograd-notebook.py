@@ -35,3 +35,17 @@ def f(x):
 x = np.linspace(-1, 1, 20)
 y = f(x)
 plotting.twod([x, y], mark="line")
+
+# %%
+from maths.deep_learning.karpathy_zero_to_hero.micrograd import Value
+from maths.deep_learning.karpathy_zero_to_hero.micrograd.visualisation import GraphVizRenderer
+r = GraphVizRenderer()
+a = Value(3.0)
+b = Value(2.0)
+c = Value(1.0)
+d = Value(4.0)
+e = Value(5.0)
+f = Value(6.0)
+g = Value(7.0)
+v = ((a + b) * (c + d)) * (e + f) + g
+r.generate_graph(v)
