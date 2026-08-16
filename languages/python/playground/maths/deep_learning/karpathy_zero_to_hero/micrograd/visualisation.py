@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import assert_never
 
 from graphviz import Digraph
 from manim import (
@@ -26,8 +27,12 @@ def opnode_label(v: Value) -> str:
             return "+"
         case Op.MUL:
             return "*"
+        case Op.TANH:
+            return "tanh"
         case None:
             raise ValueError()
+        case _:
+            assert_never(v.op)
 
 def node_id(v: Value) -> str:
     return str(id(v))
@@ -38,7 +43,7 @@ class GraphVizRenderer:
     def _add_value_subgraph(dot: Digraph, v: Value) -> str | tuple[str, str]:
         dot.node(
             name=(value_node_id := node_id(v) + "_value"),
-            label=f"{{{v.label or ""} | data={v.data} | grad={v.grad} }}",
+            label=f"{{{v.label or ""} | data={v.data:.2f} | grad={v.grad:.2f} }}",
             shape="record"
         )
         if v.op is not None:
@@ -52,7 +57,14 @@ class GraphVizRenderer:
         return value_node_id
 
     @staticmethod
-    def _generate_graph_rec(dot: Digraph, v: Value, parent_id: str | None):
+    def _generate_graph_rec(dot: Digraph, v: Value, parent_id: str | None, visited: set[str]):
+        v_id = node_id(v)
+        if v_id in visited:
+            if parent_id is not None:
+                dot.edge(v_id + "_value", parent_id)
+            return
+
+        visited.add(v_id)
         node_ids = GraphVizRenderer._add_value_subgraph(dot, v)
 
         match node_ids:
@@ -60,7 +72,7 @@ class GraphVizRenderer:
                 if parent_id is not None:
                     dot.edge(value_node_id, parent_id)
                 for c in v.children:
-                    GraphVizRenderer._generate_graph_rec(dot, c, op_node_id)
+                    GraphVizRenderer._generate_graph_rec(dot, c, op_node_id, visited)
             case value_node_id:
                 if parent_id is not None:
                     dot.edge(value_node_id, parent_id)
@@ -69,7 +81,7 @@ class GraphVizRenderer:
         dot = Digraph(comment='Micrograd graph', format='svg')
         dot.attr(rankdir='LR')
 
-        self._generate_graph_rec(dot, v, None)
+        self._generate_graph_rec(dot, v, None, set())
 
         return dot
 
@@ -105,7 +117,7 @@ class ManimRenderer(Scene):
         parent_id: str | None,
     ) -> None:
         value_id = node_id(v) + "_value"
-        vertices[value_id] = {"label": v.label or f"data={v.data}", "is_op": False}
+        vertices[value_id] = {"label": v.label or f"data={v.data:.2f}", "is_op": False}
 
         if v.op is not None:
             op_id = node_id(v)

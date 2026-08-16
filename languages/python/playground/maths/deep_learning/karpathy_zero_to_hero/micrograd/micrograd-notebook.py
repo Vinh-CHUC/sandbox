@@ -45,19 +45,29 @@ plotting.twod([x, y], mark="line")
 from maths.deep_learning.karpathy_zero_to_hero.micrograd import Value
 from maths.deep_learning.karpathy_zero_to_hero.micrograd.visualisation import GraphVizRenderer
 r = GraphVizRenderer()
-a = Value(665.0, label="a")
-b = Value(2.0, label="b")
+a = Value(1.0, label="a")
+b = Value(1.0, label="b")
 c = Value(1.0, label="c")
-d = Value(2.0, label="d")
-e = Value(5.0, label="e")
-f = Value(6.0, label="f")
-g = Value(7.0, label="g")
-v = (((ab := a + b) * (cd := c + d)) * (ef := e + f)) + g
-ab.label = "a+b"
-ef.label = "e+f"
+d = Value(1.0, label="d")
 
-v.grad = 1
-v._backward()
-r.generate_graph(v)
+e = a * b
+f = e.tanh()
+g = e.tanh()
+e.label = "e"
+f.label = "f"
+g.label = "g"
+
+h = c * d
+h.label = "h"
+i = h.tanh()
+i.label = "i"
+
+L = (fg := f * g) * i
+fg.label = "j"
+L.label = "L"
+
+L.grad = 1
+L.backward()
+r.generate_graph(L)
 
 # %%

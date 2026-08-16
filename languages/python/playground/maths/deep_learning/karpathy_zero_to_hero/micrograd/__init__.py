@@ -21,7 +21,7 @@ class Value:
     def __post_init__(self):
         self._backward: Callable = lambda: None
 
-    def __add__(self, other):
+    def __add__(self, other) -> Value:
         v = Value(self.data + other.data, children=(self, other), op=Op.ADD)
 
         def _backward():
@@ -31,7 +31,7 @@ class Value:
         v._backward = _backward
         return v
 
-    def __mul__(self, other):
+    def __mul__(self, other) -> Value:
         v = Value(self.data * other.data, children=(self, other), op=Op.MUL)
 
         def _backward():
@@ -42,7 +42,7 @@ class Value:
 
         return v
 
-    def tanh(self):
+    def tanh(self) -> Value:
         v = Value(
             (math.exp(2 * self.data) - 1) / (math.exp(2 * self.data) + 1),
             children=(self,),
