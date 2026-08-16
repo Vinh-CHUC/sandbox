@@ -6,3 +6,4 @@ import Playground.Exercises.LogicAndProof._4_Propositional_Logic
 import Playground.Exercises.LogicAndProof._5_Classical_Reasoning
 import Playground.Exercises.LogicAndProof._9_First_Order_Logic
 import Playground.Exercises.LogicAndProof._12_Sets
+import Playground.TAPL.II_Simple_Types._9_Simply_Typed_Lambda_Calculus

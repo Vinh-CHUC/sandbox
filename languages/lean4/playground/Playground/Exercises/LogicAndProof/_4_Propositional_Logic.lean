@@ -278,19 +278,19 @@ example (A B : Prop) : A ∧ B → B ∧ A := by
 -- Another example
 ------------------
 example (A B C : Prop) : A ∧ (B ∨ C) → (A ∧ B) ∨ (A ∧ C) := by
-intro (h1 : A ∧ (B ∨ C))
-have h2 : A := And.left h1
-have h3 : B ∨ C := And.right h1
-show (A ∧ B) ∨ (A ∧ C)
-apply Or.elim h3
-. intro (h4: B)
-  have h5 : A ∧ B := And.intro h2 h4
+  intro (h1 : A ∧ (B ∨ C))
+  have h2 : A := And.left h1
+  have h3 : B ∨ C := And.right h1
   show (A ∧ B) ∨ (A ∧ C)
-  exact Or.inl h5
-. intro (h4: C)
-  have h5 : A ∧ C := And.intro h2 h4
-  show (A ∧ B) ∨ (A ∧ C)
-  exact Or.inr h5
+  apply Or.elim h3
+  . intro (h4: B)
+    have h5 : A ∧ B := And.intro h2 h4
+    show (A ∧ B) ∨ (A ∧ C)
+    exact Or.inl h5
+  . intro (h4: C)
+    have h5 : A ∧ C := And.intro h2 h4
+    show (A ∧ B) ∨ (A ∧ C)
+    exact Or.inr h5
 
 -- term mode
 example (A B C : Prop) : A ∧ (B ∨ C) → (A ∧ B) ∨ (A ∧ C) :=

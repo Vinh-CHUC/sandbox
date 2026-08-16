@@ -481,10 +481,10 @@ section
   variable (h: ∀ x, P x → P (f x))
 
   example: ∀ y, P y → P (f (f y)) := by
-  intro (y: A) (py: P y) -- P (f (f y))
-  apply h -- P (f y)
-  apply h -- P y
-  exact py
+    intro (y: A) (py: P y) -- P (f (f y))
+    apply h -- P (f y)
+    apply h -- P y
+    exact py
 
   -- Term version
   example: ∀ y, P y → P (f (f y)) :=
@@ -502,8 +502,8 @@ section
   variable (A B: U → Prop)
 
   example : (∀ x, A x ∧ B x) → ∀ x, A x := by
-  intro x_a_and_b x
-  exact And.left $ x_a_and_b x
+    intro x_a_and_b x
+    exact And.left $ x_a_and_b x
 
   -- Term version
   example : (∀ x, A x ∧ B x) → ∀ x, A x :=
@@ -578,17 +578,17 @@ section
 
   -- Term variant
   example : False :=
-  Or.elim (Classical.em (shaves barber barber))
-  (
-    fun (shaves_himself: shaves barber barber) =>
-      have b_doesnot_shave_himself: ¬ shaves barber barber := Iff.mp (h barber) shaves_himself
-      b_doesnot_shave_himself shaves_himself
-  )
-  (
-    fun (doesnot_shave_himself: ¬ shaves barber barber) =>
-      have shaves_himself: shaves barber barber := Iff.mpr (h barber) doesnot_shave_himself
-      doesnot_shave_himself shaves_himself
-  )
+    Or.elim (Classical.em (shaves barber barber))
+    (
+      fun (shaves_himself: shaves barber barber) =>
+        have b_doesnot_shave_himself: ¬ shaves barber barber := Iff.mp (h barber) shaves_himself
+        b_doesnot_shave_himself shaves_himself
+    )
+    (
+      fun (doesnot_shave_himself: ¬ shaves barber barber) =>
+        have shaves_himself: shaves barber barber := Iff.mpr (h barber) doesnot_shave_himself
+        doesnot_shave_himself shaves_himself
+    )
 
 end
 
@@ -599,17 +599,17 @@ section
   variable (A B : U → Prop)
 
   example : (∃ x, A x) → ∃ x, A x ∨ B x := by
-  intro h
-  obtain ⟨x, ax⟩ := h
-  -- Somehow magically no need to supply x as well
-  apply Exists.intro
-  . exact Or.inl ax
+    intro h
+    obtain ⟨x, ax⟩ := h
+    -- Somehow magically no need to supply x as well
+    apply Exists.intro
+    . exact Or.inl ax
 
   example : (∃ x, A x) → ∃ x, A x ∨ B x := by
-  intro h
-  obtain ⟨x, ax⟩ := h
-  apply Exists.intro x
-  . exact Or.inl ax
+    intro h
+    obtain ⟨x, ax⟩ := h
+    apply Exists.intro x
+    . exact Or.inl ax
 
 end
 
@@ -626,8 +626,8 @@ section
   variable (h2 : ∃ x, A x)
 
   example : ∃ x, B x := by
-  obtain ⟨x, ax⟩ := h2
-  exact Exists.intro x $ h1 x ax
+    obtain ⟨x, ax⟩ := h2
+    exact Exists.intro x $ h1 x ax
 
   -- Term variant
   example : ∃ x, B x :=
@@ -644,9 +644,9 @@ section
     (h1 : ∃ x, A x ∧ B x)
     (h2 : ∀ x, B x → C x)
   : ∃ x, A x ∧ C x := by
-  obtain ⟨x, ⟨ax, bx⟩⟩ := h1
-  apply Exists.intro
-  exact ⟨ax, h2 x bx⟩
+    obtain ⟨x, ⟨ax, bx⟩⟩ := h1
+    apply Exists.intro
+    exact ⟨ax, h2 x bx⟩
 
   -- Term variant
   example
@@ -664,9 +664,9 @@ section
   variable (A B C : U → Prop)
 
   example : (¬ ∃ x, A x) → ∀ x, ¬ A x := by
-  intro not_ex_ax x ax
-  apply not_ex_ax
-  exact Exists.intro x ax
+    intro not_ex_ax x ax
+    apply not_ex_ax
+    exact Exists.intro x ax
 
   -- Term variant
   example : (¬ ∃ x, A x) → ∀ x, ¬ A x :=
@@ -674,9 +674,9 @@ section
     not_ex_ax $ Exists.intro x ax
 
   example : (∀ x, ¬ A x) → ¬ ∃ x, A x := by
-  intro neg_ax ex_ax
-  obtain ⟨x, ax⟩ := ex_ax
-  exact neg_ax x ax
+    intro neg_ax ex_ax
+    obtain ⟨x, ax⟩ := ex_ax
+    exact neg_ax x ax
 
   -- Term variant
   example : (∀ x, ¬ A x) → ¬ ∃ x, A x :=
@@ -691,11 +691,11 @@ section
   variable (R : U → U → Prop)
 
   example : (∃ x, ∀ y, R x y) → ∀ y, ∃ x, R x y := by
-  intro xy_rxy
-  obtain ⟨x, y_to_rxy⟩ := xy_rxy
-  intro y
-  apply Exists.intro
-  exact y_to_rxy y
+    intro xy_rxy
+    obtain ⟨x, y_to_rxy⟩ := xy_rxy
+    intro y
+    apply Exists.intro
+    exact y_to_rxy y
 
   -- Term variant
   example : (∃ x, ∀ y, R x y) → ∀ y, ∃ x, R x y :=
@@ -725,12 +725,12 @@ section
 
     -- replace the sorry with a proof, using foo and rfl, without using eq.symm.
     theorem my_symm (h : b = a) : a = b := by
-    -- a = a → b = a
-    exact foo (refl a) h
+      -- a = a → b = a
+      exact foo (refl a) h
 
     -- now use foo and my_symm to prove transitivity
     theorem my_trans (h1 : a = b) (h2 : b = c) : a = c := by
-    exact foo h1 (my_symm h2)
+      exact foo h1 (my_symm h2)
   end
 end
 

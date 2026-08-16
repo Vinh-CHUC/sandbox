@@ -198,15 +198,15 @@ x ∈ ⋃ i, A i := by
 
 theorem forall_of_mem_Inter {x : U}
 (h : x ∈ ⋂ i, A i):
-∀ i, x ∈ A i := by
-rw [← mem_iInter]
-assumption
+  ∀ i, x ∈ A i := by
+  rw [← mem_iInter]
+  assumption
 
 theorem mem_Inter_of_forall {x : U}
 (h: ∀ i, x ∈ A i) :
-(x ∈ ⋂ i, A i):= by
-rw [mem_iInter]
-assumption
+  (x ∈ ⋂ i, A i):= by
+  rw [mem_iInter]
+  assumption
 
 -- An example
 example : (⋂ i, A i ∩ B i) = (⋂ i, A i) ∩ (⋂ i, B i) := by
@@ -351,19 +351,19 @@ section
   variable (A : I → Set U) (B : I → Set U) (C : Set U)
 
   example : (⋂ i, A i) ∩ (⋂ i, B i) ⊆ (⋂ i, A i ∩ B i) := by
-  intro x h1
-  obtain ⟨ai, bi⟩ := h1
-  apply mem_iInter.mpr
-  intro i
-  exact ⟨mem_iInter.mp ai i, mem_iInter.mp bi i⟩
+    intro x h1
+    obtain ⟨ai, bi⟩ := h1
+    apply mem_iInter.mpr
+    intro i
+    exact ⟨mem_iInter.mp ai i, mem_iInter.mp bi i⟩
 
   example : C ∩ (⋃ i, A i) ⊆ ⋃ i, C ∩ A i := by
-  intro x h1
-  obtain ⟨x_c, x_ai⟩ := h1
-  rw [mem_iUnion]
-  obtain ⟨i: I, _: x ∈ A i⟩ := (mem_iUnion.mp x_ai)
-  constructor
-  exact ⟨x_c, ‹x ∈ A i›⟩ 
+    intro x h1
+    obtain ⟨x_c, x_ai⟩ := h1
+    rw [mem_iUnion]
+    obtain ⟨i: I, _: x ∈ A i⟩ := (mem_iUnion.mp x_ai)
+    constructor
+    exact ⟨x_c, ‹x ∈ A i›⟩ 
 end
 
 -- 4
@@ -377,19 +377,19 @@ section
   example : A ⊆ A := Subset.refl A
 
   example (h : A ⊆ B) : powerset A ⊆ powerset B := by
-  intro sa sa_in_pa
-  apply Subset.trans
-  . show sa ⊆ A
-    exact sa_in_pa
-  . show A ⊆ B
-    exact h
+    intro sa sa_in_pa
+    apply Subset.trans
+    . show sa ⊆ A
+      exact sa_in_pa
+    . show A ⊆ B
+      exact h
 
   example (h : powerset A ⊆ powerset B) : A ⊆ B := by
-  -- h is formally sa -> sa ∈ P A -> sa ∈ P B
-  -- h is formally sa -> sa ⊆ A -> sa ⊆ B
-  have : A ⊆ A := Subset.refl A
-  apply h
-  -- the first argument of h (of type Set A) is implicit
-  show A ∈ powerset A
-  assumption
+    -- h is formally sa -> sa ∈ P A -> sa ∈ P B
+    -- h is formally sa -> sa ⊆ A -> sa ⊆ B
+    have : A ⊆ A := Subset.refl A
+    apply h
+    -- the first argument of h (of type Set A) is implicit
+    show A ∈ powerset A
+    assumption
 end

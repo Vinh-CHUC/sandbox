@@ -85,20 +85,20 @@ section
 
   /- Tactical mode -/
   example : (A → B) ∨ (B → A) := by
-  apply Or.elim (Classical.em B)
-  . intro b
-    have : A → B := by
-      intro
+    apply Or.elim (Classical.em B)
+    . intro b
+      have : A → B := by
+        intro
+        assumption
+      apply Or.inl
       assumption
-    apply Or.inl
-    assumption
-  . intro nb
-    have : B → A := by
-      intro b
-      apply False.elim
-      exact nb b
-    apply Or.inr
-    assumption
+    . intro nb
+      have : B → A := by
+        intro b
+        apply False.elim
+        exact nb b
+      apply Or.inr
+      assumption
 end 
 
 /- ---------------------------- -/
