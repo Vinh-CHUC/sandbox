@@ -1,6 +1,6 @@
 pub mod rust_features {
     mod borrow;
-    mod concurrency;
+    pub mod concurrency;
     mod iterators;
     pub mod lifetimes;
     mod oo;
