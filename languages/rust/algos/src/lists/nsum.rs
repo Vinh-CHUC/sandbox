@@ -1,5 +1,18 @@
 use std::collections::HashMap;
 
+pub fn unique_multi_cartesian_product(l: &[u16], n: u8) -> Option<impl Iterator<Item = Vec<usize>>> {
+}
+
+pub mod NSum {
+    pub fn naive(l: &[u16], target: u16, nsum: u8) -> Option<Vec<usize>> {
+        let mut indices = Vec::<Vec<usize>>::new();
+        for _ in (0..nsum) {
+
+        }
+        None
+    }
+}
+
 pub mod TwoSum {
 use super::HashMap;
 
