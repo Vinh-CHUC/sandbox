@@ -1,7 +1,48 @@
 use std::collections::HashMap;
 
-pub fn unique_multi_cartesian_product(l: &[u16], n: u8) -> Option<impl Iterator<Item = Vec<usize>>> {
+pub mod CartesianProduct {
+
+// Vec<Vec<>> using iterators
+pub fn multi_cartesian_product(l: &[u16], n: u8) -> Vec<Vec<u16>> {
+    (0..n).fold(vec![vec![]], |acc, _| {
+        acc.into_iter().flat_map(|prefix| {
+            l.iter().map(move |x| {
+                // As we do not mutate prefix itself, the function needs not be FnOnce
+                let mut tuple = prefix.clone();
+                tuple.push(*x);
+                tuple
+            })
+        }).collect()
+    })
 }
+
+// Vec<Vec<>> loopy
+pub fn multi_cartesian_loopy(l: &[u16], n: u8) -> Vec<Vec<u16>> {
+    let mut acc = vec![vec![]];
+
+    for _ in 0..n {
+        let mut new_acc = vec![vec![]];
+
+        for prefix in acc {
+            for x in l {
+                let mut v = prefix.clone();
+                v.push(*x);
+                new_acc.push(v);
+            }
+        }
+
+        // Moved out but we can write into it!
+        acc = new_acc;
+    }
+    acc
+}
+
+// Full laziness, a bit overkill? Is it actually that efficient?
+// Basically some kind of nested linkedlist of Boxes with boxed/dyns
+// pub fn multi_cartesian_lazy(l: &[u16], n: u8)  {}
+
+}
+
 
 pub mod NSum {
     pub fn naive(l: &[u16], target: u16, nsum: u8) -> Option<Vec<usize>> {
