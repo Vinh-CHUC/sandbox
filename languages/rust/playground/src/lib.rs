@@ -5,7 +5,7 @@ pub mod rust_features {
     pub mod lifetimes;
     mod oo;
     mod patterns;
-    mod pointers;
+    pub mod pointers;
     mod types;
 }
 

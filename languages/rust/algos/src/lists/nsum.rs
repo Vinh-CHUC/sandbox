@@ -1,60 +1,16 @@
 use std::collections::HashMap;
 
-pub mod CartesianProduct {
-
-// Vec<Vec<>> using iterators
-pub fn multi_cartesian_product(l: &[u16], n: u8) -> Vec<Vec<u16>> {
-    (0..n).fold(vec![vec![]], |acc, _| {
-        acc.into_iter().flat_map(|prefix| {
-            l.iter().map(move |x| {
-                // As we do not mutate prefix itself, the function needs not be FnOnce
-                let mut tuple = prefix.clone();
-                tuple.push(*x);
-                tuple
-            })
-        }).collect()
-    })
-}
-
-// Vec<Vec<>> loopy
-pub fn multi_cartesian_loopy(l: &[u16], n: u8) -> Vec<Vec<u16>> {
-    let mut acc = vec![vec![]];
-
-    for _ in 0..n {
-        let mut new_acc = vec![vec![]];
-
-        for prefix in acc {
-            for x in l {
-                let mut v = prefix.clone();
-                v.push(*x);
-                new_acc.push(v);
-            }
-        }
-
-        // Moved out but we can write into it!
-        acc = new_acc;
-    }
-    acc
-}
-
-// Full laziness, a bit overkill? Is it actually that efficient?
-// Basically some kind of nested linkedlist of Boxes with boxed/dyns
-// pub fn multi_cartesian_lazy(l: &[u16], n: u8)  {}
-
-}
-
-
-pub mod NSum {
+pub mod nsum {
+    // TODO: k-sum where k is dividable by l > 1, sort + meet in the middle
+    #[allow(unused)]
     pub fn naive(l: &[u16], target: u16, nsum: u8) -> Option<Vec<usize>> {
-        let mut indices = Vec::<Vec<usize>>::new();
-        for _ in (0..nsum) {
-
-        }
+        let indices = Vec::<Vec<usize>>::new();
+        for _ in 0..nsum {}
         None
     }
 }
 
-pub mod TwoSum {
+pub mod two_sum {
 use super::HashMap;
 
 pub fn with_hash_map(l: &Vec<u16>, target: u16) -> Option<(usize, usize)>{
@@ -95,7 +51,7 @@ pub fn with_two_pointers(l: &[u16], target: u16) -> Option<(usize, usize)> {
 
 }
 
-pub mod ThreeSum {
+pub mod three_sum {
 use super::HashMap;
 
 pub fn basic(l: &[u16], target: u16) -> Option<(usize, usize, usize)>{
@@ -147,7 +103,7 @@ pub fn seen_pairs(l: &[u16], target: u16) -> Option<(usize, usize, usize)>{
 
 #[cfg(test)]
 mod tests {
-    use super::TwoSum;
+    use super::two_sum;
     use hegel::generators as gs;
     use hegel::TestCase;
 
@@ -201,7 +157,7 @@ mod tests {
         let target = draw_sum_target(&tc, &l, 2, guaranteed);
 
         let expected = naive_two_sum(&l, target);
-        let actual = TwoSum::with_hash_map(&l, target);
+        let actual = two_sum::with_hash_map(&l, target);
 
         match expected {
             None => assert_eq!(actual, None, "two_sum returned a pair for {:?} / {}", l, target),
@@ -221,7 +177,7 @@ mod tests {
         let target = draw_sum_target(&tc, &l, 2, guaranteed);
 
         let expected = naive_two_sum(&l, target);
-        let actual = TwoSum::with_hash_map(&l, target);
+        let actual = two_sum::with_hash_map(&l, target);
 
         match expected {
             None => assert_eq!(actual, None, "two_sum returned a pair for {:?} / {}", l, target),
@@ -235,7 +191,7 @@ mod tests {
 
     #[hegel::test(derandomize = true)]
     fn three_sum_matches_naive(tc: TestCase) {
-        use super::ThreeSum;
+        use super::three_sum;
 
         let l = tc.draw(gs::vecs(gs::integers::<u16>()).max_size(100));
         tc.assume(l.len() >= 3);
@@ -245,7 +201,7 @@ mod tests {
         let target = draw_sum_target(&tc, &l, 3, guaranteed);
 
         let expected = naive_three_sum(&l, target);
-        let actual = ThreeSum::basic(&l, target);
+        let actual = three_sum::basic(&l, target);
 
         match expected {
             None => assert_eq!(
@@ -270,7 +226,7 @@ mod tests {
 
     #[hegel::test(derandomize = true)]
     fn three_sum_with_seen_pairs_matches_naive(tc: TestCase) {
-        use super::ThreeSum;
+        use super::three_sum;
 
         let l = tc.draw(gs::vecs(gs::integers::<u16>()).max_size(100));
         tc.assume(l.len() >= 3);
@@ -280,7 +236,7 @@ mod tests {
         let target = draw_sum_target(&tc, &l, 3, guaranteed);
 
         let expected = naive_three_sum(&l, target);
-        let actual = ThreeSum::seen_pairs(&l, target);
+        let actual = three_sum::seen_pairs(&l, target);
 
         match expected {
             None => assert_eq!(

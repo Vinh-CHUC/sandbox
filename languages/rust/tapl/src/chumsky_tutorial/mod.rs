@@ -329,8 +329,7 @@ fn eval<'src>(
             let output = eval(then, vars, funcs);
             funcs.functions.pop();
             output
-        },
-        _ => todo!(),
+        }
     }
 }
 

@@ -106,7 +106,7 @@ where
 {
     // If T itself contains references, then they have to outlive the &'a
     // If T dost not contain any references then `T: 'a` is always fulfilled
-    myref: &'a T,
+    _myref: &'a T,
 }
 
 #[cfg(test)]
