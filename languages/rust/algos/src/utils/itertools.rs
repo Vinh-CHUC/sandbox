@@ -7,8 +7,8 @@ pub mod cartesian_product {
     {
         (0..arity).fold(vec![vec![]], |acc, _| {
             acc.into_iter().flat_map(|prefix| {
-                // A fresh clone per prefix, mimicking the slice version's l.iter()
                 l.clone().map(move |x| {
+                    // The move here isn't essential.. clone count is the same
                     // As we do not mutate prefix itself, the function needs not be FnOnce
                     let mut tuple = prefix.clone();
                     tuple.push(x);
@@ -70,6 +70,30 @@ pub mod cartesian_product {
 }
 
 pub mod combinations {
+    pub fn basic<'a, T, I>(l: I, arity: usize) -> Vec<Vec<&'a T>>
+    where
+        T: 'a,
+        I: Iterator<Item = &'a T> + Clone
+    {
+        (0..arity).fold(vec![vec![]], |acc, _| {
+            acc.into_iter().flat_map(|prefix| {
+                let last_idx = prefix.last().map(|(idx, _)| *idx);
+                let skip = last_idx.map_or(0, |idx| idx + 1);
+
+                l.clone().enumerate().skip(skip).map(move |(idx, el)| {
+                    let mut new_comb = prefix.clone();
+                    new_comb.push((idx, el));
+                    new_comb
+                })
+            }).collect()
+        }).into_iter().map(|c| {
+            c.into_iter().map(|(_, el)|{
+                el
+            }).collect()
+        }).collect()
+    }
+
+
     // Vec<Vec<>> loopy
     pub fn loopy<'a, T, I>(l: I, arity: usize) -> Vec<Vec<&'a T>>
     where
@@ -95,11 +119,14 @@ pub mod combinations {
             acc = new_acc;
         }
 
-        acc.iter().map(|comb|{
-            comb.iter().map(|(_, v)| *v).collect()
+        acc.into_iter().map(|comb|{
+            comb.into_iter().map(|(_, v)| v).collect()
         }).collect()
     }
 
+    pub fn lazy<'a, T, I>(l: I, arity: usize) -> Box<dyn Iterator<Item = Vec<&'a T>> + 'a>{
+        Box::new(std::iter::once(vec![]))
+    }
 }
 
 #[cfg(test)]
