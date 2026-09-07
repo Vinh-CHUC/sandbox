@@ -2,7 +2,6 @@ pub mod cartesian_product {
     // Vec<Vec<>> using iterators
     pub fn basic<'a, T, I>(l: I, arity: usize) -> Vec<Vec<&'a T>>
     where
-        T: 'a,
         I: Iterator<Item = &'a T> + Clone,
     {
         (0..arity).fold(vec![vec![]], |acc, _| {
@@ -21,7 +20,6 @@ pub mod cartesian_product {
     // Vec<Vec<>> loopy
     pub fn loopy<'a, T, I>(l: I, arity: usize) -> Vec<Vec<&'a T>>
     where
-        T: 'a,
         I: Iterator<Item = &'a T> + Clone,
     {
         let mut acc = vec![vec![]];
@@ -50,7 +48,6 @@ pub mod cartesian_product {
     // out over the element list.
     pub fn lazy<'a, T, I>(l: I, arity: usize) -> Box<dyn Iterator<Item = Vec<&'a T>> + 'a>
     where
-        T: 'a,
         I: Iterator<Item = &'a T> + Clone + 'a,
     {
         if arity == 0 {
@@ -72,7 +69,6 @@ pub mod cartesian_product {
 pub mod combinations {
     pub fn basic<'a, T, I>(l: I, arity: usize) -> Vec<Vec<&'a T>>
     where
-        T: 'a,
         I: Iterator<Item = &'a T> + Clone
     {
         (0..arity).fold(vec![vec![]], |acc, _| {
@@ -97,7 +93,6 @@ pub mod combinations {
     // Vec<Vec<>> loopy
     pub fn loopy<'a, T, I>(l: I, arity: usize) -> Vec<Vec<&'a T>>
     where
-        T: 'a,
         I: Iterator<Item = &'a T> + Clone,
     {
         let mut acc = vec![vec![]];
@@ -124,13 +119,48 @@ pub mod combinations {
         }).collect()
     }
 
-    pub fn lazy<'a, T, I>(l: I, arity: usize) -> Box<dyn Iterator<Item = Vec<&'a T>> + 'a>{
-        Box::new(std::iter::once(vec![]))
+    pub fn _lazy<'a, T, I>(l: I, arity: usize) -> Box<dyn Iterator<Item = Vec<(usize, &'a T)>> + 'a>
+    where
+        // the 'a on I itself necessary! as the iterator is lazily evaluated
+        I: Iterator<Item = &'a T> + Clone + 'a
+    {
+        if arity == 0 {
+            Box::new(std::iter::once(vec![]))
+        } else {
+            let prev = _lazy(l.clone(), arity - 1);
+
+            Box::new(prev.flat_map(move |prefix| {  // move l: I not really essential?
+                                                    //
+                let last_idx = prefix.last().map(|(idx, _)| *idx);
+                let skip = last_idx.map_or(0, |idx| idx + 1);
+
+                l.clone().enumerate().skip(skip).map(
+                    move |(idx, el)| {  // Move the prefix not super essential
+                        let mut new_comb = prefix.clone();
+                        new_comb.push((idx, el));
+                        new_comb
+                    }
+                )
+            }))
+        }
+    }
+
+    pub fn lazy<'a, T, I>(l: I, arity: usize) -> Box<dyn Iterator<Item = Vec<&'a T>> + 'a>
+    where
+        I : Iterator<Item = &'a T> + Clone + 'a
+    {
+        Box::new(_lazy(l, arity).map(
+            |v| {
+                v.into_iter().map(|(_, el)| el).collect()
+            }
+        ))
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use itertools::Itertools;
+
     use super::*;
 
     #[test]
@@ -160,11 +190,15 @@ mod tests {
             vec![&l[2], &l[3]],
         ];
         assert_eq!(combinations::loopy(l.iter(), 2), expected);
+        assert_eq!(combinations::basic(l.iter(), 2), expected);
+        assert_eq!(combinations::lazy(l.iter(), 2).collect_vec(), expected);
 
         // C(4, arity) for arity in 0..=5, with arity > len yielding nothing
         let result_sizes = [1, 4, 6, 4, 1, 0];
         for (arity, &r_size) in (0..=5).zip(result_sizes.iter()) {
             assert_eq!(combinations::loopy(l.iter(), arity).len(), r_size);
+            assert_eq!(combinations::basic(l.iter(), arity).len(), r_size);
+            assert_eq!(combinations::lazy(l.iter(), arity).collect_vec().len(), r_size);
         }
     }
 }
