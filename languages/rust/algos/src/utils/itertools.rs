@@ -1,4 +1,6 @@
 pub mod cartesian_product {
+    use itertools::Itertools;
+
     // Vec<Vec<>> using iterators
     pub fn basic<'a, T, I>(l: I, arity: usize) -> Vec<Vec<&'a T>>
     where
@@ -6,14 +8,19 @@ pub mod cartesian_product {
     {
         (0..arity).fold(vec![vec![]], |acc, _| {
             acc.into_iter().flat_map(|prefix| {
-                l.clone().map(move |x| {
-                    // The move here isn't essential.. clone count is the same
+                l.clone().map(move |el| {
+                    // The move here isn't essential for the performance clone count is the same
                     // As we do not mutate prefix itself, the function needs not be FnOnce
-                    let mut tuple = prefix.clone();
-                    tuple.push(x);
-                    tuple
+                    //
+                    // However it's necessary for lifetime reasons, this inner closure here needs to
+                    // be independent from the outer one lifetime wise
+                    //
+                    // TODO create a note in Obsidian with Flat_Map internals
+                    let mut new_comb = prefix.clone();
+                    new_comb.push(el);
+                    new_comb
                 })
-            }).collect()
+            }).collect_vec()
         })
     }
 
@@ -22,24 +29,25 @@ pub mod cartesian_product {
     where
         I: Iterator<Item = &'a T> + Clone,
     {
-        let mut acc = vec![vec![]];
+        let mut result = vec![vec![]];
 
         for _ in 0..arity {
-            let mut new_acc = vec![];
+            let mut new_result = vec![];
 
-            for prefix in acc {
-                // Here the need for cloning is because we iterate over l multiple times
-                for x in l.clone() {
-                    let mut v = prefix.clone();
-                    v.push(x);
-                    new_acc.push(v);
+            // This works too
+            // for prefix in &result {
+            for prefix in result {
+                // Here the need for cloning is because we iterate over l multiple times over l
+                for el in l.clone() {
+                    let mut new_comb = prefix.clone(); 
+                    new_comb.push(el);
+                    new_result.push(new_comb);
                 }
             }
-
             // Moved out but we can write into it!
-            acc = new_acc;
+            result = new_result;
         }
-        acc
+        result
     }
 
     // To confirm Box<dyn Trait> is implicitly Box<dyn Trait + 'a>
