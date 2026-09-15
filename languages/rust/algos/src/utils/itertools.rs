@@ -39,23 +39,33 @@ pub mod cartesian_product {
             for prefix in result {
                 // Here the need for cloning is because we iterate over l multiple times over l
                 for el in l.clone() {
-                    let mut new_comb = prefix.clone(); 
+                    let mut new_comb = prefix.clone();
                     new_comb.push(el);
                     new_result.push(new_comb);
                 }
             }
             // Moved out but we can write into it!
+            // Rust analysis the dataflow and understand that result is valid again at the end of
+            // the loop body, thus ready to be iterated again in the next iteration of arity
             result = new_result;
         }
         result
     }
 
-    // To confirm Box<dyn Trait> is implicitly Box<dyn Trait + 'a>
+    // To confirm Box<dyn Trait> is by default Box<dyn Trait + 'static>, due to type erasure Rust
+    // can't really know about references lifetimes held by the dyn object. So it picks the default
+    // of "there is borrowed data inside" (except 'static)
+    //
     // An Iterator is single-pass, so each level lazily re-clones l (from the
     // pristine original, which itself is never advanced) whenever it fans a prefix
     // out over the element list.
     pub fn lazy<'a, T, I>(l: I, arity: usize) -> Box<dyn Iterator<Item = Vec<&'a T>> + 'a>
     where
+        // Note the 'a here for I:
+        // - I outlives 'a <==> any references in I must outlive 'a
+        //
+        // To satisfy the Box<dyn ... 'a> its internals, here the l.clone().map() must also satisfy
+        // that constraint
         I: Iterator<Item = &'a T> + Clone + 'a,
     {
         if arity == 0 {
@@ -63,13 +73,15 @@ pub mod cartesian_product {
         } else {
             // Box itself implement iter, it just delegates to the inner type
             let prev = lazy(l.clone(), arity - 1);
-            Box::new(prev.flat_map(move |prefix| {
-                l.clone().map(move |x| {
-                    let mut tuple = prefix.clone();
-                    tuple.push(x);
-                    tuple
+            // Contrary to basic the flat_map closure here outlives this function, so it's got to
+            // own l
+            Box::new(prev.flat_map(move |prefix|
+                l.clone().map(move |el| {
+                    let mut new_comb = prefix.clone();
+                    new_comb.push(el);
+                    new_comb
                 })
-            }))
+            ))
         }
     }
 }
