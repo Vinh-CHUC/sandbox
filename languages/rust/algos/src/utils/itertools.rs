@@ -87,26 +87,26 @@ pub mod cartesian_product {
 }
 
 pub mod combinations {
+    use itertools::Itertools;
+
     pub fn basic<'a, T, I>(l: I, arity: usize) -> Vec<Vec<&'a T>>
     where
         I: Iterator<Item = &'a T> + Clone
     {
-        (0..arity).fold(vec![vec![]], |acc, _| {
+        let with_idxs = (0..arity).fold(vec![vec![]], |acc, _| {
             acc.into_iter().flat_map(|prefix| {
-                let last_idx = prefix.last().map(|(idx, _)| *idx);
-                let skip = last_idx.map_or(0, |idx| idx + 1);
-
+                let skip = prefix.last().map_or(0, |(idx, _)| *idx + 1);
                 l.clone().enumerate().skip(skip).map(move |(idx, el)| {
-                    let mut new_comb = prefix.clone();
-                    new_comb.push((idx, el));
-                    new_comb
+                   let mut new_comb = prefix.clone(); 
+                   new_comb.push((idx, el));
+                   new_comb
                 })
-            }).collect()
-        }).into_iter().map(|c| {
-            c.into_iter().map(|(_, el)|{
-                el
-            }).collect()
-        }).collect()
+            }).collect_vec()
+        });
+
+        with_idxs.into_iter().map(|comb| {
+            comb.into_iter().map(|(_, el)| el).collect_vec()
+        }).collect_vec()
     }
 
 
