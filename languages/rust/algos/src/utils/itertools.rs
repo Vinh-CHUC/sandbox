@@ -7,20 +7,16 @@ pub mod cartesian_product {
         I: Iterator<Item = &'a T> + Clone,
     {
         (0..arity).fold(vec![vec![]], |acc, _| {
-            acc.into_iter().flat_map(|prefix| {
+            acc.into_iter().flat_map(|comb|
+                // This move is not useful for perf
+                // But is required to compile |comb| goes out of scope by the time the inner
+                // iterator gets walked over
                 l.clone().map(move |el| {
-                    // The move here isn't essential for the performance clone count is the same
-                    // As we do not mutate prefix itself, the function needs not be FnOnce
-                    //
-                    // However it's necessary for lifetime reasons, this inner closure here needs to
-                    // be independent from the outer one lifetime wise
-                    //
-                    // TODO create a note in Obsidian with Flat_Map internals
-                    let mut new_comb = prefix.clone();
+                    let mut new_comb = comb.clone();
                     new_comb.push(el);
                     new_comb
-                })
-            }).collect_vec()
+                }).collect_vec()
+            ).collect_vec()
         })
     }
 
