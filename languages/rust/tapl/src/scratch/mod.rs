@@ -77,7 +77,19 @@ pub fn check_type(ctx: Context, t: Term) -> Result<Ty, TypeError> {
             } else {
                 Err(TypeError::FN_TYPE_EXPECTED)
             }
-        }
+        },
+        Term::True | Term::False => Ok(Ty::BOOLEAN),
+        Term::If(r#if, r#then, r#else) => {
+            if check_type(ctx.clone(), *r#if)? != Ty::BOOLEAN {
+                return Err(TypeError::TYPE_MISMATCH);
+            }
+
+            let then_t = check_type(ctx.clone(), *r#then)?;
+            if then_t != check_type(ctx, *r#else)? {
+                return Err(TypeError::TYPE_MISMATCH);
+            }
+            Ok(then_t)
+        },
         _ => Ok(Ty::BOOLEAN)
     }
 }

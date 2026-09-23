@@ -77,9 +77,13 @@ pub fn remove_names(expr: &ExprWithName, names: &mut Vec<char>) -> Result<Expr, 
     }
 }
 
+// name_idx current number of traversed lambda binders
 pub fn add_names(expr: &Expr, name_idx: u8) -> Result<ExprWithName, String> {
     match expr {
         Expr::Var(i) => {
+            // name_idx is +1 compared to the DeBruin naming
+            // \lambda 0. 0
+            //      name_idx: 1
             let c = NAMES[(name_idx as i32 - 1 - *i) as usize];
             Ok(ExprWithName::Var(c.to_string()))
         },
@@ -90,6 +94,10 @@ pub fn add_names(expr: &Expr, name_idx: u8) -> Result<ExprWithName, String> {
             ))
         },
         Expr::Abs(t) => {
+            // A small technicality
+            // The binder is NAMES[name_idx]
+            // but for a potential 0 inside it'll be NAMES[(name_idx - 1]) as we'll
+            // have traversed a binder
             let c = NAMES[name_idx as usize];
             let name_idx = name_idx + 1;
             Ok(ExprWithName::Abs(
