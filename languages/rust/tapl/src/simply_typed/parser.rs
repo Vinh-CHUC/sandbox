@@ -15,6 +15,10 @@ pub enum NamedTerm {
 
 pub fn parser<'src>() -> impl Parser<'src, &'src [Token], NamedTerm, extra::Err<Rich<'src, Token>>> {
     recursive(|term| {
+        // Type grammar:
+        // - Bool
+        // - Bool -> (Bool)
+        // - Bool -> (B -> ...)
         let ty = recursive(|ty| {
             let atom = just(Token::Bool)
                 .to(Ty::BOOLEAN)

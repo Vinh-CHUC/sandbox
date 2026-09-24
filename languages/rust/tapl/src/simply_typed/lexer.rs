@@ -19,6 +19,7 @@ pub enum Token {
 
 pub fn lexer<'src>() -> impl Parser<'src, &'src str, Vec<Token>, extra::Err<Rich<'src, char>>> {
     let token = choice((
+        // ignored() yields ()
         choice((
             just('\\').ignored(),
             text::keyword("lambda").ignored(),
@@ -34,7 +35,10 @@ pub fn lexer<'src>() -> impl Parser<'src, &'src str, Vec<Token>, extra::Err<Rich
         text::keyword("if").to(Token::If),
         text::keyword("then").to(Token::Then),
         text::keyword("else").to(Token::Else),
+
+        // types are hardcoded atm
         text::keyword("Bool").to(Token::Bool),
+
         text::ident().map(|s: &str| Token::Var(s.to_string())),
     ));
 
