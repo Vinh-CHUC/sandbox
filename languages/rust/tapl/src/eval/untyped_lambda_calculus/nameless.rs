@@ -84,6 +84,11 @@ pub fn add_names(expr: &Expr, name_idx: u8) -> Result<ExprWithName, String> {
             // name_idx is +1 compared to the DeBruin naming
             // \lambda 0. 0
             //      name_idx: 1
+            //
+            // Put another way: name_idx is the **number** of lambdas traversed
+            // ~the length of the array NAMES that we're meant to use
+            //
+            // but i is the index starting from the right
             let c = NAMES[(name_idx as i32 - 1 - *i) as usize];
             Ok(ExprWithName::Var(c.to_string()))
         },
@@ -94,10 +99,6 @@ pub fn add_names(expr: &Expr, name_idx: u8) -> Result<ExprWithName, String> {
             ))
         },
         Expr::Abs(t) => {
-            // A small technicality
-            // The binder is NAMES[name_idx]
-            // but for a potential 0 inside it'll be NAMES[(name_idx - 1]) as we'll
-            // have traversed a binder
             let c = NAMES[name_idx as usize];
             let name_idx = name_idx + 1;
             Ok(ExprWithName::Abs(
@@ -197,6 +198,11 @@ mod tests {
         let e2 = parse_src(r"\. \. 1 0");
         let named2 = add_names(&e2, 0).unwrap();
         assert_eq!(named2, parse_named_src(r"\x. \y. x y"));
+
+        // Tree split: we thus reuse the same name
+        let e2 = parse_src(r"\. (\. 0 1) (\. 0 1)");
+        let named2 = add_names(&e2, 0).unwrap();
+        assert_eq!(named2, parse_named_src(r"\x. (\y. y x) (\y. y x)"));
     }
 
     #[test]
