@@ -48,7 +48,7 @@ pub enum Term {
     If(Box<Term>, Box<Term>, Box<Term>)
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 enum TypeError {
     DEFAULT,
     FN_TYPE_EXPECTED,
@@ -97,9 +97,28 @@ pub fn check_type(ctx: Context, t: Term) -> Result<Ty, TypeError> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use chumsky::Parser;
+    use crate::simply_typed::lexer::lexer;
+    use crate::simply_typed::nameless::remove_names;
+    use crate::simply_typed::parser::parser;
+
+    fn func(t1: Ty, t2: Ty) -> Ty {
+        Ty::FUNC(Box::new(t1), Box::new(t2))
+    }
+
+    fn parse_src(src: &str) -> Term {
+        let tokens = lexer().parse(src).into_result().unwrap();
+        let named = parser().parse(&tokens).into_result().unwrap();
+        remove_names(&named, &mut Vec::new()).unwrap()
+    }
 
     #[test]
-    fn basic(){
-        check_type(Context(vec![]), Term::True);
+    fn test_check_type() {
+        // (\x:Bool->Bool. x) (\y:Bool. y) : Bool -> Bool
+        let t = parse_src(r"(\x:Bool->Bool. x) (\y:Bool. y)");
+        assert_eq!(
+            check_type(Context(vec![]), t),
+            Ok(func(Ty::BOOLEAN, Ty::BOOLEAN))
+        );
     }
 }
