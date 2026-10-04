@@ -59,6 +59,7 @@ enum TypeError {
 pub fn check_type(ctx: Context, t: Term) -> Result<Ty, TypeError> {
     match t {
         Term::Var(idx, _ctx_length) => ctx.getType(idx).map_err(|_| TypeError::DEFAULT),
+        // Interestingly here Abs is only annotated with the type of the input
         Term::Abs(binding_name, ty, body) => {
             let new_ctx = ctx.add_binding(binding_name, Binding::TypedVar(ty.clone()));
             let ret_type = check_type(new_ctx, *body)?;
@@ -113,12 +114,41 @@ mod tests {
     }
 
     #[test]
+    fn test_failures() {
+        let t = parse_src(r"true (\y:Bool. y)");
+        assert_eq!(check_type(Context(vec![]), t), Err(TypeError::FN_TYPE_EXPECTED));
+
+        let t = parse_src(r"(\y:Bool. y) (\x:Bool.x)");
+        assert_eq!(check_type(Context(vec![]), t), Err(TypeError::TYPE_MISMATCH));
+
+        let t = parse_src(r"if (\y:Bool. y) then true else false");
+        assert_eq!(check_type(Context(vec![]), t), Err(TypeError::TYPE_MISMATCH));
+
+        let t = parse_src(r"if true then true else (\x:Bool. x)");
+        assert_eq!(check_type(Context(vec![]), t), Err(TypeError::TYPE_MISMATCH));
+    }
+
+    #[test]
     fn test_check_type() {
         // (\x:Bool->Bool. x) (\y:Bool. y) : Bool -> Bool
         let t = parse_src(r"(\x:Bool->Bool. x) (\y:Bool. y)");
         assert_eq!(
             check_type(Context(vec![]), t),
             Ok(func(Ty::BOOLEAN, Ty::BOOLEAN))
+        );
+
+        let t = parse_src(r"if true then true else false");
+        assert_eq!(check_type(Context(vec![]), t), Ok(Ty::BOOLEAN));
+
+        let t = parse_src(r"if true then (\x:Bool->Bool.x) else (\y:Bool->Bool.y)");
+        assert_eq!(
+            check_type(Context(vec![]), t),
+            Ok(
+                func(
+                    func(Ty::BOOLEAN, Ty::BOOLEAN),
+                    func(Ty::BOOLEAN, Ty::BOOLEAN)
+                )
+            )
         );
     }
 }

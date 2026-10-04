@@ -11,11 +11,15 @@ pub mod cartesian_product {
                 // This move is not useful for perf
                 // But is required to compile |comb| goes out of scope by the time the inner
                 // iterator gets walked over
+                //
+                // The move becomes unnecessary if we use instead acc.iter().flat_map !!!
+                // - in the former case |comb| is a &Vec<&T>
+                // - in the latter |comb| is a Vec<&T>
                 l.clone().map(move |el| {
                     let mut new_comb = comb.clone();
                     new_comb.push(el);
                     new_comb
-                }).collect_vec()
+                })
             ).collect_vec()
         })
     }
