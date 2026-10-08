@@ -54,9 +54,16 @@ TEST(RangesTypesTest, Zipping) {
 
   for (const auto& it : std::views::zip(vec, vec2)){
     static_assert(std::is_same_v<decltype(it), const std::tuple<std::string&, int&>&>);
-    auto [s, i] = it;
-    static_assert(std::is_same_v<decltype(s), std::string&>);
-    s = "hello";
+    {
+      auto [s, i] = it;
+      static_assert(std::is_same_v<decltype(s), std::string&>);
+      s = "hello";
+    }
+    {
+      auto& [s, i] = it;  // Semantically we do not copy the tuple<&,&> but negligible difference
+      static_assert(std::is_same_v<decltype(s), std::string&>);
+      s = "hello";
+    }
   }
   // The const as the zip level doesn't const the things inside
   ASSERT_EQ(vec[0], "hello");
