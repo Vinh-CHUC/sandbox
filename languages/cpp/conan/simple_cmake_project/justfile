@@ -5,8 +5,8 @@ install:
     conan install . --output-folder=build --build=missing
 
 build:
-    cd build && cmake .. -DCMAKE_TOOLCHAIN_FILE=conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Release
-    cd build && cmake --build .
+    cd build && . ./conanbuild.sh && cmake .. -DCMAKE_TOOLCHAIN_FILE=conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Release
+    cd build && . ./conanbuild.sh && cmake --build .
 
 run:
     ./build/compressor
