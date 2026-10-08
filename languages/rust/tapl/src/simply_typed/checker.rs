@@ -30,7 +30,8 @@ impl Context {
     }
 
     pub fn getType(&self, idx: usize) -> Result<Ty, String> {
-        let b = self.0.get(idx).map(|x| &(x.1)).ok_or_else(|| "Index not found".to_owned())?;
+        let pos = self.0.len().checked_sub(1 + idx).ok_or_else(|| "Index not found".to_owned())?;
+        let b = self.0.get(pos).map(|x| &(x.1)).ok_or_else(|| "Index not found".to_owned())?;
         match b {
             Binding::Name => Err("No type information".to_owned()),
             Binding::TypedVar(ty) => Ok(ty.clone())
@@ -149,6 +150,18 @@ mod tests {
                     func(Ty::BOOLEAN, Ty::BOOLEAN)
                 )
             )
+        );
+    }
+
+    #[test]
+    fn test_check_type_outer_binding() {
+        // \x:Bool. \y:Bool->Bool. y x
+        // x is Var(1, 2) and resolves to the outer binding, so getType must
+        // index from the right of the context.
+        let t = parse_src(r"\x:Bool. \y:Bool->Bool. y x");
+        assert_eq!(
+            check_type(Context(vec![]), t),
+            Ok(func(Ty::BOOLEAN, func(func(Ty::BOOLEAN, Ty::BOOLEAN), Ty::BOOLEAN)))
         );
     }
 }
