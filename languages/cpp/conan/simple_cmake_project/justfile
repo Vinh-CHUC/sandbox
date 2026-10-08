@@ -1,0 +1,12 @@
+setup:
+    conan profile detect --force
+
+install:
+    conan install . --output-folder=build --build=missing
+
+build:
+    cd build && cmake .. -DCMAKE_TOOLCHAIN_FILE=conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Release
+    cd build && cmake --build .
+
+run:
+    ./build/compressor
