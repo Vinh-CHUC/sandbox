@@ -46,7 +46,8 @@ pub enum Term {
     App(Box<Term>, Box<Term>),
     True,
     False,
-    If(Box<Term>, Box<Term>, Box<Term>)
+    If(Box<Term>, Box<Term>, Box<Term>),
+    Let(String, Box<Term>, Box<Term>)
 }
 
 #[derive(Debug, PartialEq)]

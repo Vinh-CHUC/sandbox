@@ -25,6 +25,14 @@ pub fn remove_names(expr: &NamedTerm, names: &mut Vec<String>) -> Result<Term, S
             Box::new(remove_names(t, names)?),
             Box::new(remove_names(e, names)?),
         )),
+        NamedTerm::Let(name, bound, body) => {
+            // x is in scope in body only, not in the bound expression
+            let bound = remove_names(bound, names)?;
+            names.push(name.clone());
+            let body = remove_names(body, names)?;
+            names.pop();
+            Ok(Term::Let(name.clone(), Box::new(bound), Box::new(body)))
+        },
     }
 }
 
@@ -56,6 +64,13 @@ pub fn add_names(expr: &Term, names: &mut Vec<String>) -> Result<NamedTerm, Stri
             Box::new(add_names(t, names)?),
             Box::new(add_names(e, names)?),
         )),
+        Term::Let(name, bound, body) => {
+            let bound = add_names(bound, names)?;
+            names.push(name.clone());
+            let body = add_names(body, names)?;
+            names.pop();
+            Ok(NamedTerm::Let(name.clone(), Box::new(bound), Box::new(body)))
+        },
     }
 }
 
@@ -100,12 +115,32 @@ mod tests {
     }
 
     #[test]
+    fn test_remove_names_let() {
+        // let binds in the body only, so the bound expression sees the outer scope
+        assert_eq!(
+            parse_src(r"let x = true in x"),
+            Term::Let(
+                "x".to_string(),
+                Box::new(Term::True),
+                Box::new(Term::Var(0, 1)),
+            )
+        );
+
+        // The bound expression is not in the scope of the let variable
+        let named = parse_named(r"let x = x in true");
+        assert!(remove_names(&named, &mut Vec::new()).is_err());
+    }
+
+    #[test]
     fn test_add_names_roundtrip() {
         for src in [
             r"\x:Bool. x",
             r"\x:Bool. \y:Bool->Bool. if y x then x else false",
             r"(\x:Bool->Bool. x) (\y:Bool. y)",
             r"if true then false else true",
+            r"let x = true in x",
+            r"\x:Bool. let y = x in y",
+            r"let f = \x:Bool. x in f true",
         ] {
             let named = parse_named(src);
             let nameless = remove_names(&named, &mut Vec::new()).unwrap();

@@ -13,6 +13,9 @@ pub enum Token {
     If,
     Then,
     Else,
+    Let,
+    In,
+    Eq,
     Bool,
     Var(String),
 }
@@ -35,6 +38,10 @@ pub fn lexer<'src>() -> impl Parser<'src, &'src str, Vec<Token>, extra::Err<Rich
         text::keyword("if").to(Token::If),
         text::keyword("then").to(Token::Then),
         text::keyword("else").to(Token::Else),
+        text::keyword("let").to(Token::Let),
+        text::keyword("in").to(Token::In),
+
+        just('=').to(Token::Eq),
 
         // types are hardcoded atm
         text::keyword("Bool").to(Token::Bool),
@@ -79,6 +86,18 @@ mod tests {
         assert_eq!(
             lexer().parse("iffy else").into_result().unwrap(),
             vec![Token::Var("iffy".to_string()), Token::Else]
+        );
+
+        assert_eq!(
+            lexer().parse("let x = true in x").into_result().unwrap(),
+            vec![
+                Token::Let,
+                Token::Var("x".to_string()),
+                Token::Eq,
+                Token::True,
+                Token::In,
+                Token::Var("x".to_string()),
+            ]
         );
     }
 }

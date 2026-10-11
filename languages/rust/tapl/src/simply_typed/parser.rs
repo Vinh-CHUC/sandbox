@@ -10,7 +10,8 @@ pub enum NamedTerm {
     App(Box<NamedTerm>, Box<NamedTerm>),
     True,
     False,
-    If(Box<NamedTerm>, Box<NamedTerm>, Box<NamedTerm>)
+    If(Box<NamedTerm>, Box<NamedTerm>, Box<NamedTerm>),
+    Let(String, Box<NamedTerm>, Box<NamedTerm>)
 }
 
 pub fn parser<'src>() -> impl Parser<'src, &'src [Token], NamedTerm, extra::Err<Rich<'src, Token>>> {
@@ -55,6 +56,16 @@ pub fn parser<'src>() -> impl Parser<'src, &'src [Token], NamedTerm, extra::Err<
                 Box::new(els),
             ));
 
+        // let x = t1 in t2 binds x in t2 only (non-recursive)
+        let let_term = just(Token::Let)
+            .ignore_then(select! { Token::Var(v) => v })
+            .then_ignore(just(Token::Eq))
+            .then(term.clone())
+            .then_ignore(just(Token::In))
+            .then(term.clone())
+            .map(|((name, bound), body)| NamedTerm::Let(name, Box::new(bound), Box::new(body)));
+
+        // atom is there to accomodate the application just below
         let atom = var
             .or(abs)
             .or(just(Token::True).to(NamedTerm::True))
@@ -67,7 +78,9 @@ pub fn parser<'src>() -> impl Parser<'src, &'src [Token], NamedTerm, extra::Err<
             |a, b| NamedTerm::App(Box::new(a), Box::new(b)),
         );
 
-        if_term.or(app)
+        // let/if are greedy and extend as far as possible so they can't be in the app
+        // If let/if are to be arguments they have to be parenthesised
+        let_term.or(if_term).or(app)
     })
 }
 
@@ -124,6 +137,30 @@ mod tests {
             abs("f",
                 func(func(Ty::BOOLEAN, Ty::BOOLEAN), Ty::BOOLEAN),
                 app(v("f"), abs("x", Ty::BOOLEAN, v("x")))
+            )
+        );
+
+        // let body extends as far right as possible
+        assert_eq!(
+            parse_named(r"let x = true in x false"),
+            NamedTerm::Let(
+                "x".to_string(),
+                Box::new(NamedTerm::True),
+                Box::new(app(v("x"), NamedTerm::False)),
+            )
+        );
+
+        // nested lets
+        assert_eq!(
+            parse_named(r"let x = true in let y = false in y"),
+            NamedTerm::Let(
+                "x".to_string(),
+                Box::new(NamedTerm::True),
+                Box::new(NamedTerm::Let(
+                    "y".to_string(),
+                    Box::new(NamedTerm::False),
+                    Box::new(v("y")),
+                )),
             )
         );
     }
