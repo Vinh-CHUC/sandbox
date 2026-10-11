@@ -29,7 +29,7 @@ impl Context {
         self
     }
 
-    pub fn getType(&self, idx: usize) -> Result<Ty, String> {
+    pub fn get_type(&self, idx: usize) -> Result<Ty, String> {
         let pos = self.0.len().checked_sub(1 + idx).ok_or_else(|| "Index not found".to_owned())?;
         let b = self.0.get(pos).map(|x| &(x.1)).ok_or_else(|| "Index not found".to_owned())?;
         match b {
@@ -39,6 +39,8 @@ impl Context {
     }
 }
 
+// Note the String in Abs/Let are not actually used it's only used for round tripping in the
+// add/remove names unit tests
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Term {
     Var(usize, usize),  // De Bruijn idx, context length ~ number of lambda binders from root to <here>
@@ -51,7 +53,7 @@ pub enum Term {
 }
 
 #[derive(Debug, PartialEq)]
-enum TypeError {
+pub enum TypeError {
     DEFAULT,
     FN_TYPE_EXPECTED,
     TYPE_MISMATCH
@@ -60,12 +62,17 @@ enum TypeError {
 // Corresponds to inversation of the tying relation
 pub fn check_type(ctx: Context, t: Term) -> Result<Ty, TypeError> {
     match t {
-        Term::Var(idx, _ctx_length) => ctx.getType(idx).map_err(|_| TypeError::DEFAULT),
+        Term::Var(idx, _ctx_length) => ctx.get_type(idx).map_err(|_| TypeError::DEFAULT),
         // Interestingly here Abs is only annotated with the type of the input
         Term::Abs(binding_name, ty, body) => {
             let new_ctx = ctx.add_binding(binding_name, Binding::TypedVar(ty.clone()));
             let ret_type = check_type(new_ctx, *body)?;
             Ok(Ty::FUNC(Box::new(ty), Box::new(ret_type)))
+        },
+        Term::Let(binding_name, term, body) => {
+            let term_type = check_type(ctx.clone(), *term)?;
+            let new_ctx = ctx.add_binding(binding_name, Binding::TypedVar(term_type));
+            check_type(new_ctx, *body)
         },
         Term::App(t1, t2) => {
             let t1_t = check_type(ctx.clone(), *t1)?;
@@ -93,7 +100,6 @@ pub fn check_type(ctx: Context, t: Term) -> Result<Ty, TypeError> {
             }
             Ok(then_t)
         },
-        _ => Ok(Ty::BOOLEAN)
     }
 }
 
@@ -151,6 +157,15 @@ mod tests {
                     func(Ty::BOOLEAN, Ty::BOOLEAN)
                 )
             )
+        );
+
+        let t = parse_src(r"let x = true in x");  // let x = true in x  (should be Bool)
+        assert_eq!(check_type(Context(vec![]), t), Ok(Ty::BOOLEAN));
+
+        let t = parse_src(r"let x = (\y:Bool. y) in x");
+        assert_eq!(
+            check_type(Context(vec![]), t),
+            Ok(func(Ty::BOOLEAN, Ty::BOOLEAN))
         );
     }
 

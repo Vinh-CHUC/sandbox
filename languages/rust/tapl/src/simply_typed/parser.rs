@@ -67,7 +67,6 @@ pub fn parser<'src>() -> impl Parser<'src, &'src [Token], NamedTerm, extra::Err<
 
         // atom is there to accomodate the application just below
         let atom = var
-            .or(abs)
             .or(just(Token::True).to(NamedTerm::True))
             .or(just(Token::False).to(NamedTerm::False))
             .or(term.clone().delimited_by(just(Token::OpenParen), just(Token::CloseParen)));
@@ -78,9 +77,11 @@ pub fn parser<'src>() -> impl Parser<'src, &'src [Token], NamedTerm, extra::Err<
             |a, b| NamedTerm::App(Box::new(a), Box::new(b)),
         );
 
-        // let/if are greedy and extend as far as possible so they can't be in the app
-        // If let/if are to be arguments they have to be parenthesised
-        let_term.or(if_term).or(app)
+        // let/if/abs have lower precedence than app. For example:
+        // - let/if have term.clone() inside which can itself (rec) be an app
+        // - but the other way around is not possible as the atom does not allow if/let (unless
+        // parenthesised)
+        let_term.or(if_term).or(app).or(abs)
     })
 }
 
@@ -109,6 +110,49 @@ mod tests {
         let tokens = lexer().parse(src).into_result().unwrap();
         parser().parse(&tokens).into_result().unwrap()
     }
+
+    #[test]
+    fn test_parser_precedence() {
+        // Parses as: if true then true else (f g)
+        // Does NOT parse as: (if true then true else f) g
+        assert_eq!(
+            parse_named(r"if true then true else f g"),
+            NamedTerm::If(
+                Box::new(NamedTerm::True),
+                Box::new(NamedTerm::True),
+                Box::new(app(v("f"), v("g")))
+            )
+        );
+
+        // Parses as: let x = true in (let y = false in (x y))
+        // Does NOT parse as: (let x = true in let y = false in x) y
+        assert_eq!(
+            parse_named(r"let x = true in let y = false in x y"),
+            NamedTerm::Let(
+                "x".to_string(),
+                Box::new(NamedTerm::True),
+                Box::new(NamedTerm::Let(
+                    "y".to_string(),
+                    Box::new(NamedTerm::False),
+                    Box::new(app(v("x"), v("y"))),
+                )),
+            )
+        );
+
+        // Parses as \x:Bool. \y:Bool. (x y)
+        // NOT as (\x:Bool. \y:Bool. x) y
+        assert_eq!(
+            parse_named(r"\x:Bool. \y:Bool. x y"),
+            abs("x",
+                Ty::BOOLEAN,
+                abs("y",
+                    Ty::BOOLEAN,
+                    app(v("x"), v("y"))
+                )
+            )
+        );
+    }
+        
 
     #[test]
     fn test_parser() {
