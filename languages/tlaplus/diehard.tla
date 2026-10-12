@@ -28,11 +28,7 @@ PourSmallIntoBig ==
     /\ small' = IF big + small =< 5 THEN 0 ELSE small - (5 - big)
     /\ big'   = IF big + small =< 5 THEN big + small ELSE 5
 
-(*
-A variant of the one above
-Where the IF is not really an expression but rather will yield a block
-a relations
-*)
+(* A variant of the one above *)
 PourSmallIntoBig2 ==
     IF big + small =< 5
     THEN /\ big' = big + small
@@ -47,7 +43,7 @@ Next == \/ FillBig
         \/ PourBigIntoSmall
         \/ PourSmallIntoBig
 
-NotSolved == big # 4
+NotSolved == big /= 4
 
 Spec == Init /\ [][Next]_vars
 
