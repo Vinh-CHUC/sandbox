@@ -1,5 +1,5 @@
 import { Container, Graphics } from "pixi.js";
-import type { Queue } from "./model";
+import type { Queue } from "./model/queue";
 
 export type Layout = { readonly boxSize: number; readonly gap: number };
 
@@ -39,6 +39,8 @@ export const createQueueView = ({ boxSize, gap }: Layout): QueueView => {
         root.addChild(g);
       }
       g.x = q.slot(i, now) * stride;
+      // Drop inserted items in from above, otherwise they'd overlap the item they displace
+      g.y = -q.entering(i, now) * stride;
     });
   };
 

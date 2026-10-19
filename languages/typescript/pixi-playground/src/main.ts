@@ -1,11 +1,23 @@
 import { Application, Assets, Sprite } from "pixi.js";
-import { Queue } from "./queue/model";
+import { Queue } from "./queue/model/queue";
 import { createQueueView } from "./queue/view";
 
 const QUEUE_LENGTH = 8;
-const POP_INTERVAL_MS = 1500;
+const EDIT_INTERVAL_MS = 700;
 
 const randomColor = () => Math.floor(Math.random() * 0xffffff);
+const randomInt = (n: number) => Math.floor(Math.random() * n);
+
+/** Pop/push at the ends or remove/insert in the middle, keeping the length around QUEUE_LENGTH */
+const randomEdit = (q: Queue, now: number) => {
+  const n = q.items.length;
+  const grow = n < QUEUE_LENGTH || (n === QUEUE_LENGTH && Math.random() < 0.5);
+  const atEnds = Math.random() < 0.5;
+  if (grow && atEnds) q.push(randomColor());
+  else if (grow) q.insertAt(randomInt(n + 1), randomColor(), now);
+  else if (atEnds) q.pop(now);
+  else q.removeAt(randomInt(n), now);
+};
 
 (async () => {
   // Create a new application
@@ -35,16 +47,16 @@ const randomColor = () => Math.floor(Math.random() * 0xffffff);
   // Conveyor-belt queue: head on the left, popped into the processor
   const queue = new Queue();
   for (let i = 0; i < QUEUE_LENGTH; i++) queue.push(randomColor());
-  let lastPopAt = performance.now();
+  let lastEditAt = performance.now();
   const queueView = createQueueView({ boxSize: 48, gap: 12 });
   queueView.root.position.set(120, 80);
   app.stage.addChild(queueView.root);
 
   app.ticker.add(() => {
     const now = performance.now();
-    if (now - lastPopAt >= POP_INTERVAL_MS) {
-      if (queue.pop(now) !== undefined) queue.push(randomColor());
-      lastPopAt = now;
+    if (now - lastEditAt >= EDIT_INTERVAL_MS) {
+      randomEdit(queue, now);
+      lastEditAt = now;
     }
     queueView.render(queue, now);
   });
