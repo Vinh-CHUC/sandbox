@@ -1,4 +1,11 @@
-import type { Fraction, Item, ItemId, Ms, Size } from "../../shared/common";
+import type {
+  Fraction,
+  Item,
+  ItemId,
+  Ms,
+  Pos,
+  Size,
+} from "../../shared/common";
 import {
   isLive,
   lag,
@@ -26,6 +33,10 @@ export class Queue {
   // - Used to compute the `entering()` fraction that decays from 1 → 0
   private readonly insertedAt = new Map<ItemId, Ms>();
 
+  // Tracks items handed over by an upstream queue: where they fly in from (stage coords) and when
+  // - Used to compute `arrival()`, the fly-in from `source` to the item's slot
+  private readonly arrivals = new Map<ItemId, { source: Pos; at: Ms }>();
+
   ///////////
   // Logic //
   ///////////
@@ -37,6 +48,12 @@ export class Queue {
   /** Appending displaces nobody, hence no `now` */
   push(item: Item): void {
     this._items.push(item);
+  }
+
+  /** Append `item`, flying in from `source` (stage coords), e.g. an upstream queue's head */
+  arrive(item: Item, source: Pos, now: Ms): void {
+    this._items.push(item);
+    this.arrivals.set(item.id, { source, at: now });
   }
 
   /** `index` in [0, items.length], `items.length` appends */
@@ -61,6 +78,7 @@ export class Queue {
     const [removed] = this._items.splice(index, 1);
     this.shifts.delete(removed.id);
     this.insertedAt.delete(removed.id);
+    this.arrivals.delete(removed.id);
     this.shiftFrom(index, +removed.size, now);
     return removed;
   }
@@ -79,6 +97,13 @@ export class Queue {
   entering(index: Index, now: Ms): Fraction {
     const at = this.insertedAt.get(this.itemAt(index).id);
     return at === undefined ? 0 : remaining(at, now);
+  }
+
+  /** Fly-in of the item at `index`: `t` runs 0 → 1 (eased); null once landed or if it never flew */
+  arrival(index: Index, now: Ms): { source: Pos; t: Fraction } | null {
+    const a = this.arrivals.get(this.itemAt(index).id);
+    if (a === undefined || !isLive(a.at, now)) return null;
+    return { source: a.source, t: 1 - remaining(a.at, now) };
   }
 
   ///////////////////////

@@ -74,14 +74,12 @@ export class Station {
     };
   }
 
-  /** free the station once its item is done; the item "disappears" for now */
-  public reap(now: Ms, cfg: StationConfig): boolean {
+  /** free the station once its item is done, handing that item back; null while busy or free */
+  public reap(now: Ms, cfg: StationConfig): Item | null {
     const state = this.state(now, cfg);
-    if (state.kind === "busy" && state.progress >= 1) {
-      this.occupancy = null;
-      return true;
-    }
-    return false;
+    if (state.kind !== "busy" || state.progress < 1) return null;
+    this.occupancy = null;
+    return state.item;
   }
 }
 
@@ -114,8 +112,11 @@ export class StationBoard {
     return true;
   }
 
-  /** reap every station whose item has finished */
-  reap(now: Ms, cfg: StationConfig): void {
-    for (const s of this.stations) s.reap(now, cfg);
+  /** reap every station whose item has finished: each item with the index of its station */
+  reap(now: Ms, cfg: StationConfig): { item: Item; index: number }[] {
+    return this.stations.flatMap((s, index) => {
+      const item = s.reap(now, cfg);
+      return item === null ? [] : [{ item, index }];
+    });
   }
 }

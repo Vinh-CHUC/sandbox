@@ -1,6 +1,6 @@
 import { Container, Graphics } from "pixi.js";
 import type { Queue } from "./model/queue";
-import type { Item, Pos } from "../shared/common";
+import { lerp, type Item, type Pos } from "../shared/common";
 import { type Layout } from "./layout";
 
 export const buildBoxGraphics = (item: Item, layout: Layout): Graphics => {
@@ -39,9 +39,20 @@ export class QueueView {
         this.queue_container.addChild(g);
       }
       const pos = this.layout.itemOffset(q.slot(i, now), q.entering(i, now));
-      const { x, y } = this.layout.boxOrigin(pos, item.size);
-      g.x = x;
-      g.y = y;
+      const slotBox = this.layout.boxOrigin(pos, item.size);
+
+      // Items handed over from upstream fly in from `source` (stage → local coords)
+      const arrival = q.arrival(i, now);
+      if (arrival !== null) {
+        // Use arrival interpolation
+        const origin = this.queue_container.position;
+        g.x = lerp(arrival.source.x - origin.x, slotBox.x, arrival.t);
+        g.y = lerp(arrival.source.y - origin.y, slotBox.y, arrival.t);
+        return;
+      } else {
+        g.x = slotBox.x;
+        g.y = slotBox.y;
+      }
     });
   }
 }

@@ -222,3 +222,25 @@ describe("Queue", () => {
     });
   });
 });
+
+describe("arrive / arrival", () => {
+  const source = { x: 10, y: 20 };
+
+  it("appends at the tail, flying in from `source` over MOVE_DURATION_MS", () => {
+    const q = new Queue();
+    q.push(item(1, RED));
+    q.arrive(item(2, GREEN), source, 0);
+    expect(q.items.map((i) => i.id)).toEqual([1, 2]);
+    expect(q.arrival(1, 0)).toEqual({ source, t: 0 });
+    expect(q.arrival(1, 500)?.t).toBeCloseTo(0.5); // smoothstep(0.5) = 0.5
+    expect(q.arrival(1, 1000)).toBeNull(); // landed
+  });
+
+  it("is null for items that were pushed or inserted", () => {
+    const q = new Queue();
+    q.push(item(1, RED));
+    q.insertAt(0, item(2, GREEN), 0);
+    expect(q.arrival(0, 0)).toBeNull();
+    expect(q.arrival(1, 0)).toBeNull();
+  });
+});
