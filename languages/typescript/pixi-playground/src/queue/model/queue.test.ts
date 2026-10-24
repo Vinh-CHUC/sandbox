@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { Queue } from "./queue";
-import { clamp01, lag, smoothstep, type Item, type Shift } from "./utils";
+import type { Item } from "../../shared/common";
+import { lag, type Shift } from "./utils";
 
 const RED = 0xff0000;
 const GREEN = 0x00ff00;
@@ -12,38 +13,6 @@ const item = (id: number, color: number, size = 1, processMs = 1000): Item => ({
   color,
   size,
   processMs,
-});
-
-describe("clamp01", () => {
-  it.each([
-    [0, 0],
-    [0.25, 0.25],
-    [1, 1],
-    [1.4, 1],
-  ])("clamp01(%d) = %d", (x, expected) => {
-    expect(clamp01(x)).toBe(expected);
-  });
-
-  it("throws on negatives", () => {
-    expect(() => clamp01(-0.2)).toThrow(RangeError);
-  });
-});
-
-describe("smoothstep", () => {
-  it.each([
-    [0, 0],
-    [0.25, 0.15625],
-    [0.5, 0.5],
-    [0.75, 0.84375],
-    [1, 1],
-  ])("smoothstep(%d) = %d", (x, expected) => {
-    expect(smoothstep(x)).toBeCloseTo(expected);
-  });
-
-  it("goes wild outside [0, 1], hence clamp01", () => {
-    expect(smoothstep(1.4)).toBeCloseTo(0.392); // would drift back
-    expect(smoothstep(2)).toBe(-4);
-  });
 });
 
 const removedAt = (at: number): Shift => ({ at, delta: +1 });

@@ -1,10 +1,7 @@
-import type { Size } from "./model/utils";
+import type { Extent, Pos, Size } from "../shared/common";
 
 /** Which way a queue advances, from its tail to its head */
 export type Direction = "ltr" | "rtl" | "ttb" | "btt";
-
-export type Pos = { readonly x: number; readonly y: number };
-export type Extent = { readonly w: number; readonly h: number };
 
 /**
  * Unit vectors per direction. `slot` points from the head (slot 0) toward the tail, so items
@@ -20,7 +17,14 @@ const AXES: Record<Direction, { readonly slot: Pos; readonly cross: Pos }> = {
 
 export const isVertical = (d: Direction): boolean => d === "ttb" || d === "btt";
 
-/** The geometry of a conveyor belt: box size, spacing, and flow direction. */
+/**
+ * The geometry of a conveyor belt: box size, spacing, and flow direction.
+ *
+ * Deliberately unaware of where the queue sits on screen: every `Pos` is relative to the queue
+ * origin (the head's anchor, slot 0). The owner places the whole belt by positioning the pixi
+ * container holding its boxes, so children inherit the translation and no method here adds an
+ * origin. Callers that cross containers (e.g. dispatching to a station) add it themselves.
+ */
 export class Layout {
   constructor(
     readonly boxSize: number,

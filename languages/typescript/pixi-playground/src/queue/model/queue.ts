@@ -1,15 +1,11 @@
+import type { Fraction, Item, ItemId, Ms, Size } from "../../shared/common";
 import {
   isLive,
   lag,
   remaining,
   sum,
-  type Fraction,
   type Index,
-  type Item,
-  type ItemId,
-  type Ms,
   type Shift,
-  type Size,
   type Slot,
   type SlotDelta,
 } from "./utils";

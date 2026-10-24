@@ -1,10 +1,11 @@
 import { Application, Assets, Sprite } from "pixi.js";
 import { Queue } from "./queue/model/queue";
-import type { Item } from "./queue/model/utils";
-import { createQueueView, type QueueView } from "./queue/view";
-import { Layout, type Direction, type Pos } from "./queue/layout";
+import type { Item, Pos } from "./shared/common";
+import { QueueView } from "./queue/view";
+import { Layout, type Direction } from "./queue/layout";
 import { DEFAULT_CONFIG, Station, StationBoard } from "./station/station";
-import { createStationView } from "./station/view";
+import { DEFAULT_LOOK, StationLook } from "./station/look";
+import { StationView } from "./station/view";
 
 const BOX = 36;
 const GAP = 8;
@@ -45,8 +46,8 @@ const createConveyor = (origin: Pos, direction: Direction): Conveyor => {
   const queue = new Queue();
   for (let i = 0; i < QUEUE_LENGTH; i++) queue.push(newItem());
 
-  const view = createQueueView(layout);
-  view.root.position.set(origin.x, origin.y);
+  const view = new QueueView(queue, layout);
+  view.setPosition(origin);
 
   return { queue, layout, view, origin };
 };
@@ -82,29 +83,28 @@ const randomEdit = (c: Conveyor, board: StationBoard, now: number) => {
   // Append the application canvas to the document body
   document.getElementById("pixi-container")!.appendChild(app.canvas);
 
-  // Load the bunny texture
-  const texture = await Assets.load("/assets/bunny.png");
-
-  const bunny = new Sprite(texture);
-  bunny.anchor.set(0.5);
-  bunny.position.set(app.screen.width / 2, app.screen.height / 2);
-  app.stage.addChild(bunny);
-
   // Two left-to-right conveyor belts feeding one pool of stations. The head (exit) is on the
   // right, so the tail extends leftwards from each origin.
   const conveyors: Conveyor[] = [
     createConveyor({ x: 620, y: 60 }, "ltr"),
     createConveyor({ x: 620, y: 240 }, "ltr"),
   ];
-  for (const c of conveyors) app.stage.addChild(c.view.root);
+  for (const c of conveyors) app.stage.addChild(c.view.queue_container);
 
-  const stations = STATION_POSITIONS.map((target) => new Station(target));
-  const board = new StationBoard(stations);
-  const stationView = createStationView(
-    new Layout(BOX, GAP, "ltr"),
+  const look = new StationLook(
     DEFAULT_CONFIG,
+    new Layout(BOX, GAP, "ltr"),
+    DEFAULT_LOOK,
   );
-  app.stage.addChild(stationView.root);
+  // Stations know nothing of where they sit: each one's view is placed instead
+  const placed = STATION_POSITIONS.map((target) => {
+    const station = new Station();
+    const view = new StationView(station, look);
+    view.setPosition(target);
+    app.stage.addChild(view.station_container);
+    return { station, view };
+  });
+  const board = new StationBoard(placed.map(({ station }) => station));
 
   let lastEditAt = performance.now();
   app.ticker.add(() => {
@@ -114,14 +114,7 @@ const randomEdit = (c: Conveyor, board: StationBoard, now: number) => {
       lastEditAt = now;
     }
     board.reap(now, DEFAULT_CONFIG);
-    for (const c of conveyors) c.view.render(c.queue, now);
-    stationView.render(stations, now);
-  });
-
-  // Listen for animate update
-  app.ticker.add((time) => {
-    // Just for fun, let's rotate mr rabbit a little.
-    // * Delta is 1 if running at 100% performance, creates frame-independent transformation *
-    bunny.rotation += 0.1 * time.deltaTime;
+    for (const c of conveyors) c.view.render(now);
+    for (const { view } of placed) view.render(now);
   });
 })();
