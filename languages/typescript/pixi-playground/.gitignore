@@ -22,3 +22,11 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Python caches (data/)
+__pycache__/
+*.pyc
+
+# Generated traces (`just trace` in data/), except the small fixture the tests read
+*.parquet
+!src/trace/fixture/*.parquet

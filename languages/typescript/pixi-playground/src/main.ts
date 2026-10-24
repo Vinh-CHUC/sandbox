@@ -1,112 +1,108 @@
 import { Application } from "pixi.js";
-import {
-  PartId,
-  ScreenPos,
-  WorldPos,
-  type Item,
-  type PartRequest,
-  type PartType,
-} from "./shared/common";
+import { ScreenPos, SimMs, WallMs, type Pos } from "./shared/common";
 import { SimClock } from "./shared/clock";
+import { GROUND } from "./shared/palette";
+import { units } from "./shared/scale";
 import { FLAT, type Projection } from "./shared/projection";
-import { BoardId, ConveyorId, World, type WorldSpec } from "./world";
-
-const EDIT_INTERVAL_MS = 400;
+import { loadTrace, openUrl } from "./trace/load";
+import type { Trace } from "./trace/trace";
+import { World } from "./world";
 
 /** 2:1 isometric; the offset keeps the (skewed) scene in view */
 const ISO: Projection = {
   kind: "iso",
   scale: 0.7,
-  offset: ScreenPos(250, -100),
+  offset: ScreenPos(units(12.5), -units(4.2)),
 };
 
-const PART_TYPES: readonly PartType[] = [
-  { id: PartId("wheel"), color: 0x2c3e50 },
-  { id: PartId("seat"), color: 0x9b59b6 },
-  { id: PartId("engine"), color: 0xe67e22 },
-  { id: PartId("door"), color: 0x1abc9c },
-  { id: PartId("light"), color: 0xf1c40f },
-];
+/** Playback speeds: a trace spans hours, so 60× (a minute per second) is the default */
+const SPEEDS = [1, 10, 60, 300, 1200];
+const INITIAL_SPEED = 60;
 
-const C1 = ConveyorId("C1");
-const C2 = ConveyorId("C2");
-const S1 = BoardId("S1");
-const S2 = BoardId("S2");
+/** Where `data/` writes traces to; Vite serves `public/` as is */
+const TRACE_URL = `${import.meta.env.BASE_URL}trace`;
 
-// C1 → S1 → C2 → S2, left to right. Conveyors have their head (exit) on the right, so their
-// tails extend leftwards from each origin; stations are stacked around each conveyor's axis.
-const SPEC: WorldSpec = {
-  conveyors: [
-    { id: C1, origin: WorldPos(600, 240), direction: "ltr" },
-    { id: C2, origin: WorldPos(1400, 240), direction: "ltr" },
-  ],
-  boards: [
-    {
-      id: S1,
-      // item top-left, in stage coords
-      positions: [WorldPos(720, 100), WorldPos(720, 240), WorldPos(720, 380)],
-    },
-    {
-      id: S2,
-      positions: [
-        WorldPos(1520, 100),
-        WorldPos(1520, 240),
-        WorldPos(1520, 380),
-      ],
-    },
-  ],
-  // Below the stations, between S1 and S2: it supplies both
-  inventory: { origin: WorldPos(1000, 520), parts: PART_TYPES, capacity: 100 },
-  edges: [
-    { from: { kind: "queue", id: C1 }, to: { kind: "stations", id: S1 } },
-    { from: { kind: "stations", id: S1 }, to: { kind: "queue", id: C2 } },
-    { from: { kind: "queue", id: C2 }, to: { kind: "stations", id: S2 } },
-  ],
-};
+const element = (id: string) => document.getElementById(id)!;
 
-const randomColor = () => Math.floor(Math.random() * 0xffffff);
-const randomInt = (n: number) => Math.floor(Math.random() * n);
-const randomSize = () => 1 + randomInt(3); // 1..3 boxes wide
-const randomProcessMs = () => 1000 + randomInt(2000);
-
-let nextId = 0;
-const newItem = (): Item => ({
-  id: nextId++,
-  color: randomColor(),
-  size: randomSize(),
-  processMs: randomProcessMs(),
-});
-
-/** 2 or 3 distinct parts, 1 to 3 of each */
-const pickParts = (parts: readonly PartId[]): PartRequest => {
-  const shuffled = [...parts].sort(() => Math.random() - 0.5);
-  return shuffled
-    .slice(0, 2 + randomInt(2))
-    .map((part) => ({ part, count: 1 + randomInt(3) }));
-};
+/** Wall-clock time of `t` simulated ms into the trace, e.g. "2026-01-01 03:12" (UTC) */
+const clockTime = (trace: Trace, t: number) =>
+  new Date(trace.startUnixMs + t).toISOString().slice(0, 16).replace("T", " ");
 
 (async () => {
-  // Create a new application
   const app = new Application();
+  // Grey ground outside the sites; each site paints its own floor (see SiteView)
+  await app.init({ background: GROUND, resizeTo: window });
+  element("pixi-container").appendChild(app.canvas);
 
-  // Initialize the application
-  await app.init({ background: "#1099bb", resizeTo: window });
+  let trace: Trace;
+  try {
+    trace = await loadTrace(openUrl(TRACE_URL));
+  } catch (error) {
+    // Most likely no trace yet: tell how to make one rather than showing an empty canvas
+    element("time").textContent =
+      `No trace at ${TRACE_URL} (run \`just trace\` in data/): ${String(error)}`;
+    throw error;
+  }
 
-  // Append the application canvas to the document body
-  document.getElementById("pixi-container")!.appendChild(app.canvas);
-
-  const tooltip = document.getElementById("tooltip")!;
-  const world = new World(SPEC, { newItem, pickParts }, (text, at) => {
-    tooltip.style.display = text === null ? "none" : "block";
-    if (text === null) return;
-    if (tooltip.textContent !== text) tooltip.textContent = text;
-    // Just below-right of the pointer, so it doesn't sit under it
-    tooltip.style.left = `${at.x + 12}px`;
-    tooltip.style.top = `${at.y + 12}px`;
+  const tooltip = element("tooltip");
+  const world = new World(trace, {
+    onHover: (text, at) => {
+      tooltip.style.display = text === null ? "none" : "block";
+      if (text === null) return;
+      if (tooltip.textContent !== text) tooltip.textContent = text;
+      // Just below-right of the pointer, so it doesn't sit under it
+      tooltip.style.left = `${at.x + 12}px`;
+      tooltip.style.top = `${at.y + 12}px`;
+    },
   });
   app.stage.addChild(world.root);
 
-  const toggle = document.getElementById("projection-toggle")!;
+  // Panning: drag anywhere to move the world around
+  app.stage.eventMode = "static";
+  app.stage.hitArea = app.screen;
+  app.canvas.style.cursor = "grab";
+  let dragFrom: Pos | null = null;
+  app.stage.on("pointerdown", (e) => {
+    dragFrom = { x: e.global.x, y: e.global.y };
+    app.canvas.style.cursor = "grabbing";
+  });
+  app.stage.on("globalpointermove", (e) => {
+    if (dragFrom === null) return;
+    world.panBy(ScreenPos(e.global.x - dragFrom.x, e.global.y - dragFrom.y));
+    dragFrom = { x: e.global.x, y: e.global.y };
+  });
+  const endDrag = () => {
+    dragFrom = null;
+    app.canvas.style.cursor = "grab";
+  };
+  app.stage.on("pointerup", endDrag);
+  app.stage.on("pointerupoutside", endDrag);
+  // Zooming: explicit buttons, around the middle of the screen (the mouse wheel and pinch stay
+  // the browser's); double-click resets pan and zoom
+  const ZOOM_STEP = 1.25;
+  const showZoom = () => {
+    element("zoom").textContent = `${Math.round(world.zoom * 100)}%`;
+  };
+  const zoomAroundCentre = (factor: number) => {
+    world.zoomBy(
+      factor,
+      ScreenPos(app.screen.width / 2, app.screen.height / 2),
+    );
+    showZoom();
+  };
+  element("zoom-in").addEventListener("click", () =>
+    zoomAroundCentre(ZOOM_STEP),
+  );
+  element("zoom-out").addEventListener("click", () =>
+    zoomAroundCentre(1 / ZOOM_STEP),
+  );
+  showZoom();
+  app.canvas.addEventListener("dblclick", () => {
+    world.resetView();
+    showZoom();
+  });
+
+  const toggle = element("projection-toggle");
   const label = () => (world.projection.kind === "flat" ? "Isometric" : "Flat");
   toggle.textContent = label();
   toggle.addEventListener("click", () => {
@@ -115,37 +111,38 @@ const pickParts = (parts: readonly PartId[]): PartRequest => {
   });
 
   // Simulated time: pause and speed controls only touch this clock
-  const clock = new SimClock();
-  const button = (id: string) => document.getElementById(id)!;
+  const clock = new SimClock(SPEEDS, INITIAL_SPEED);
   const showClock = () => {
-    button("pause").textContent = clock.paused ? "▶" : "⏸";
-    button("speed").textContent = `${clock.speed}×`;
+    element("pause").textContent = clock.paused ? "▶" : "⏸";
+    element("speed").textContent = `${clock.speed}×`;
   };
   const onClick = (id: string, action: () => void) =>
-    button(id).addEventListener("click", () => {
+    element(id).addEventListener("click", () => {
       action();
       showClock();
     });
   onClick("pause", () => clock.togglePause());
   onClick("slower", () => clock.slower());
   onClick("faster", () => clock.faster());
+  showClock();
 
   // Throughput labels: which sliding window they average over
-  const windowSelect = button("window") as HTMLSelectElement;
+  const windowSelect = element("window") as HTMLSelectElement;
   const applyWindow = () =>
     world.setThroughputWindow(Number(windowSelect.value));
   windowSelect.addEventListener("change", applyWindow);
   applyWindow();
-  showClock();
 
-  let lastEditAt = clock.now;
+  const time = element("time");
   app.ticker.add((ticker) => {
-    // Real frame time in, simulated time out: everything below runs on the latter
-    const now = clock.advance(ticker.deltaMS);
-    if (now - lastEditAt >= EDIT_INTERVAL_MS) {
-      world.randomEdit(now);
-      lastEditAt = now;
+    // Real frame time in, simulated time out, held at the trace's end
+    const now = SimMs(Math.min(clock.advance(ticker.deltaMS), trace.endMs));
+    if (now >= trace.endMs && !clock.paused) {
+      clock.togglePause();
+      showClock();
     }
-    world.tick(now);
+    world.tick(now, WallMs(performance.now()));
+    const shown = clockTime(trace, now);
+    if (time.textContent !== shown) time.textContent = shown;
   });
 })();

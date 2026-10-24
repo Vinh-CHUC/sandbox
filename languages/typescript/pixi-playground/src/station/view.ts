@@ -1,7 +1,14 @@
-import { Container, Graphics, Text, type FederatedPointerEvent } from "pixi.js";
-import { WorldPos, type Extent, type ItemId, type Pos } from "../shared/common";
+import { Container, Graphics, type FederatedPointerEvent } from "pixi.js";
+import {
+  WorldPos,
+  type ItemId,
+  type Pos,
+  type SimMs,
+  type WallMs,
+} from "../shared/common";
 import {
   depth,
+  drawArc,
   drawBox,
   drawPlate,
   placeAt,
@@ -9,15 +16,14 @@ import {
   throttle,
 } from "../shared/draw";
 import { FLAT, project, type Projection } from "../shared/projection";
-import type { HeldLook, PadLook, PartLook, StationLook } from "./look";
+import { CHARCOAL } from "../shared/palette";
+import type { ArcLook, HeldLook, PadLook, PartLook, StationLook } from "./look";
 import type { Station } from "./station";
+import { formatRate } from "./throughput";
+import { sharpText, units } from "../shared/scale";
 
-/** White so the station's progress colour can drive it via `tint` */
-const buildItemBox = (
-  extent: Extent,
-  height: number,
-  p: Projection,
-): Graphics => drawBox(new Graphics(), p, extent, height, 0xffffff);
+const buildItemBox = (look: HeldLook, p: Projection): Graphics =>
+  drawBox(new Graphics(), p, look.extent, look.height, look.color);
 
 const drawPad = (pad: Graphics, look: PadLook, p: Projection): void => {
   drawPlate(pad.clear(), p, look.extent, look.color);
@@ -28,7 +34,23 @@ const placeItem = (box: Graphics, look: HeldLook, p: Projection): void => {
   placeAt(box, project(p, look.pos));
   box.zIndex = depth(look.pos, look.extent);
   box.alpha = look.alpha;
-  box.tint = look.tint;
+};
+
+/** The job's progress as an arc from 12 o'clock, a full circle at 100% (a sweeping segment if unknown) */
+const drawProgress = (
+  g: Graphics,
+  look: ArcLook | null,
+  p: Projection,
+): void => {
+  g.clear();
+  if (look === null) return;
+  const { center, radius, color, width, progress } = look;
+  // No background track: the ring only closes into a full circle at 100%
+  const [from, to] =
+    progress.kind === "known"
+      ? [0, progress.fraction]
+      : [progress.phase, progress.phase + 0.25];
+  drawArc(g, p, center, radius, from, to, { color, width });
 };
 
 /** Show `text` near the pointer (client coords), or hide the tooltip when `text` is null */
@@ -38,6 +60,8 @@ export type Hover = (text: string | null, at: Pos) => void;
 export class StationView {
   public readonly station_container = new Container();
   private readonly pad = new Graphics();
+  /** The progress ring around the item, see `ArcLook` */
+  private readonly arc = new Graphics();
   /** The held item's box, if any: at most one, since a station holds one item */
   private box: { readonly id: ItemId; readonly graphic: Graphics } | null =
     null;
@@ -47,12 +71,12 @@ export class StationView {
   private projection: Projection = FLAT;
   /** Where the pointer is (client coords) while it hovers the station; null otherwise */
   private pointer: Pos | null = null;
-  /** Live throughput, e.g. "4.2 / min", just above the plate */
+  /** Live throughput, e.g. "4.2 / min" (or "/ h", "/ day" for slower flows), just above the plate */
   /** The throughput label is refreshed at most once per RATE_REFRESH_MS of real time */
   private readonly refreshRate = throttle(RATE_REFRESH_MS);
-  private readonly rate = new Text({
+  private readonly rate = sharpText({
     text: "",
-    style: { fontSize: 12, fill: 0xffffff },
+    style: { fontSize: units(0.33), fill: CHARCOAL },
   });
 
   constructor(
@@ -62,10 +86,12 @@ export class StationView {
   ) {
     this.station_container.sortableChildren = true;
     // The plate lies on the ground, under whatever the station holds
-    this.pad.zIndex = -Infinity;
+    // Below everything: the plate, then the progress ring; items and parts sort above by depth
+    this.pad.zIndex = -2e9;
+    this.arc.zIndex = -1e9;
     this.rate.anchor.set(0.5);
     this.rate.zIndex = Infinity;
-    this.station_container.addChild(this.pad, this.rate);
+    this.station_container.addChild(this.pad, this.arc, this.rate);
 
     // Hovering the pad or anything on it counts; the text itself is refreshed in `render`
     this.station_container.eventMode = "static";
@@ -97,21 +123,28 @@ export class StationView {
   }
 
   /**
-   * Redraw at `now`. The throughput label is refreshed at most once per RATE_REFRESH_MS of real
-   * time (so it stays readable at any speed); `perMinute` is only called then.
+   * Redraw as of simulated `now` (what's happening) and wall time `wall` (animations). The
+   * throughput label is refreshed at most once per RATE_REFRESH_MS of real time (so it stays
+   * readable at any speed); `perMinute` is only called then.
    */
-  public render(now: number, perMinute: () => number): void {
+  public render(now: SimMs, wall: WallMs, perMinute: () => number): void {
     this.refreshRate(() => {
-      const rate = `${perMinute().toFixed(1)} / min`;
+      const rate = formatRate(perMinute());
       if (this.rate.text !== rate) this.rate.text = rate;
     });
-    const { pad, held } = this.look.at(this.station, now, this.origin);
+    const { pad, held, arc } = this.look.at(
+      this.station,
+      now,
+      wall,
+      this.origin,
+    );
     // Plate is always drawn, sized to the held item (or a base box when free)
     drawPad(this.pad, pad, this.projection);
+    drawProgress(this.arc, arc, this.projection);
     this.syncBox(held);
     // Live while hovered: progress ticks up, and the station goes "Idle" when its item leaves
     if (this.pointer !== null)
-      this.onHover?.(this.look.describe(this.station, now), this.pointer);
+      this.onHover?.(this.look.describe(this.station, now, wall), this.pointer);
   }
 
   /** Keep the box in step with the held item: dropped when it leaves, built when one arrives */
@@ -124,7 +157,7 @@ export class StationView {
     // Free station: plate only
     if (held === null) return;
     if (this.box === null) {
-      const graphic = buildItemBox(held.extent, held.height, this.projection);
+      const graphic = buildItemBox(held, this.projection);
       this.station_container.addChild(graphic);
       this.box = { id: held.id, graphic };
     }

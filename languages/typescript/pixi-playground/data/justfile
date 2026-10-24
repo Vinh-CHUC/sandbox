@@ -1,0 +1,37 @@
+# Flow trace pipeline: generate a trace of parquet tables for the viewer (../public/trace)
+
+# Where the viewer fetches traces from
+out := "../public/trace"
+
+default:
+    @just --list
+
+# Install the locked dependencies
+sync:
+    uv sync --locked
+
+# Run the tests
+test *args:
+    uv run pytest {{args}}
+
+# Strict type check
+typecheck:
+    uv run pyright
+
+# Everything CI would run
+check: typecheck test
+
+# Generate a trace into `out` (needs the generator: `flowtrace.generate`, not written yet)
+trace seed="1" hours="8":
+    uv run python -m flowtrace.generate --out {{out}} --seed {{seed}} --hours {{hours}}
+
+# Replay-check a trace directory: schemas, references, and every event in `seq` order
+validate dir=out:
+    uv run python -m flowtrace.validate {{dir}}
+
+# Full pipeline: check, generate, then validate what was generated
+pipeline seed="1" hours="8": check (trace seed hours) validate
+
+# Remove generated traces
+clean:
+    rm -rf {{out}}

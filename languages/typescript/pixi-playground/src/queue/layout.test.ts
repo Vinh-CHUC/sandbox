@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { WallMs } from "../shared/common";
 import { Queue } from "./model/queue";
 import { isVertical, Layout, type Direction } from "./layout";
 
@@ -19,13 +20,11 @@ describe("layout", () => {
   const gaps = (direction: Direction, sizes: number[]): number[] => {
     const ly = new Layout(48, 12, direction);
     const q = new Queue();
-    sizes.forEach((size, id) =>
-      q.push({ id, color: 0, size, processMs: 1000 }),
-    );
+    sizes.forEach((size, id) => q.push({ id, color: 0, size }));
 
     const spans = q.items
       .map((item, i) => {
-        const pos = ly.itemOffset(q.slot(i, 0), 0);
+        const pos = ly.itemOffset(q.slot(i, WallMs(0)), 0);
         const { x, y } = ly.boxOrigin(pos, item.size);
         const { w, h } = ly.boxExtent(item.size);
         return isVertical(direction) ? [y, y + h] : [x, x + w];
@@ -90,5 +89,18 @@ describe("tailAlpha", () => {
     [12, 1, 0], // way past
   ])("slot %d, size %d → %d", (slot, size, expected) => {
     expect(belt.tailAlpha(slot, size)).toBeCloseTo(expected);
+  });
+});
+
+describe("clampToBelt", () => {
+  const belt = new Layout(48, 12, "ltr", 8);
+  it.each([
+    [3, 1, 3], // fits
+    [7, 1, 7], // the last slot
+    [31, 1, 7], // elided: the tail end
+    [31, 3, 5], // a size-3 item's last place
+    [6.5, 2, 6], // part-way off: pulled back on
+  ])("slot %d, size %d → %d", (slot, size, expected) => {
+    expect(belt.clampToBelt(slot, size)).toBe(expected);
   });
 });

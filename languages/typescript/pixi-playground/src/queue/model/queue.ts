@@ -4,11 +4,13 @@ import type {
   ItemId,
   Ms,
   Size,
+  WallMs,
   WorldPos,
 } from "../../shared/common";
 import {
   isLive,
   lag,
+  MOVE_DURATION_MS,
   remaining,
   sum,
   type Index,
@@ -17,8 +19,15 @@ import {
   type SlotDelta,
 } from "./utils";
 
+/**
+ * Items in order, plus how they're animated. Animations run on wall time (`WallMs`), so they
+ * look the same at any playback speed: every `now` here is wall time.
+ */
 export class Queue {
   private readonly _items: Item[] = [];
+
+  /** `moveMs`: how long every animation here takes (shifts, drop-ins, fly-ins), in wall ms */
+  constructor(private readonly moveMs: Ms = MOVE_DURATION_MS) {}
 
   // "Shifts", e.g. popping() or deleting from the middle that haven't been fully animated yet
   // - The shift contains the timestamp! It allows to know how far along we are for the animation
@@ -31,11 +40,14 @@ export class Queue {
 
   // Tracks when an item was inserted (for entrance animation that manipulates y-coordinate)
   // - Used to compute the `entering()` fraction that decays from 1 → 0
-  private readonly insertedAt = new Map<ItemId, Ms>();
+  private readonly insertedAt = new Map<ItemId, WallMs>();
 
   // Tracks items handed over by an upstream queue: where they fly in from (world coords) and when
   // - Used to compute `arrival()`, the fly-in from `source` to the item's slot
-  private readonly arrivals = new Map<ItemId, { source: WorldPos; at: Ms }>();
+  private readonly arrivals = new Map<
+    ItemId,
+    { source: WorldPos; at: WallMs }
+  >();
 
   ///////////
   // Logic //
@@ -50,30 +62,52 @@ export class Queue {
     this._items.push(item);
   }
 
-  /** Append `item`, flying in from `source` (world coords), e.g. an upstream queue's head */
-  arrive(item: Item, source: WorldPos, now: Ms): void {
-    this._items.push(item);
-    this.arrivals.set(item.id, { source, at: now });
-  }
-
-  /** `index` in [0, items.length], `items.length` appends */
-  insertAt(index: Index, item: Item, now: Ms): void {
+  /**
+   * `item` joins at `index` (in [0, items.length]): flying in from `source` (world coords, e.g.
+   * the station it just left) if given, dropping in from the side otherwise
+   */
+  enter(index: Index, item: Item, now: WallMs, source?: WorldPos): void {
     if (index < 0 || index > this._items.length)
       throw new RangeError(
-        `insertAt: index ${index} out of [0, ${this._items.length}]`,
+        `enter: index ${index} out of [0, ${this._items.length}]`,
       );
     this._items.splice(index, 0, item);
-    this.insertedAt.set(item.id, now);
+    if (source === undefined) this.insertedAt.set(item.id, now);
+    else this.arrivals.set(item.id, { source, at: now });
     this.shiftFrom(index + 1, -item.size, now);
   }
 
+  /** `index` in [0, items.length], `items.length` appends; drops in from the side */
+  insertAt(index: Index, item: Item, now: WallMs): void {
+    this.enter(index, item, now);
+  }
+
+  /** Position of item `id`, -1 if it isn't queued */
+  indexOf(id: ItemId): Index {
+    return this._items.findIndex((item) => item.id === id);
+  }
+
+  /** Take item `id` out from wherever it is; `undefined` if it isn't queued */
+  remove(id: ItemId, now: WallMs): Item | undefined {
+    const index = this.indexOf(id);
+    return index < 0 ? undefined : this.removeAt(index, now);
+  }
+
+  /** Move item `id` to `index` (its position afterwards): it pops out and drops back in there */
+  move(id: ItemId, index: Index, now: WallMs): void {
+    const item = this.remove(id, now);
+    if (item === undefined)
+      throw new RangeError(`move: item ${id} isn't queued`);
+    this.enter(index, item, now);
+  }
+
   /** `undefined` when the queue is empty */
-  pop(now: Ms): Item | undefined {
+  pop(now: WallMs): Item | undefined {
     return this.removeAt(0, now);
   }
 
   /** `undefined` when `index` is out of range */
-  removeAt(index: Index, now: Ms): Item | undefined {
+  removeAt(index: Index, now: WallMs): Item | undefined {
     if (index < 0 || index >= this._items.length) return undefined;
     const [removed] = this._items.splice(index, 1);
     this.shifts.delete(removed.id);
@@ -88,22 +122,25 @@ export class Queue {
   /////////////////////////////////
 
   /** Fractional visual slot of the item at `index` (0 = head), in units of one box width */
-  slot(index: Index, now: Ms): Slot {
+  slot(index: Index, now: WallMs): Slot {
     const item = this.itemAt(index);
-    return this.widthBefore(index) + lag(this.shifts.get(item.id) ?? [], now);
+    return (
+      this.widthBefore(index) +
+      lag(this.shifts.get(item.id) ?? [], now, this.moveMs)
+    );
   }
 
   /** How much of its entrance the item at `index` still has to make: 1 → 0, 0 if never inserted */
-  entering(index: Index, now: Ms): Fraction {
+  entering(index: Index, now: WallMs): Fraction {
     const at = this.insertedAt.get(this.itemAt(index).id);
-    return at === undefined ? 0 : remaining(at, now);
+    return at === undefined ? 0 : remaining(at, now, this.moveMs);
   }
 
   /** Fly-in of the item at `index`: `t` runs 0 → 1 (eased); null once landed or if it never flew */
-  arrival(index: Index, now: Ms): { source: WorldPos; t: Fraction } | null {
+  arrival(index: Index, now: WallMs): { source: WorldPos; t: Fraction } | null {
     const a = this.arrivals.get(this.itemAt(index).id);
-    if (a === undefined || !isLive(a.at, now)) return null;
-    return { source: a.source, t: 1 - remaining(a.at, now) };
+    if (a === undefined || !isLive(a.at, now, this.moveMs)) return null;
+    return { source: a.source, t: 1 - remaining(a.at, now, this.moveMs) };
   }
 
   ///////////////////////
@@ -121,9 +158,11 @@ export class Queue {
     return sum(this._items.slice(0, index).map((item) => item.size));
   }
 
-  private shiftFrom(start: Index, delta: SlotDelta, now: Ms): void {
+  private shiftFrom(start: Index, delta: SlotDelta, now: WallMs): void {
     for (const { id } of this._items.slice(start)) {
-      const live = (this.shifts.get(id) ?? []).filter((s) => isLive(s.at, now));
+      const live = (this.shifts.get(id) ?? []).filter((s) =>
+        isLive(s.at, now, this.moveMs),
+      );
       this.shifts.set(id, [...live, { at: now, delta }]);
     }
   }

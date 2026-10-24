@@ -1,284 +1,193 @@
 import { Container } from "pixi.js";
-import { transfer, type Conveyor, type Node } from "./flow";
 import { Inventory } from "./inventory/inventory";
-import { layoutStacks } from "./inventory/stacks";
+import { layoutStacks, type Stack } from "./inventory/stacks";
 import { InventoryView } from "./inventory/view";
-import { Layout, type Direction } from "./queue/layout";
+import { Layout } from "./queue/layout";
 import { Queue } from "./queue/model/queue";
 import { QueueView } from "./queue/view";
-import type {
-  Extent,
-  Item,
-  Ms,
-  PartId,
-  PartRequest,
-  PartType,
+import {
+  ScreenPos,
   WorldPos,
+  type Item,
+  type ItemId,
+  type Ms,
+  type SimMs,
+  type SkuId,
+  type WallMs,
 } from "./shared/common";
 import { placeAt } from "./shared/draw";
+import { MAX_ZOOM } from "./shared/scale";
+import { CHARCOAL, skuColor, vehicleColor } from "./shared/palette";
 import { GridView } from "./shared/grid";
 import { cameraOffset, FLAT, type Projection } from "./shared/projection";
-import { DEFAULT_LOOK, StationLook } from "./station/look";
-import { DEFAULT_CONFIG, Station, StationBoard } from "./station/station";
+import { SiteView } from "./site/view";
+import { DEFAULT_LOOK, StationLook, type Names } from "./station/look";
+import { Station } from "./station/station";
 import { Throughput } from "./station/throughput";
 import { StationView, type Hover } from "./station/view";
+import { DEFAULT_LAYOUT, placeTopology } from "./trace/layout";
+import { Replay } from "./trace/replay";
+import { labelOf, type Trace, type TraceEvent } from "./trace/trace";
 
-const BOX = 36;
-const GAP = 8;
-const QUEUE_LENGTH = 5;
-/** Every this often (simulated), one more part goes back on a stack, cycling through the parts */
-const RESTOCK_INTERVAL_MS = 200;
+const { box: BOX, gap: GAP, beltLength: BELT_LENGTH } = DEFAULT_LAYOUT;
+/** The furthest the camera zooms out */
+export const MIN_ZOOM = 0.25;
 /** The longest throughput window that can be asked for: older completions are forgotten */
-export const MAX_THROUGHPUT_WINDOW_MS = 5 * 60_000;
+export const MAX_THROUGHPUT_WINDOW_MS = 4 * 60 * 60_000;
+/** How long animations last on screen (wall time), whatever the playback speed */
+export const DEFAULT_ANIMATION_MS = 800;
 
-export type ConveyorId = string & { readonly __brand: "ConveyorId" };
-export const ConveyorId = (id: string) => id as ConveyorId;
-export type BoardId = string & { readonly __brand: "BoardId" };
-export const BoardId = (id: string) => id as BoardId;
+export type WorldOptions = {
+  /** how long fly-ins, drop-ins and queue shifts take, in wall ms */
+  readonly animationMs?: Ms;
+  /** called while a station is hovered, see `Hover`; omitted in tests */
+  readonly onHover?: Hover;
+};
 
-/** A queue whose head sits at `origin` (world coords), flowing in `direction` */
-export type ConveyorSpec = {
-  readonly id: ConveyorId;
+type QueueEntry = {
+  readonly queue: Queue;
+  readonly layout: Layout;
   readonly origin: WorldPos;
-  readonly direction: Direction;
-  /** visible belt length in slots; items beyond it are elided (default `DEFAULT_BELT_LENGTH`) */
-  readonly length?: number;
+  readonly view: QueueView;
 };
-/** A pool of stations, one per position (item top-left, in world coords) */
-export type BoardSpec = {
-  readonly id: BoardId;
-  readonly positions: readonly WorldPos[];
+type StationEntry = {
+  readonly station: Station;
+  readonly pos: WorldPos;
+  readonly view: StationView;
+  readonly throughput: Throughput;
 };
-export type QueueRef = { readonly kind: "queue"; readonly id: ConveyorId };
-export type StationsRef = { readonly kind: "stations"; readonly id: BoardId };
-export type NodeRef = QueueRef | StationsRef;
-/**
- * Items flow along edges: a conveyor's popped head goes anywhere, a station's finished item goes
- * into a conveyor (stations → stations is not representable: there is nowhere to wait).
- */
-export type Edge =
-  | { readonly from: QueueRef; readonly to: NodeRef }
-  | { readonly from: StationsRef; readonly to: QueueRef };
-
-/** One stack per part type, in a row along x from `origin`; each starts (and refills to) `capacity` */
-export type InventorySpec = {
-  readonly origin: WorldPos;
-  readonly parts: readonly PartType[];
-  readonly capacity: number;
-};
-
-/** The whole world as plain data: what exists, where it sits, and how items flow */
-export type WorldSpec = {
-  readonly conveyors: readonly ConveyorSpec[];
-  readonly boards: readonly BoardSpec[];
-  /** supplies every station: each dispatched item takes its parts from here */
-  readonly inventory: InventorySpec;
-  readonly edges: readonly Edge[];
-};
-
-/** The world's sources of randomness, injected so the world itself stays deterministic */
-export type WorldRandom = {
-  readonly newItem: () => Item;
-  /** what the next dispatched item needs, out of the inventory's `parts` */
-  readonly pickParts: (parts: readonly PartId[]) => PartRequest;
-};
-
-/** Where each conveyor's popped head goes, and which conveyor each board's finished items go to */
-export type Downstream = {
-  readonly ofConveyor: Map<Conveyor, Node>;
-  readonly ofBoard: Map<StationBoard, Conveyor>;
+type InventoryEntry = {
+  readonly inventory: Inventory;
+  readonly view: InventoryView;
+  /** units consumed, per SKU */
+  readonly consumption: ReadonlyMap<SkuId, Throughput>;
 };
 
 /**
- * Resolve id-based `edges` into object references.
- * Throws on an unknown id, or a source with more than one downstream edge.
+ * The trace, replayed: builds a model and a view per place from the trace's topology (laid out
+ * automatically), then applies the trace's events as time goes on. It decides nothing: every
+ * change comes from an event. What it adds is presentation, e.g. fly-ins: an item that leaves a
+ * place and arrives at another at the same instant is animated between the two.
+ *
+ * Two clocks: simulated time (`SimMs`) says what happens when; wall time (`WallMs`) drives the
+ * animations, so they look the same at any playback speed.
  */
-export const resolveEdges = (
-  edges: readonly Edge[],
-  conveyors: ReadonlyMap<ConveyorId, Conveyor>,
-  boards: ReadonlyMap<BoardId, StationBoard>,
-  inventory: Inventory,
-): Downstream => {
-  const lookup = <K, V>(m: ReadonlyMap<K, V>, id: K): V => {
-    const v = m.get(id);
-    if (v === undefined) throw new Error(`unknown id: ${String(id)}`);
-    return v;
-  };
-  const toNode = (ref: NodeRef): Node => {
-    switch (ref.kind) {
-      case "queue":
-        return { kind: "queue", conveyor: lookup(conveyors, ref.id) };
-      case "stations":
-        return {
-          kind: "stations",
-          board: lookup(boards, ref.id),
-          inventory,
-        };
-    }
-  };
-  const once = <K, V>(m: Map<K, V>, key: K, value: V, id: string) => {
-    if (m.has(key)) throw new Error(`${id} has two downstream edges`);
-    m.set(key, value);
-  };
-
-  const ofConveyor = new Map<Conveyor, Node>();
-  const ofBoard = new Map<StationBoard, Conveyor>();
-  for (const edge of edges) {
-    switch (edge.from.kind) {
-      case "queue":
-        once(
-          ofConveyor,
-          lookup(conveyors, edge.from.id),
-          toNode(edge.to),
-          edge.from.id,
-        );
-        break;
-      case "stations": {
-        // `Edge` already rules this out, but TS doesn't narrow `to` from `from.kind`
-        const { to } = edge;
-        if (to.kind !== "queue")
-          throw new Error(`${edge.from.id} can only feed a conveyor`);
-        once(
-          ofBoard,
-          lookup(boards, edge.from.id),
-          lookup(conveyors, to.id),
-          edge.from.id,
-        );
-        break;
-      }
-    }
-  }
-  return { ofConveyor, ofBoard };
-};
-
-/** The ground the grid covers: everything in `spec`, plus a few cells of slack, from (0, 0) */
-const gridExtent = (spec: WorldSpec, step: number): Extent => {
-  const all = [
-    ...spec.conveyors.map(({ origin }) => origin),
-    ...spec.boards.flatMap(({ positions }) => positions),
-    spec.inventory.origin,
-  ];
-  const slack = 4 * step;
-  return {
-    w: Math.max(0, ...all.map((p) => p.x)) + slack,
-    h: Math.max(0, ...all.map((p) => p.y)) + slack,
-  };
-};
-
-/** Builds the models and their views from a `WorldSpec`, and drives them over time */
 export class World {
   /** Everything drawn: the grid, then every view, for `app.stage.addChild` */
   public readonly root = new Container();
   private readonly grid: GridView;
   private _projection: Projection = FLAT;
-  private readonly conveyors = new Map<ConveyorId, Conveyor>();
-  private readonly boards: {
-    readonly id: BoardId;
-    readonly board: StationBoard;
-    readonly positions: readonly WorldPos[];
-    /** per station, in the board's order: its view and its completions */
-    readonly stations: readonly {
-      readonly view: StationView;
-      readonly throughput: Throughput;
-    }[];
-  }[] = [];
-  /** Parts consumed, per part type */
-  private readonly consumption = new Map<PartId, Throughput>();
+  /** How far the view has been dragged, in screen px: on top of the projection's own offset */
+  private pan = ScreenPos(0, 0);
+  /** Camera zoom: scales the whole drawing at once (1 = world px are screen px) */
+  private _zoom = 1;
+  /** One fence per site, under everything else */
+  private readonly siteViews: SiteView[] = [];
+  private readonly queues = new Map<number, QueueEntry>();
+  private readonly stations = new Map<number, StationEntry>();
+  private readonly inventories = new Map<number, InventoryEntry>();
+  /** job → the station running it */
+  private readonly jobs = new Map<number, number>();
+  /** One `Item` per id seen, so views can key boxes on it */
+  private readonly items = new Map<ItemId, Item>();
+  /** Where each item last was (world coords) and when it left: the origin of a same-time move */
+  private readonly lastSeen = new Map<ItemId, { pos: WorldPos; t: SimMs }>();
+  private readonly replay: Replay;
   /** Sliding window for the stations' and stacks' per-minute labels */
-  private throughputWindowMs: Ms = 60_000;
-  private readonly queueViews: QueueView[] = [];
-  private readonly stationViews: StationView[] = [];
-  private readonly inventory: Inventory;
-  private readonly inventoryView: InventoryView;
-  private readonly downstream: Downstream;
-  /** Conveyors with nothing upstream: the only ones that get new items */
-  private readonly roots: Conveyor[] = [];
-  /** Last restock (simulated time), and which part is next; null until the first tick */
-  private restockAt: Ms | null = null;
-  private restockNext = 0;
+  private throughputWindowMs: Ms = 60 * 60_000;
 
-  constructor(
-    spec: WorldSpec,
-    private readonly random: WorldRandom,
-    /** called while a station is hovered, see `Hover`; omitted in tests */
-    onHover?: Hover,
-  ) {
-    const { newItem } = random;
-    const fedIds = new Set(
-      spec.edges.flatMap(({ to }) => (to.kind === "queue" ? [to.id] : [])),
+  constructor(trace: Trace, options: WorldOptions = {}) {
+    const animationMs = options.animationMs ?? DEFAULT_ANIMATION_MS;
+    const top = trace.topology;
+    const placement = placeTopology(top);
+    const stride = BOX + GAP;
+    const at = <T>(
+      map: ReadonlyMap<number, T>,
+      what: string,
+      id: number,
+    ): T => {
+      const value = map.get(id);
+      if (value === undefined)
+        throw new Error(`layout: no position for ${what} ${id}`);
+      return value;
+    };
+
+    // Inventories first: stations need to know where each stack sits for the parts' fly-in
+    const skuColors = new Map(
+      top.skus.map((sku, i) => [sku, skuColor(i, top.skus.length)]),
     );
-    for (const { id, origin, direction, length } of spec.conveyors) {
-      const layout = new Layout(BOX, GAP, direction, length);
-      const queue = new Queue();
-      const conveyor = { queue, layout, origin };
-      // Fed conveyors start empty: their items come from upstream
-      if (!fedIds.has(id)) {
-        for (let i = 0; i < QUEUE_LENGTH; i++) queue.push(newItem());
-        this.roots.push(conveyor);
-      }
-      const view = new QueueView(queue, layout);
-      view.setPosition(origin);
-      this.conveyors.set(id, conveyor);
-      this.queueViews.push(view);
+    const stacks = new Map<number, Map<SkuId, Stack>>();
+    for (const { id } of top.inventories) {
+      const skus = top.inventorySkus.get(id) ?? [];
+      const ownStacks = layoutStacks(
+        at(placement.inventories, "inventory", id),
+        skus.map((sku) => ({ id: sku, color: skuColors.get(sku) ?? CHARCOAL })),
+        stride,
+      );
+      stacks.set(id, ownStacks);
+      const inventory = new Inventory(skus);
+      this.inventories.set(id, {
+        inventory,
+        view: new InventoryView(
+          inventory,
+          ownStacks,
+          BOX,
+          DEFAULT_LOOK.margin,
+          CHARCOAL,
+        ),
+        consumption: new Map(
+          skus.map((sku) => [sku, new Throughput(MAX_THROUGHPUT_WINDOW_MS)]),
+        ),
+      });
     }
 
-    const stacks = layoutStacks(
-      spec.inventory.origin,
-      spec.inventory.parts,
-      BOX + GAP,
-    );
-    this.inventory = new Inventory(
-      spec.inventory.parts.map(({ id }) => id),
-      spec.inventory.capacity,
-    );
-    for (const part of this.inventory.parts)
-      this.consumption.set(part, new Throughput(MAX_THROUGHPUT_WINDOW_MS));
-    this.inventoryView = new InventoryView(
-      this.inventory,
-      stacks,
-      BOX,
-      DEFAULT_LOOK.margin,
-      DEFAULT_LOOK.padColor,
-    );
-
+    const names: Names = {
+      item: (id) => labelOf(trace, "items", id, `Item ${id}`),
+      sku: (id) => labelOf(trace, "skus", id, `SKU ${id}`),
+    };
     const look = new StationLook(
-      DEFAULT_CONFIG,
+      { flightMs: animationMs },
       new Layout(BOX, GAP, "ltr"),
       DEFAULT_LOOK,
-      stacks,
+      (inventory, sku) => stacks.get(inventory)?.get(sku),
+      names,
     );
-    const boardsById = new Map<BoardId, StationBoard>();
-    for (const { id, positions } of spec.boards) {
-      // Stations know nothing of where they sit: each one's view is placed instead
-      const placed = positions.map((target) => {
-        const station = new Station();
-        const view = new StationView(station, look, onHover);
-        view.setPosition(target);
-        this.stationViews.push(view);
-        return {
-          station,
-          view,
-          throughput: new Throughput(MAX_THROUGHPUT_WINDOW_MS),
-        };
+
+    for (const { id } of top.queues) {
+      const layout = new Layout(BOX, GAP, "ltr", BELT_LENGTH);
+      const queue = new Queue(animationMs);
+      const origin = at(placement.queues, "queue", id);
+      const view = new QueueView(queue, layout);
+      view.setPosition(origin);
+      this.queues.set(id, { queue, layout, origin, view });
+    }
+    for (const { id } of top.stations) {
+      const station = new Station();
+      const pos = at(placement.stations, "station", id);
+      const view = new StationView(station, look, options.onHover);
+      view.setPosition(pos);
+      this.stations.set(id, {
+        station,
+        pos,
+        view,
+        throughput: new Throughput(MAX_THROUGHPUT_WINDOW_MS),
       });
-      const board = new StationBoard(placed.map(({ station }) => station));
-      boardsById.set(id, board);
-      this.boards.push({ id, board, positions, stations: placed });
     }
 
-    this.downstream = resolveEdges(
-      spec.edges,
-      this.conveyors,
-      boardsById,
-      this.inventory,
-    );
+    for (const [id, { pos, extent }] of placement.sites)
+      this.siteViews.push(
+        new SiteView(pos, extent, labelOf(trace, "sites", id, `Site ${id}`)),
+      );
 
-    this.grid = new GridView(gridExtent(spec, BOX + GAP), BOX + GAP);
+    this.replay = new Replay(trace.events);
+    this.grid = new GridView(placement.extent, stride);
     this.root.addChild(
+      // Site floors first, so the grid shows on top of them
+      ...this.siteViews.map((v) => v.site_container),
       this.grid.graphic,
-      this.inventoryView.inventory_container,
-      ...this.queueViews.map((v) => v.queue_container),
-      ...this.stationViews.map((v) => v.station_container),
+      ...[...this.inventories.values()].map((i) => i.view.inventory_container),
+      ...[...this.queues.values()].map((q) => q.view.queue_container),
+      ...[...this.stations.values()].map((s) => s.view.station_container),
     );
     this.setProjection(FLAT);
   }
@@ -290,11 +199,47 @@ export class World {
   /** Redraw the whole world under `p`: models and their world coords are untouched */
   public setProjection(p: Projection): void {
     this._projection = p;
-    placeAt(this.root, cameraOffset(p));
+    this.placeRoot();
     this.grid.setProjection(p);
-    this.inventoryView.setProjection(p);
-    for (const view of this.queueViews) view.setProjection(p);
-    for (const view of this.stationViews) view.setProjection(p);
+    for (const view of this.siteViews) view.setProjection(p);
+    for (const { view } of this.inventories.values()) view.setProjection(p);
+    for (const { view } of this.queues.values()) view.setProjection(p);
+    for (const { view } of this.stations.values()) view.setProjection(p);
+  }
+
+  /** Drag the view by `delta` screen px; kept across projection changes */
+  public panBy(delta: ScreenPos): void {
+    this.pan = ScreenPos(this.pan.x + delta.x, this.pan.y + delta.y);
+    this.placeRoot();
+  }
+
+  public get zoom(): number {
+    return this._zoom;
+  }
+
+  /**
+   * Zoom by `factor` (> 1 zooms in), keeping the point under `at` (screen px) where it is, as a
+   * mouse wheel would. Clamped to [MIN_ZOOM, MAX_ZOOM].
+   */
+  public zoomBy(factor: number, at: ScreenPos): void {
+    const zoom = Math.min(Math.max(this._zoom * factor, MIN_ZOOM), MAX_ZOOM);
+    const k = zoom / this._zoom;
+    // Whatever was under `at` stays there: the root moves towards `at` as it scales about it
+    const root = this.root.position;
+    const offset = cameraOffset(this._projection);
+    this.pan = ScreenPos(
+      at.x - (at.x - root.x) * k - offset.x,
+      at.y - (at.y - root.y) * k - offset.y,
+    );
+    this._zoom = zoom;
+    this.placeRoot();
+  }
+
+  /** Back to the projection's own framing, at zoom 1 */
+  public resetView(): void {
+    this.pan = ScreenPos(0, 0);
+    this._zoom = 1;
+    this.placeRoot();
   }
 
   /** Change the window the throughput labels average over, capped at MAX_THROUGHPUT_WINDOW_MS */
@@ -302,84 +247,178 @@ export class World {
     this.throughputWindowMs = Math.min(ms, MAX_THROUGHPUT_WINDOW_MS);
   }
 
-  /** Items per minute finished by station `index` of board `id`, over the current window */
-  public throughput(id: BoardId, index: number, now: Ms): number {
-    const entry = this.boards.find((b) => b.id === id);
-    const station = entry?.stations[index];
-    return station?.throughput.perMinute(now, this.throughputWindowMs) ?? 0;
-  }
-
-  /** `part`s consumed per minute, over the current window */
-  public partThroughput(part: PartId, now: Ms): number {
-    return (
-      this.consumption.get(part)?.perMinute(now, this.throughputWindowMs) ?? 0
-    );
-  }
-
-  /** How many of `part` the inventory holds */
-  public stock(part: PartId): number {
-    return this.inventory.count(part);
-  }
-
-  /** The items currently on conveyor `id`, head first */
-  public items(id: ConveyorId): readonly Item[] {
-    return this.conveyors.get(id)?.queue.items ?? [];
+  /** Apply the trace up to simulated `now`, then redraw, animating as of wall time `wall` */
+  public tick(now: SimMs, wall: WallMs): void {
+    this.replay.advance(now, (event) => this.apply(event, wall));
+    this.render(now, wall);
   }
 
   /**
-   * Top up every root by one item, keeping it at most QUEUE_LENGTH long; then, for a random
-   * conveyor feeding another conveyor, pop its head into it (feeding stations happens in `tick`,
-   * as soon as one is free).
+   * Apply one event, its animations starting at wall time `wall`. Throws on ids or states the
+   * trace can't have (see data/'s validator).
    */
-  public randomEdit(now: Ms): void {
-    for (const root of this.roots)
-      if (root.queue.items.length < QUEUE_LENGTH)
-        root.queue.push(this.random.newItem());
-
-    const all = [...this.conveyors.values()];
-    const c = all[Math.floor(Math.random() * all.length)];
-    const next = this.downstream.ofConveyor.get(c);
-    if (next?.kind === "queue") transfer(c, next, now);
-  }
-
-  /** Restock, move finished items out of stations, feed free stations, then redraw everything */
-  public tick(now: Ms): void {
-    this.restock(now);
-    for (const { board, positions, stations } of this.boards) {
-      const next = this.downstream.ofBoard.get(board);
-      for (const { item, index } of board.reap(now, DEFAULT_CONFIG)) {
-        stations[index].throughput.record(now);
-        // Without a downstream conveyor the item just disappears
-        next?.queue.arrive(item, positions[index], now);
-      }
-    }
-    for (const c of this.conveyors.values()) {
-      const next = this.downstream.ofConveyor.get(c);
-      // Pop as long as a station is free and the inventory has what the next item needs
-      if (next?.kind === "stations")
-        for (;;) {
-          const parts = this.random.pickParts(this.inventory.parts);
-          if (!transfer(c, next, now, parts)) break;
-          for (const { part, count } of parts)
-            this.consumption.get(part)?.record(now, count);
-        }
-    }
-    for (const view of this.queueViews) view.render(now);
-    for (const { stations } of this.boards)
-      for (const { view, throughput } of stations)
-        view.render(now, () =>
-          throughput.perMinute(now, this.throughputWindowMs),
+  public apply(e: TraceEvent, wall: WallMs): void {
+    switch (e.kind) {
+      case "queue_enter":
+        this.queueOf(e.queue).queue.enter(
+          e.index,
+          this.itemOf(e.item),
+          wall,
+          this.cameFrom(e.item, e.t),
         );
-    this.inventoryView.render((part) => this.partThroughput(part, now));
+        return;
+      case "queue_leave": {
+        const q = this.queueOf(e.queue);
+        const index = q.queue.indexOf(e.item);
+        if (index < 0)
+          throw new Error(
+            `seq ${e.seq}: item ${e.item} isn't in queue ${e.queue}`,
+          );
+        this.lastSeen.set(e.item, {
+          pos: this.slotPos(q, index, wall),
+          t: e.t,
+        });
+        q.queue.removeAt(index, wall);
+        return;
+      }
+      case "queue_move":
+        this.queueOf(e.queue).queue.move(e.item, e.index, wall);
+        return;
+      case "station_start": {
+        const s = this.stationOf(e.station);
+        // Coming from nowhere at this instant: it just appears at the station
+        const source = this.cameFrom(e.item, e.t) ?? s.pos;
+        s.station.start(this.itemOf(e.item), source, e.t, wall, e.expectedMs);
+        this.jobs.set(e.job, e.station);
+        return;
+      }
+      case "station_end": {
+        const s = this.stationOf(this.stationRunning(e.job, e.seq));
+        const item = s.station.end();
+        this.jobs.delete(e.job);
+        s.throughput.record(e.t);
+        this.lastSeen.set(item.id, { pos: s.pos, t: e.t });
+        return;
+      }
+      case "consumption":
+        this.stationOf(this.stationRunning(e.job, e.seq)).station.addParts({
+          inventory: e.inventory,
+          sku: e.sku,
+          count: e.count,
+        });
+        this.inventoryOf(e.inventory)
+          .consumption.get(e.sku)
+          ?.record(e.t, e.count);
+        return;
+      case "stock":
+        this.inventoryOf(e.inventory).inventory.set(e.sku, e.count);
+        return;
+    }
   }
 
-  /** One part per RESTOCK_INTERVAL_MS, round-robin; catches up after long frames (e.g. at 4×) */
-  private restock(now: Ms): void {
-    this.restockAt ??= now;
-    const parts = this.inventory.parts;
-    while (parts.length > 0 && now - this.restockAt >= RESTOCK_INTERVAL_MS) {
-      this.inventory.restock(parts[this.restockNext++ % parts.length]);
-      this.restockAt += RESTOCK_INTERVAL_MS;
+  /** Redraw as of simulated `now` (what's happening) and wall time `wall` (animations) */
+  public render(now: SimMs, wall: WallMs): void {
+    const window = this.throughputWindowMs;
+    for (const { view } of this.queues.values()) view.render(wall);
+    for (const { view, throughput } of this.stations.values())
+      view.render(now, wall, () => throughput.perMinute(now, window));
+    for (const { view, consumption } of this.inventories.values())
+      view.render((sku) => consumption.get(sku)?.perMinute(now, window) ?? 0);
+  }
+
+  /* ── read-only views of the state, mostly for tests ─────────────────── */
+
+  /** Item ids in queue `id`, head first */
+  public queueItems(id: number): ItemId[] {
+    return this.queueOf(id).queue.items.map((item) => item.id);
+  }
+
+  /** The item station `id` is working on, if any */
+  public stationItem(id: number): ItemId | null {
+    return this.stationOf(id).station.item?.id ?? null;
+  }
+
+  public stock(inventory: number, sku: SkuId): number {
+    return this.inventoryOf(inventory).inventory.count(sku);
+  }
+
+  /** Items per minute finished by station `id`, over the current window */
+  public throughput(id: number, now: SimMs): number {
+    return this.stationOf(id).throughput.perMinute(
+      now,
+      this.throughputWindowMs,
+    );
+  }
+
+  /** Units of `sku` consumed per minute from `inventory`, over the current window */
+  public skuThroughput(inventory: number, sku: SkuId, now: SimMs): number {
+    return (
+      this.inventoryOf(inventory)
+        .consumption.get(sku)
+        ?.perMinute(now, this.throughputWindowMs) ?? 0
+    );
+  }
+
+  /* ── helpers ─────────────────────────────────────────────────────────── */
+
+  private placeRoot(): void {
+    const offset = cameraOffset(this._projection);
+    placeAt(this.root, ScreenPos(offset.x + this.pan.x, offset.y + this.pan.y));
+    this.root.scale.set(this._zoom);
+  }
+
+  private itemOf(id: ItemId): Item {
+    let item = this.items.get(id);
+    if (item === undefined) {
+      item = { id, color: vehicleColor(id), size: 1 };
+      this.items.set(id, item);
     }
+    return item;
+  }
+
+  /** Where `item` was if it left somewhere at exactly simulated `t` (so this is a move) */
+  private cameFrom(item: ItemId, t: SimMs): WorldPos | undefined {
+    const seen = this.lastSeen.get(item);
+    this.lastSeen.delete(item);
+    return seen !== undefined && seen.t === t ? seen.pos : undefined;
+  }
+
+  /**
+   * World coords of the box at `index` in `q`, as drawn at wall time `now`; for an elided item,
+   * the belt's tail end (so it leaves from there, not from a point far past the belt)
+   */
+  private slotPos(q: QueueEntry, index: number, now: WallMs): WorldPos {
+    const item = q.queue.items[index];
+    const offset = q.layout.itemOffset(
+      q.layout.clampToBelt(q.queue.slot(index, now), item.size),
+      q.queue.entering(index, now),
+    );
+    const local = q.layout.boxOrigin(offset, item.size);
+    return WorldPos(q.origin.x + local.x, q.origin.y + local.y);
+  }
+
+  private stationRunning(job: number, seq: number): number {
+    const station = this.jobs.get(job);
+    if (station === undefined)
+      throw new Error(`seq ${seq}: job ${job} isn't running`);
+    return station;
+  }
+
+  private queueOf(id: number): QueueEntry {
+    const entry = this.queues.get(id);
+    if (entry === undefined) throw new Error(`trace: unknown queue ${id}`);
+    return entry;
+  }
+
+  private stationOf(id: number): StationEntry {
+    const entry = this.stations.get(id);
+    if (entry === undefined) throw new Error(`trace: unknown station ${id}`);
+    return entry;
+  }
+
+  private inventoryOf(id: number): InventoryEntry {
+    const entry = this.inventories.get(id);
+    if (entry === undefined) throw new Error(`trace: unknown inventory ${id}`);
+    return entry;
   }
 }

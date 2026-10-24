@@ -3,7 +3,8 @@ import prettier from "eslint-plugin-prettier/recommended";
 import tseslint from "typescript-eslint";
 
 export default tseslint.config(
-  { ignores: ["dist"] },
+  // data/ is the Python side (its .venv ships JS of its own)
+  { ignores: ["dist", "data"] },
   {
     extends: [
       js.configs.recommended,

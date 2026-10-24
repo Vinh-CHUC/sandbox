@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { clamp01, mixColor, smoothstep } from "./common";
+import { clamp01, hsl, mixColor, smoothstep } from "./common";
 
 describe("clamp01", () => {
   it.each([
@@ -40,5 +40,17 @@ describe("mixColor", () => {
     [1, 0x00ff00],
   ])("blends red→green at %d to %d", (t, expected) => {
     expect(mixColor(0xff0000, 0x00ff00, t)).toBe(expected);
+  });
+});
+
+describe("hsl", () => {
+  it.each([
+    [0, 1, 0.5, 0xff0000],
+    [120, 1, 0.5, 0x00ff00],
+    [240, 1, 0.5, 0x0000ff],
+    [0, 0, 1, 0xffffff],
+    [0, 0, 0, 0x000000],
+  ])("hsl(%d, %d, %d) = %d", (h, s, l, expected) => {
+    expect(hsl(h, s, l)).toBe(expected);
   });
 });

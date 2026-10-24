@@ -1,27 +1,28 @@
 import { describe, expect, it } from "vitest";
 import { Layout } from "../queue/layout";
-import { PartId, WorldPos, type Item } from "../shared/common";
-import { StationLook, tooltip, type LookConfig } from "./look";
+import { SimMs, SkuId, WallMs, WorldPos, type Item } from "../shared/common";
+import { StationLook, tooltip, type LookConfig, type Names } from "./look";
 import { Station, type Busy, type StationConfig } from "./station";
 
 const cfg: LookConfig = {
   heartbeatMs: 400,
   alphaMin: 0.3,
   alphaMax: 1,
-  fromColor: 0xff0000,
-  toColor: 0x00ff00,
   margin: 8,
   padColor: 0x123456,
   partSize: 10,
+  arcColor: 0x333333,
+  arcWidth: 2,
+  spinMs: 1000,
 };
 
-const stationCfg: StationConfig = { dispatchMs: 100 };
+const stationCfg: StationConfig = { flightMs: 100 };
 const layout = new Layout(20, 5, "ltr");
 const look = new StationLook(stationCfg, layout, cfg);
 const at = (x: number, y: number) => WorldPos(x, y);
 const origin = at(100, 0); // where the station sits on the stage
 
-const item = (size = 1): Item => ({ id: 7, color: 0, size, processMs: 1000 });
+const item = (size = 1): Item => ({ id: 7, color: 0, size });
 const busy = (over: Partial<Busy> = {}): Busy => ({
   kind: "busy",
   item: item(),
@@ -29,7 +30,8 @@ const busy = (over: Partial<Busy> = {}): Busy => ({
   parts: [],
   arrival: 1,
   progress: 0,
-  processedMs: 0,
+  elapsedMs: 0,
+  shownMs: 0,
   ...over,
 });
 const held = (over: Partial<Busy> = {}) => look.of(busy(over), origin).held!;
@@ -39,6 +41,7 @@ describe("StationLook.of", () => {
     expect(look.of({ kind: "free" }, origin)).toEqual({
       pad: { pos: at(-8, -8), extent: { w: 36, h: 36 }, color: 0x123456 },
       held: null,
+      arc: null,
     });
   });
 
@@ -54,16 +57,18 @@ describe("StationLook.of", () => {
     expect(held({ arrival: 1 }).pos).toEqual(at(0, 0)); // arrived
   });
 
-  it("alpha beats between alphaMin and alphaMax with processing time", () => {
-    expect(held({ processedMs: 0 }).alpha).toBeCloseTo(0.3); // trough
-    expect(held({ processedMs: 200 }).alpha).toBeCloseTo(1); // peak
-    expect(held({ processedMs: 400 }).alpha).toBeCloseTo(0.3); // trough again
+  it("alpha beats between alphaMin and alphaMax with wall time on screen", () => {
+    expect(held({ shownMs: 0 }).alpha).toBeCloseTo(0.3); // trough
+    expect(held({ shownMs: 200 }).alpha).toBeCloseTo(1); // peak
+    expect(held({ shownMs: 400 }).alpha).toBeCloseTo(0.3); // trough again
+    // Simulated time doesn't move it: same beat whatever the playback speed
+    expect(held({ shownMs: 200, elapsedMs: 3_600_000 }).alpha).toBeCloseTo(1);
   });
 
-  it("tint blends fromColor → toColor by progress", () => {
-    expect(held({ progress: 0 }).tint).toBe(0xff0000);
-    expect(held({ progress: 0.5 }).tint).toBe(0x808000); // muddy midpoint
-    expect(held({ progress: 1 }).tint).toBe(0x00ff00);
+  it("the item keeps its own colour, whatever the progress", () => {
+    const red = { id: 7, color: 0xff0000, size: 1 };
+    expect(held({ item: red, progress: 0 }).color).toBe(0xff0000);
+    expect(held({ item: red, progress: 1 }).color).toBe(0xff0000);
   });
 
   it("carries the item's id and box extent for the view", () => {
@@ -74,18 +79,54 @@ describe("StationLook.of", () => {
   });
 });
 
+describe("StationLook arc", () => {
+  const arc = (over: Partial<Busy>) => look.of(busy(over), origin).arc!;
+
+  it("rings the first box, just clear of its corners", () => {
+    // boxSize 20: centre (10, 10), corners √2 × 10 ≈ 14.1 away, plus the line width
+    expect(arc({})).toMatchObject({
+      center: at(10, 10),
+      color: 0x333333,
+      width: 2,
+    });
+    expect(arc({}).radius).toBeCloseTo(10 * Math.SQRT2 + 2);
+  });
+
+  it("fills with a known progress", () => {
+    expect(arc({ progress: 0.25 }).progress).toEqual({
+      kind: "known",
+      fraction: 0.25,
+    });
+  });
+
+  it("sweeps once per spinMs of wall time when the length is unknown", () => {
+    expect(arc({ progress: null, shownMs: 250 }).progress).toEqual({
+      kind: "unknown",
+      phase: 0.25,
+    });
+    expect(arc({ progress: null, shownMs: 1250 }).progress).toMatchObject({
+      phase: 0.25,
+    });
+  });
+});
+
 describe("StationLook parts", () => {
-  const P = PartId("p");
-  // origin (100, 0); P's stack sits at (200, 0); boxSize 20, partSize 10 → inset 5
+  const P = SkuId(100);
+  // origin (100, 0); inventory 5's P stack sits at (200, 0); boxSize 20, partSize 10 → inset 5
   const withStacks = new StationLook(
     stationCfg,
     layout,
     cfg,
-    new Map([[P, { pos: at(200, 0), color: 0xabcdef }]]),
+    (inventory, sku) =>
+      inventory === 5 && sku === P
+        ? { pos: at(200, 0), color: 0xabcdef }
+        : undefined,
   );
   const parts = (arrival: number) =>
-    withStacks.of(busy({ arrival, parts: [{ part: P, count: 2 }] }), origin)
-      .held!.parts;
+    withStacks.of(
+      busy({ arrival, parts: [{ inventory: 5, sku: P, count: 2 }] }),
+      origin,
+    ).held!.parts;
 
   it("one cube per unit, starting on the stack, side by side", () => {
     expect(parts(0).map((p) => p.pos)).toEqual([at(105, 5), at(117, 5)]);
@@ -103,7 +144,7 @@ describe("StationLook parts", () => {
 
   it("parts without a known stack are skipped", () => {
     const unknown = look.of(
-      busy({ arrival: 0, parts: [{ part: P, count: 1 }] }),
+      busy({ arrival: 0, parts: [{ inventory: 5, sku: P, count: 1 }] }),
       origin,
     );
     expect(unknown.held!.parts).toEqual([]);
@@ -111,35 +152,53 @@ describe("StationLook parts", () => {
 });
 
 describe("tooltip", () => {
-  const W = PartId("wheel");
-  const E = PartId("engine");
+  const W = SkuId(1);
+  const E = SkuId(2);
+  const names: Names = {
+    item: (id) => `Vehicle ${id}`,
+    sku: (id) => (id === W ? "wheel" : "engine"),
+  };
 
   it("free stations are idle", () => {
-    expect(tooltip({ kind: "free" })).toBe("Idle");
+    expect(tooltip({ kind: "free" }, names)).toBe("Idle");
   });
 
   it("says when the item is still on its way", () => {
-    expect(tooltip(busy({ arrival: 0.4 }))).toBe(
-      "Vehicle #7 · arriving\nno parts",
+    expect(tooltip(busy({ arrival: 0.4 }), names)).toBe(
+      "Vehicle 7 · arriving\nno parts",
     );
   });
 
   it("lists the parts used, with progress once processing", () => {
     const parts = [
-      { part: W, count: 3 },
-      { part: E, count: 1 },
+      { inventory: 5, sku: W, count: 3 },
+      { inventory: 5, sku: E, count: 1 },
     ];
-    expect(tooltip(busy({ arrival: 1, progress: 0.634, parts }))).toBe(
-      "Vehicle #7 · processing 63%\nwheel ×3, engine ×1",
+    expect(tooltip(busy({ arrival: 1, progress: 0.634, parts }), names)).toBe(
+      "Vehicle 7 · processing 63%\nwheel ×3, engine ×1",
+    );
+  });
+
+  it("without an expected duration, says how long it's been at it", () => {
+    expect(
+      tooltip(busy({ progress: null, elapsedMs: 25 * 60_000 }), names),
+    ).toBe("Vehicle 7 · processing for 25 min\nno parts");
+  });
+
+  it("falls back to ids without names", () => {
+    expect(tooltip(busy({ arrival: 0.4 }))).toBe(
+      "Item #7 · arriving\nno parts",
     );
   });
 });
 
 describe("StationLook.at", () => {
-  it("reads the station's state at `now`", () => {
+  it("reads the station's state at simulated `now` and wall time `wall`", () => {
     const station = new Station();
-    expect(look.at(station, 50, origin).held).toBeNull();
-    station.dispatch(item(), at(0, 0), 0);
-    expect(look.at(station, 50, origin).held?.pos.x).toBeCloseTo(-50); // halfway in
+    expect(look.at(station, SimMs(0), WallMs(50), origin).held).toBeNull();
+    station.start(item(), at(0, 0), SimMs(0), WallMs(0), null);
+    // halfway through the 100 ms fly-in, however much simulated time passed
+    const held = look.at(station, SimMs(60_000), WallMs(50), origin).held;
+    expect(held?.pos.x).toBeCloseTo(-50);
   });
 });

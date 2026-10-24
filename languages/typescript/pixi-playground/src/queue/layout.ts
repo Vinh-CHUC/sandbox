@@ -94,6 +94,19 @@ export class Layout {
   }
 
   /**
+   * The nearest slot on the belt for an item of `size`: `slot` itself if it fits, the belt's tail
+   * end otherwise. Where to fly to (or from) an item whose real slot is elided, rather than some
+   * point far past the belt (over whatever lies upstream).
+   *
+   *   clampToBelt(3, 1)   # 3   fits a length-8 belt
+   *   clampToBelt(31, 1)  # 7   the last slot
+   *   clampToBelt(31, 3)  # 5   the last place a size-3 item fits
+   */
+  public clampToBelt(slot: number, size: Size): number {
+    return Math.max(0, Math.min(slot, this.length - size));
+  }
+
+  /**
    * How visible an item at (fractional) `slot` is: 1 while it fits on the belt, fading to 0 as its
    * tail end sticks out by up to one more slot.
    *

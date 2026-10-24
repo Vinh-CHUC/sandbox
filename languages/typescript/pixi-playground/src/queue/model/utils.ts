@@ -3,6 +3,7 @@ import {
   smoothstep,
   type Fraction,
   type Ms,
+  type WallMs,
 } from "../../shared/common";
 
 // Removing an element releases its `size` worth of space for the items after it, inserting one takes
@@ -17,20 +18,32 @@ export type Index = number;
 export type Slot = number;
 /** Displacement, in slots */
 export type SlotDelta = number;
-/** `delta` slots of displacement still owed by an item, decaying to 0 from time `at` (ms) */
-export type Shift = { readonly at: Ms; readonly delta: SlotDelta };
+/** `delta` slots of displacement still owed by an item, decaying to 0 from `at` (wall time) */
+export type Shift = { readonly at: WallMs; readonly delta: SlotDelta };
 
 export const MOVE_DURATION_MS: Ms = 1000;
 
 export const sum = (xs: readonly number[]) => xs.reduce((a, b) => a + b, 0);
 
-/** Fraction of a move started at `at` still to travel: 1 → 0 */
-export const remaining = (at: Ms, now: Ms): Fraction => {
-  const progress = clamp01((now - at) / MOVE_DURATION_MS);
+/** Fraction of a move started at `at` still to travel: 1 → 0, over `duration` */
+export const remaining = (
+  at: WallMs,
+  now: WallMs,
+  duration: Ms = MOVE_DURATION_MS,
+): Fraction => {
+  const progress = clamp01((now - at) / duration);
   return 1 - smoothstep(progress);
 };
 
-export const isLive = (at: Ms, now: Ms) => now - at < MOVE_DURATION_MS;
+export const isLive = (
+  at: WallMs,
+  now: WallMs,
+  duration: Ms = MOVE_DURATION_MS,
+) => now - at < duration;
 
-export const lag = (shifts: readonly Shift[], now: Ms): SlotDelta =>
-  sum(shifts.map((s) => s.delta * remaining(s.at, now)));
+export const lag = (
+  shifts: readonly Shift[],
+  now: WallMs,
+  duration: Ms = MOVE_DURATION_MS,
+): SlotDelta =>
+  sum(shifts.map((s) => s.delta * remaining(s.at, now, duration)));

@@ -1,41 +1,26 @@
-import type { PartId, PartRequest } from "../shared/common";
+import type { SkuId } from "../shared/common";
 
-/** Stacks of parts, each holding at most `capacity` */
+/** Stock levels of the SKUs an inventory carries. Passive: a trace sets them. */
 export class Inventory {
-  private readonly stock: Map<PartId, number>;
+  private readonly stock: Map<SkuId, number>;
 
-  constructor(
-    parts: readonly PartId[],
-    private readonly capacity: number,
-  ) {
-    this.stock = new Map(parts.map((part) => [part, capacity]));
+  constructor(skus: readonly SkuId[]) {
+    this.stock = new Map(skus.map((sku) => [sku, 0]));
   }
 
-  public get parts(): readonly PartId[] {
+  /** The SKUs carried, in stack order */
+  public get skus(): readonly SkuId[] {
     return [...this.stock.keys()];
   }
 
-  public count(part: PartId): number {
-    return this.stock.get(part) ?? 0;
+  public count(sku: SkuId): number {
+    return this.stock.get(sku) ?? 0;
   }
 
-  public canSupply(request: PartRequest): boolean {
-    return request.every(({ part, count }) => this.count(part) >= count);
-  }
-
-  /** Remove everything in `request` at once; throws (taking nothing) if any stack is short */
-  public take(request: PartRequest): void {
-    if (!this.canSupply(request))
-      throw new RangeError(
-        `take: not enough stock for ${JSON.stringify(request)}`,
-      );
-    for (const { part, count } of request)
-      this.stock.set(part, this.count(part) - count);
-  }
-
-  /** One more `part`, up to `capacity`; unknown parts are ignored */
-  public restock(part: PartId): void {
-    if (!this.stock.has(part)) return;
-    this.stock.set(part, Math.min(this.count(part) + 1, this.capacity));
+  /** New level for `sku`; throws for a SKU this inventory doesn't carry */
+  public set(sku: SkuId, count: number): void {
+    if (!this.stock.has(sku))
+      throw new RangeError(`set: inventory doesn't carry sku ${sku}`);
+    this.stock.set(sku, count);
   }
 }

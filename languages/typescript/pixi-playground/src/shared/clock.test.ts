@@ -33,4 +33,12 @@ describe("SimClock", () => {
     for (let i = 0; i < 10; i++) clock.slower();
     expect(clock.speed).toBe(0.25);
   });
+
+  it("takes its own speeds, e.g. much faster for hours-long traces", () => {
+    const clock = new SimClock([1, 60, 600], 60);
+    expect(clock.advance(1000)).toBe(60_000); // a real second is a simulated minute
+    clock.faster();
+    expect(clock.speed).toBe(600);
+    expect(() => new SimClock([1, 2], 3)).toThrow(RangeError);
+  });
 });

@@ -1,13 +1,15 @@
-import { Container, Graphics, Text } from "pixi.js";
+import { Container, Graphics } from "pixi.js";
 import type { Queue } from "./model/queue";
-import { lerp, WorldPos, type Item } from "../shared/common";
+import { lerp, WorldPos, type Item, type WallMs } from "../shared/common";
 import { depth, drawBox, drawPlate, placeAt } from "../shared/draw";
+import { CHARCOAL } from "../shared/palette";
 import { FLAT, project, type Projection } from "../shared/projection";
 import { type Layout } from "./layout";
+import { sharpText, units } from "../shared/scale";
 
 /** The belt plate under the boxes, `BELT_MARGIN` beyond them on every side */
-const BELT_MARGIN = 6;
-const BELT_COLOR = 0x22303c;
+const BELT_MARGIN = units(0.17);
+const BELT_COLOR = CHARCOAL;
 
 export const buildBoxGraphics = (
   item: Item,
@@ -28,9 +30,9 @@ export class QueueView {
   private readonly boxes = new Map<number, Graphics>();
   private readonly belt = new Graphics();
   /** "+N" just past the belt's tail end: how many items don't fit on it */
-  private readonly elided = new Text({
+  private readonly elided = sharpText({
     text: "",
-    style: { fontSize: 14, fontWeight: "bold", fill: 0xffffff },
+    style: { fontSize: units(0.39), fontWeight: "bold", fill: CHARCOAL },
   });
   private origin = WorldPos(0, 0);
   private projection: Projection = FLAT;
@@ -63,7 +65,8 @@ export class QueueView {
     this.setPosition(this.origin);
   }
 
-  public render(now: number): void {
+  /** Redraw as of wall time `now`: queue animations run on wall time, see `Queue` */
+  public render(now: WallMs): void {
     const q = this.queue;
     const alive = new Set(q.items.map((item) => item.id));
     for (const [id, g] of this.boxes) {
@@ -99,7 +102,7 @@ export class QueueView {
    * Items past the belt's end fade out (see `Layout.tailAlpha`); one flying in towards such a slot
    * fades away on its way, rather than landing somewhere invisible.
    */
-  private alpha(index: number, now: number): number {
+  private alpha(index: number, now: WallMs): number {
     const q = this.queue;
     const tail = this.layout.tailAlpha(q.slot(index, now), q.items[index].size);
     const arrival = q.arrival(index, now);
@@ -126,7 +129,7 @@ export class QueueView {
   }
 
   /** Top-left of the box at `index`, in world coords relative to the belt's origin */
-  private boxPos(index: number, now: number): WorldPos {
+  private boxPos(index: number, now: WallMs): WorldPos {
     const q = this.queue;
     const size = q.items[index].size;
     const pos = this.layout.itemOffset(
@@ -135,12 +138,20 @@ export class QueueView {
     );
     const slotBox = this.layout.boxOrigin(pos, size);
 
-    // Items handed over from upstream fly in from `source` (world → local coords)
+    // Items handed over from upstream fly in from `source` (world → local coords), to their
+    // slot, or the belt's tail end if that's elided (they fade out there, see `alpha`)
     const arrival = q.arrival(index, now);
     if (arrival === null) return slotBox;
+    const landing = this.layout.boxOrigin(
+      this.layout.itemOffset(
+        this.layout.clampToBelt(q.slot(index, now), size),
+        q.entering(index, now),
+      ),
+      size,
+    );
     return WorldPos(
-      lerp(arrival.source.x - this.origin.x, slotBox.x, arrival.t),
-      lerp(arrival.source.y - this.origin.y, slotBox.y, arrival.t),
+      lerp(arrival.source.x - this.origin.x, landing.x, arrival.t),
+      lerp(arrival.source.y - this.origin.y, landing.y, arrival.t),
     );
   }
 }

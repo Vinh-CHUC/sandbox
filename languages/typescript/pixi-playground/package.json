@@ -11,6 +11,7 @@
     "test": "vitest"
   },
   "dependencies": {
+    "hyparquet": "^1.31.5",
     "pixi.js": "^8.8.1"
   },
   "devDependencies": {

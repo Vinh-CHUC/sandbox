@@ -1,5 +1,5 @@
-import { Container, Graphics, Text } from "pixi.js";
-import { WorldPos, type Color, type PartId } from "../shared/common";
+import { Container, Graphics, type Text } from "pixi.js";
+import { WorldPos, type Color, type SkuId } from "../shared/common";
 import {
   depth,
   drawBox,
@@ -8,27 +8,30 @@ import {
   RATE_REFRESH_MS,
   throttle,
 } from "../shared/draw";
+import { CHARCOAL, CORAL, WHITE } from "../shared/palette";
 import { FLAT, project, type Projection } from "../shared/projection";
 import type { Inventory } from "./inventory";
 import type { Stack } from "./stacks";
+import { formatRate } from "../station/throughput";
+import { sharpText, units } from "../shared/scale";
 
 /**
- * A floor plate with one box per part stack, each labelled with how many parts it holds, and with
- * how fast that part is being consumed underneath. Stacks are in absolute world coords, so the
+ * A floor plate with one box per SKU stack, each labelled with how many units it holds, and with
+ * how fast that SKU is being consumed underneath. Stacks are in absolute world coords, so the
  * container itself stays at the world's origin.
  */
 export class InventoryView {
   public readonly inventory_container = new Container();
   private readonly plate = new Graphics();
-  private readonly boxes = new Map<PartId, Graphics>();
-  private readonly labels = new Map<PartId, Text>();
-  /** Parts consumed per minute, under each stack */
-  private readonly rates = new Map<PartId, Text>();
+  private readonly boxes = new Map<SkuId, Graphics>();
+  private readonly labels = new Map<SkuId, Text>();
+  /** How fast each SKU is being consumed (see `formatRate`), under its stack */
+  private readonly rates = new Map<SkuId, Text>();
   private readonly refreshRates = throttle(RATE_REFRESH_MS);
 
   constructor(
     private readonly inventory: Inventory,
-    private readonly stacks: ReadonlyMap<PartId, Stack>,
+    private readonly stacks: ReadonlyMap<SkuId, Stack>,
     private readonly boxSize: number,
     private readonly margin: number,
     private readonly plateColor: Color,
@@ -36,24 +39,30 @@ export class InventoryView {
     this.inventory_container.sortableChildren = true;
     this.plate.zIndex = -Infinity;
     this.inventory_container.addChild(this.plate);
-    for (const part of stacks.keys()) {
-      const label = new Text({
+    for (const sku of stacks.keys()) {
+      const label = sharpText({
         text: "",
-        style: { fontSize: 14, fontWeight: "bold", fill: 0xffffff },
+        // White with a dark outline: readable on every step of the amber ramp
+        style: {
+          fontSize: units(0.39),
+          fontWeight: "bold",
+          fill: WHITE,
+          stroke: { color: CHARCOAL, width: Math.max(2, units(0.083)) },
+        },
       });
       label.anchor.set(0.5);
       // Labels sit on top of every box
       label.zIndex = Infinity;
-      this.labels.set(part, label);
+      this.labels.set(sku, label);
       this.inventory_container.addChild(label);
 
-      const rate = new Text({
+      const rate = sharpText({
         text: "",
-        style: { fontSize: 11, fill: 0xffffff },
+        style: { fontSize: units(0.31), fill: CHARCOAL },
       });
       rate.anchor.set(0.5);
       rate.zIndex = Infinity;
-      this.rates.set(part, rate);
+      this.rates.set(sku, rate);
       this.inventory_container.addChild(rate);
     }
     this.setProjection(FLAT);
@@ -65,34 +74,41 @@ export class InventoryView {
     for (const g of this.boxes.values()) g.destroy();
     this.boxes.clear();
     const extent = { w: this.boxSize, h: this.boxSize };
-    for (const [part, { pos, color }] of this.stacks) {
+    for (const [sku, { pos, color }] of this.stacks) {
       const box = drawBox(new Graphics(), p, extent, this.boxSize, color);
       placeAt(box, project(p, pos));
       box.zIndex = depth(pos, extent);
-      this.boxes.set(part, box);
+      this.boxes.set(sku, box);
       this.inventory_container.addChild(box);
 
       const centre = WorldPos(
         pos.x + this.boxSize / 2,
         pos.y + this.boxSize / 2,
       );
-      placeAt(this.labels.get(part)!, project(p, centre, this.boxSize));
+      placeAt(this.labels.get(sku)!, project(p, centre, this.boxSize));
       // Under the stack, past the plate's near edge
-      const under = WorldPos(centre.x, pos.y + this.boxSize + this.margin + 10);
-      placeAt(this.rates.get(part)!, project(p, under));
+      const under = WorldPos(
+        centre.x,
+        pos.y + this.boxSize + this.margin + units(0.28),
+      );
+      placeAt(this.rates.get(sku)!, project(p, under));
     }
   }
 
   /** Refresh the counts every frame, and the consumption rates at most once per RATE_REFRESH_MS */
-  public render(perMinute: (part: PartId) => number): void {
-    for (const [part, label] of this.labels) {
-      const text = String(this.inventory.count(part));
+  public render(perMinute: (sku: SkuId) => number): void {
+    for (const [sku, label] of this.labels) {
+      const count = this.inventory.count(sku);
+      const text = String(count);
       // Only touch the text when it changes: setting it re-renders the label
       if (label.text !== text) label.text = text;
+      // An empty stack is trouble: the one place coral is used
+      const fill = count === 0 ? CORAL : WHITE;
+      if (label.style.fill !== fill) label.style.fill = fill;
     }
     this.refreshRates(() => {
-      for (const [part, label] of this.rates) {
-        const text = `${perMinute(part).toFixed(1)} / min`;
+      for (const [sku, label] of this.rates) {
+        const text = formatRate(perMinute(sku));
         if (label.text !== text) label.text = text;
       }
     });

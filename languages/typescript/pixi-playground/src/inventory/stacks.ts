@@ -1,25 +1,25 @@
 import {
   WorldPos,
   type Color,
-  type PartId,
-  type PartType,
+  type SkuId,
+  type SkuType,
 } from "../shared/common";
 
-/** Where a part's stack sits (box top-left, world coords) and how it's painted */
+/** Where a SKU's stack sits (box top-left, world coords) and how it's painted */
 export type Stack = { readonly pos: WorldPos; readonly color: Color };
 
 /**
- * Lay `parts` out in a row along x from `origin`, one `stride` apart.
+ * Lay `skus` out in a row along x from `origin`, one `stride` apart.
  *
  *   layoutStacks((100, 50), [a, b], 44)  # {a: (100, 50), b: (144, 50)}
  */
 export const layoutStacks = (
   origin: WorldPos,
-  parts: readonly PartType[],
+  skus: readonly SkuType[],
   stride: number,
-): Map<PartId, Stack> =>
+): Map<SkuId, Stack> =>
   new Map(
-    parts.map(({ id, color }, i) => [
+    skus.map(({ id, color }, i) => [
       id,
       { pos: WorldPos(origin.x + i * stride, origin.y), color },
     ]),

@@ -1,140 +1,151 @@
 import { describe, expect, it } from "vitest";
-import { Inventory } from "./inventory/inventory";
-import { PartId, WorldPos, type Item, type PartRequest } from "./shared/common";
-import {
-  BoardId,
-  ConveyorId,
-  World,
-  resolveEdges,
-  type Edge,
-  type WorldRandom,
-  type WorldSpec,
-} from "./world";
+import { ScreenPos, SimMs, SkuId, WallMs } from "./shared/common";
+import type { Projection } from "./shared/projection";
+import type { Trace, TraceEvent } from "./trace/trace";
+import { World } from "./world";
 
-const items = () => {
-  let nextId = 0;
-  return (): Item => ({ id: nextId++, color: 0, size: 1, processMs: 1000 });
-};
+const P = SkuId(100);
+const MIN = 60_000;
+/** `n` minutes into the trace, in simulated time */
+const min = (n: number) => SimMs(n * MIN);
+/** Wall time doesn't matter to what the world holds, only to how it's animated */
+const WALL = WallMs(0);
 
-/** Fresh item ids per world; every dispatched item asks for `parts` */
-const random = (parts: PartRequest = []): WorldRandom => ({
-  newItem: items(),
-  pickParts: () => parts,
-});
-
-const P = PartId("p");
-
-const C = ConveyorId("C");
-const D = ConveyorId("D");
-const S = BoardId("S");
-const origin = WorldPos(0, 0);
-
-// C → S → D
-const spec = (
-  edges: readonly Edge[] = [
-    { from: { kind: "queue", id: C }, to: { kind: "stations", id: S } },
-    { from: { kind: "stations", id: S }, to: { kind: "queue", id: D } },
-  ],
-  capacity = 10,
-): WorldSpec => ({
-  conveyors: [
-    { id: C, origin, direction: "ltr" },
-    { id: D, origin, direction: "ltr" },
-  ],
-  boards: [{ id: S, positions: [WorldPos(50, 0)] }],
-  inventory: {
-    origin: WorldPos(0, 100),
-    parts: [{ id: P, color: 0 }],
-    capacity,
+/**
+ * queue 1 → station 10 → queue 2, inventory 5 stocking SKU 100 (as in data/'s validator tests):
+ * item 2 overtakes item 1, gets processed taking 2 × SKU 100, then lands in queue 2.
+ */
+const events: TraceEvent[] = [
+  { kind: "stock", seq: 0, t: min(0), inventory: 5, sku: P, count: 3 },
+  { kind: "queue_enter", seq: 1, t: min(0), item: 1, queue: 1, index: 0 },
+  { kind: "queue_enter", seq: 2, t: min(0), item: 2, queue: 1, index: 1 },
+  { kind: "queue_move", seq: 3, t: min(5), item: 2, queue: 1, index: 0 },
+  { kind: "queue_leave", seq: 4, t: min(10), item: 2, queue: 1 },
+  {
+    kind: "station_start",
+    seq: 5,
+    t: min(10),
+    job: 1,
+    item: 2,
+    station: 10,
+    expectedMs: null,
   },
-  edges,
-});
+  {
+    kind: "consumption",
+    seq: 6,
+    t: min(10),
+    job: 1,
+    inventory: 5,
+    sku: P,
+    count: 2,
+  },
+  { kind: "stock", seq: 7, t: min(10), inventory: 5, sku: P, count: 1 },
+  { kind: "station_end", seq: 8, t: min(30), job: 1 },
+  { kind: "queue_enter", seq: 9, t: min(30), item: 2, queue: 2, index: 0 },
+];
 
-describe("resolveEdges", () => {
-  it("throws on an unknown id", () => {
-    expect(() =>
-      resolveEdges(
-        [{ from: { kind: "queue", id: C }, to: { kind: "queue", id: D } }],
-        new Map(),
-        new Map(),
-        new Inventory([], 0),
-      ),
-    ).toThrow("unknown id: C");
-  });
+const trace = (evs: TraceEvent[] = events): Trace => ({
+  topology: {
+    sites: [1],
+    queues: [
+      { id: 1, site: 1 },
+      { id: 2, site: 1 },
+    ],
+    stations: [{ id: 10, site: 1 }],
+    inventories: [{ id: 5, site: 1 }],
+    skus: [P],
+    inventorySkus: new Map([[5, [P]]]),
+    edges: [
+      { from: { kind: "queue", id: 1 }, to: { kind: "station", id: 10 } },
+      { from: { kind: "station", id: 10 }, to: { kind: "queue", id: 2 } },
+    ],
+  },
+  events: evs,
+  labels: new Map(),
+  startUnixMs: 0,
+  endMs: min(60),
 });
 
 describe("World", () => {
-  it("draws the grid, the inventory, then one container per conveyor and per station", () => {
-    expect(new World(spec(), random()).root.children).toHaveLength(
-      1 + 1 + 2 + 1,
+  it("draws site fences, the grid, then one container per inventory, queue and station", () => {
+    expect(new World(trace()).root.children).toHaveLength(1 + 1 + 1 + 2 + 1);
+  });
+
+  it("tick replays the trace up to `now`", () => {
+    const world = new World(trace());
+    world.tick(min(0), WALL);
+    expect(world.queueItems(1)).toEqual([1, 2]);
+    expect(world.stock(5, P)).toBe(3);
+
+    world.tick(min(5), WALL); // re-prioritised
+    expect(world.queueItems(1)).toEqual([2, 1]);
+
+    world.tick(min(10), WALL); // admitted, taking its parts
+    expect(world.queueItems(1)).toEqual([1]);
+    expect(world.stationItem(10)).toBe(2);
+    expect(world.stock(5, P)).toBe(1);
+    expect(world.skuThroughput(5, P, min(10))).toBeCloseTo(2 / 10); // 2 in 10 min
+
+    world.tick(min(30), WALL); // done, on to the next queue
+    expect(world.stationItem(10)).toBeNull();
+    expect(world.queueItems(2)).toEqual([2]);
+    expect(world.throughput(10, min(30))).toBeCloseTo(1 / 30); // 1 in 30 min
+  });
+
+  it("fails loudly on events the trace can't have", () => {
+    const unknownQueue = trace([
+      { kind: "queue_enter", seq: 0, t: min(0), item: 1, queue: 9, index: 0 },
+    ]);
+    expect(() => new World(unknownQueue).tick(min(0), WALL)).toThrow(
+      "unknown queue 9",
+    );
+    const notRunning = trace([
+      { kind: "station_end", seq: 0, t: min(0), job: 4 },
+    ]);
+    expect(() => new World(notRunning).tick(min(0), WALL)).toThrow(
+      "job 4 isn't running",
     );
   });
 
-  it("only roots start filled", () => {
-    const world = new World(spec(), random());
-    expect(world.items(C)).toHaveLength(5);
-    expect(world.items(D)).toEqual([]);
+  it("panning moves the whole drawing, and survives a projection change", () => {
+    const world = new World(trace());
+    world.panBy(ScreenPos(30, -10));
+    world.panBy(ScreenPos(5, 5));
+    expect([world.root.x, world.root.y]).toEqual([35, -5]);
+    const iso: Projection = {
+      kind: "iso",
+      scale: 1,
+      offset: ScreenPos(100, 0),
+    };
+    world.setProjection(iso);
+    expect([world.root.x, world.root.y]).toEqual([135, -5]);
+    world.resetView();
+    expect([world.root.x, world.root.y]).toEqual([100, 0]);
   });
 
-  it("rejects a source with two downstream edges", () => {
-    const edges: Edge[] = [
-      { from: { kind: "queue", id: C }, to: { kind: "queue", id: D } },
-      { from: { kind: "queue", id: C }, to: { kind: "stations", id: S } },
+  it("zooms around a point, keeping what's under it in place", () => {
+    const world = new World(trace());
+    world.panBy(ScreenPos(10, 20));
+    // The world point under screen (110, 220) before zooming…
+    const under = (sx: number, sy: number) => [
+      (sx - world.root.x) / world.zoom,
+      (sy - world.root.y) / world.zoom,
     ];
-    expect(() => new World(spec(edges), random())).toThrow(
-      "C has two downstream edges",
-    );
+    const before = under(110, 220);
+    world.zoomBy(2, ScreenPos(110, 220));
+    expect(world.zoom).toBe(2);
+    expect(world.root.scale.x).toBe(2);
+    expect(under(110, 220)).toEqual(before); // …is still under it
   });
 
-  it("tick: feeds free stations, then moves finished items downstream", () => {
-    const world = new World(spec(), random());
-    world.tick(0); // head 0 → the only station; nothing else is free
-    expect(world.items(C).map((i) => i.id)).toEqual([1, 2, 3, 4]);
-
-    // done after dispatchMs (900) + processMs (1000): 0 lands in D, 1 takes the free station
-    world.tick(1900);
-    expect(world.items(D).map((i) => i.id)).toEqual([0]);
-    expect(world.items(C).map((i) => i.id)).toEqual([2, 3, 4]);
-  });
-
-  it("dispatching takes the item's parts from the inventory", () => {
-    const world = new World(spec(), random([{ part: P, count: 2 }]));
-    world.tick(0);
-    expect(world.stock(P)).toBe(8);
-  });
-
-  it("an item waits in the queue while the inventory can't cover its parts", () => {
-    const world = new World(
-      spec(undefined, 1),
-      random([{ part: P, count: 2 }]),
-    );
-    world.tick(0);
-    expect(world.items(C)).toHaveLength(5);
-    expect(world.stock(P)).toBe(1);
-  });
-
-  it("restocks one part every 200 ms, up to capacity", () => {
-    const world = new World(spec(), random([{ part: P, count: 2 }]));
-    world.tick(0); // 10 → 8; the only station is now busy until 1900
-    world.tick(450); // two restocks: at 200 and 400
-    expect(world.stock(P)).toBe(10);
-    world.tick(650);
-    expect(world.stock(P)).toBe(10); // already full
-  });
-
-  it("counts each finished item in its station's throughput", () => {
-    const world = new World(spec(), random());
-    world.tick(0); // item 0 → the station
-    expect(world.throughput(S, 0, 1000)).toBe(0);
-    world.tick(1900); // item 0 finishes (900 fly-in + 1000 processing)
-    expect(world.throughput(S, 0, 1900)).toBeCloseTo(60_000 / 1900); // 1 in 1.9 s
-    world.setThroughputWindow(1_000);
-    expect(world.throughput(S, 0, 1900)).toBeCloseTo(60); // 1 in the last 1 s
-  });
-
-  it("counts the parts each dispatch takes in that part's throughput", () => {
-    const world = new World(spec(), random([{ part: P, count: 2 }]));
-    world.tick(0); // item 0 → the station, taking 2 × P
-    expect(world.partThroughput(P, 1000)).toBeCloseTo(120); // 2 in 1 s
+  it("clamps zoom, and resetView restores pan and zoom", () => {
+    const world = new World(trace());
+    world.zoomBy(1000, ScreenPos(0, 0));
+    expect(world.zoom).toBe(4);
+    world.zoomBy(0.0001, ScreenPos(0, 0));
+    expect(world.zoom).toBe(0.25);
+    world.panBy(ScreenPos(5, 5));
+    world.resetView();
+    expect([world.zoom, world.root.x, world.root.y]).toEqual([1, 0, 0]);
   });
 });

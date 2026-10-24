@@ -44,3 +44,12 @@ body {
   white-space: pre;
   font-size: 13px;
 }
+
+#controls .group {
+  margin-left: 12px;
+}
+
+#zoom {
+  min-width: 3.5em;
+  text-align: center;
+}

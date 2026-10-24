@@ -1,110 +1,75 @@
 import { describe, expect, it } from "vitest";
-import {
-  Station,
-  StationBoard,
-  type Busy,
-  type PickStation,
-  type StationConfig,
-} from "./station";
-import { WorldPos, type Item } from "../shared/common";
+import { SimMs, SkuId, WallMs, WorldPos, type Item } from "../shared/common";
+import { Station, type Busy, type StationConfig } from "./station";
 
-const cfg: StationConfig = { dispatchMs: 100 };
-
-const item = (id: number, processMs = 1000): Item => ({
-  id,
-  color: 0,
-  size: 1,
-  processMs,
-});
-
+const cfg: StationConfig = { flightMs: 100 };
+const item = (id: number): Item => ({ id, color: 0, size: 1 });
 const at = (x: number, y: number) => WorldPos(x, y);
+const sim = SimMs;
+const wall = WallMs;
+/** State at simulated `now` and wall time `w` */
+const busy = (s: Station, now: number, w: number) =>
+  s.state(sim(now), wall(w), cfg) as Busy;
+/** Start a job at simulated and wall time 0 */
+const started = (expectedMs: number | null = null) => {
+  const s = new Station();
+  s.start(item(1), at(5, 5), sim(0), wall(0), expectedMs);
+  return s;
+};
 
 describe("Station", () => {
   it("starts free", () => {
     const s = new Station();
-    expect(s.isFree).toBe(true);
     expect(s.item).toBeNull();
-    expect(s.state(0, cfg)).toEqual({ kind: "free" });
+    expect(s.state(sim(0), wall(0), cfg)).toEqual({ kind: "free" });
   });
 
-  it("dispatch fills it; a second dispatch while busy is ignored", () => {
-    const s = new Station();
-    s.dispatch(item(1), at(10, 0), 0);
-    s.dispatch(item(2), at(10, 0), 50);
+  it("a job holds its item until it ends", () => {
+    const s = started();
     expect(s.item?.id).toBe(1);
-  });
-
-  it("arrival runs 0 → 1 over dispatchMs, keeping the source", () => {
-    const s = new Station();
-    s.dispatch(item(1), at(0, 0), 0);
-    const busy = (now: number) => s.state(now, cfg) as Busy;
-    expect(busy(0).arrival).toBe(0);
-    expect(busy(50).arrival).toBeCloseTo(0.5);
-    expect(busy(500).arrival).toBe(1);
-    expect(busy(50).source).toEqual(at(0, 0));
-  });
-
-  it("progress and processedMs start once the item has arrived", () => {
-    const s = new Station();
-    s.dispatch(item(1, 1000), at(0, 0), 0);
-    const busy = (now: number) => s.state(now, cfg) as Busy;
-    expect(busy(50)).toMatchObject({ progress: 0, processedMs: 0 }); // still flying in
-    expect(busy(100)).toMatchObject({ progress: 0, processedMs: 0 }); // processing starts at dispatchMs
-    expect(busy(600)).toMatchObject({ progress: 0.5, processedMs: 500 });
-    expect(busy(1100).progress).toBe(1);
-  });
-
-  it("reap frees the station only once the item is done", () => {
-    const s = new Station();
-    s.dispatch(item(1, 200), at(0, 0), 0); // processing window is [100, 300]
-    expect(s.reap(299, cfg)).toBeNull(); // still processing
-    expect(s.isFree).toBe(false);
-    expect(s.reap(300, cfg)?.id).toBe(1); // done → the item is handed back
-    expect(s.isFree).toBe(true);
+    expect(s.end().id).toBe(1);
     expect(s.item).toBeNull();
   });
-});
 
-describe("StationBoard", () => {
-  const boardWith = (pick?: PickStation) =>
-    new StationBoard([new Station(), new Station()], pick);
-
-  it("hasFree follows the stations", () => {
-    const board = boardWith();
-    expect(board.hasFree).toBe(true);
-    board.dispatch(item(1), at(0, 0), 0);
-    board.dispatch(item(2), at(0, 0), 0);
-    expect(board.hasFree).toBe(false);
+  it("refuses a second job while busy, and ending while free", () => {
+    expect(() => new Station().end()).toThrow();
+    expect(() =>
+      started().start(item(2), at(0, 0), sim(0), wall(0), null),
+    ).toThrow();
   });
 
-  it("dispatch returns false when every station is busy", () => {
-    const board = boardWith();
-    board.dispatch(item(1), at(0, 0), 0);
-    board.dispatch(item(2), at(0, 0), 0);
-    expect(board.dispatch(item(3), at(0, 0), 0)).toBe(false);
+  it("the item flies in over flightMs of wall time, keeping its source", () => {
+    const s = started();
+    expect(busy(s, 0, 0).arrival).toBe(0);
+    expect(busy(s, 0, 50).arrival).toBeCloseTo(0.5);
+    expect(busy(s, 0, 1000).arrival).toBe(1);
+    expect(busy(s, 0, 50).source).toEqual(at(5, 5));
   });
 
-  it("uses the injected pick policy", () => {
-    const last: PickStation = (free) => free[free.length - 1];
-    const board = boardWith(last);
-    board.dispatch(item(1), at(0, 0), 0);
-    expect(board.stations[0].isFree).toBe(true); // first skipped
-    expect(board.stations[1].item?.id).toBe(1);
+  it("progress runs over the expected duration in simulated time, null when unknown", () => {
+    expect(busy(started(1000), 250, 0).progress).toBeCloseTo(0.25);
+    expect(busy(started(1000), 5000, 0).progress).toBe(1); // overran: stays full
+    expect(busy(started(null), 250, 0)).toMatchObject({
+      progress: null,
+      elapsedMs: 250,
+    });
   });
 
-  it("reap frees every done station, returning items with their station's index", () => {
-    const last: PickStation = (free) => free[free.length - 1];
-    const board = boardWith(last);
-    board.dispatch(item(1, 200), at(0, 0), 0); // → station 1
-    board.dispatch(item(2, 200), at(0, 0), 0); // → station 0
-    expect(board.reap(150, cfg)).toEqual([]);
-    expect(board.hasFree).toBe(false);
-    expect(
-      board.reap(300, cfg).map(({ item, index }) => [item.id, index]),
-    ).toEqual([
-      [2, 0],
-      [1, 1],
-    ]);
-    expect(board.hasFree).toBe(true);
+  it("the two clocks are independent: fast playback finishes jobs, not fly-ins", () => {
+    // An hour of simulated time in 40 ms of wall time (e.g. at a very high speed)
+    const state = busy(started(30 * 60_000), 60 * 60_000, 40);
+    expect(state.progress).toBe(1);
+    expect(state.arrival).toBeCloseTo(0.4); // still flying in, at its own pace
+    expect(state.shownMs).toBe(40); // so the heartbeat beats at its own pace too
+  });
+
+  it("parts are added to the running job", () => {
+    const s = started();
+    s.addParts({ inventory: 5, sku: SkuId(100), count: 2 });
+    expect(busy(s, 0, 0).parts).toEqual([{ inventory: 5, sku: 100, count: 2 }]);
+    s.end();
+    expect(() =>
+      s.addParts({ inventory: 5, sku: SkuId(100), count: 1 }),
+    ).toThrow();
   });
 });

@@ -1,5 +1,14 @@
-/** Timestamp, e.g. from `performance.now()` */
+/** A duration in milliseconds, on whichever clock: the difference of two timestamps */
 export type Ms = number;
+/**
+ * Simulated time: ms since the trace's start. When things happen (events, progress, throughput).
+ * Branded, like `WorldPos`, so it can't be mixed up with `WallMs`.
+ */
+export type SimMs = number & { readonly __brand: "SimMs" };
+export const SimMs = (ms: number) => ms as SimMs;
+/** Wall-clock time, e.g. `performance.now()`: how long things take on screen (animations) */
+export type WallMs = number & { readonly __brand: "WallMs" };
+export const WallMs = (ms: number) => ms as WallMs;
 export type ItemId = number;
 /** 0xRRGGBB */
 export type Color = number;
@@ -18,21 +27,22 @@ export type ScreenPos = Pos & { readonly __brand: "ScreenPos" };
 export const ScreenPos = (x: number, y: number) => ({ x, y }) as ScreenPos;
 export type Extent = { readonly w: number; readonly h: number };
 
-export type PartId = string & { readonly __brand: "PartId" };
-export const PartId = (id: string) => id as PartId;
-export type PartType = { readonly id: PartId; readonly color: Color };
-/** What a vehicle needs from the inventory: distinct parts, each with how many */
-export type PartRequest = readonly {
-  readonly part: PartId;
+/** A stock-keeping unit: a type of part an inventory stocks (e.g. an NSN) */
+export type SkuId = number & { readonly __brand: "SkuId" };
+export const SkuId = (id: number) => id as SkuId;
+export type SkuType = { readonly id: SkuId; readonly color: Color };
+/** `count` units of `sku` taken from `inventory` */
+export type PartUse = {
+  readonly inventory: number;
+  readonly sku: SkuId;
   readonly count: number;
-}[];
+};
 
+/** Something that flows through queues and stations; colour and size are presentation only */
 export type Item = {
   readonly id: ItemId;
   readonly color: Color;
   readonly size: Size;
-  /** How long a station takes to process this item */
-  readonly processMs: Ms;
 };
 
 export const clamp01 = (x: number): Fraction => {
@@ -52,3 +62,17 @@ export const mixColor = (a: Color, b: Color, t: Fraction): Color =>
   (mixChannel((a >> 16) & 0xff, (b >> 16) & 0xff, t) << 16) |
   (mixChannel((a >> 8) & 0xff, (b >> 8) & 0xff, t) << 8) |
   mixChannel(a & 0xff, b & 0xff, t);
+
+/**
+ * A colour from hue (degrees), saturation and lightness (0-1)
+ *
+ *   hsl(0, 1, 0.5)    # 0xff0000
+ *   hsl(120, 1, 0.5)  # 0x00ff00
+ */
+export const hsl = (h: number, s: number, l: number): Color => {
+  const k = (n: number) => (n + h / 30) % 12;
+  const a = s * Math.min(l, 1 - l);
+  const channel = (n: number) =>
+    Math.round(255 * (l - a * Math.max(-1, Math.min(k(n) - 3, 9 - k(n), 1))));
+  return (channel(0) << 16) | (channel(8) << 8) | channel(4);
+};

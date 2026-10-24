@@ -1,0 +1,35 @@
+[project]
+name = "flowtrace"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Vinh Chuc", email = "vinh.chuc@skyral.io" }
+]
+requires-python = ">=3.14"
+dependencies = [
+    "pandas>=3.1.0",
+    "pandera>=0.34.1",
+    "pyarrow>=26.0.0",
+]
+
+[build-system]
+requires = ["uv_build>=0.11.6,<0.12.0"]
+build-backend = "uv_build"
+
+# Public PyPI only: this project must not depend on any private registry
+[[tool.uv.index]]
+name = "pypi"
+url = "https://pypi.org/simple"
+default = true
+
+[dependency-groups]
+dev = [
+    "pandas-stubs>=3.0.5.260914",
+    "pyright>=1.1.414",
+    "pytest>=9.1.1",
+]
+
+[tool.pyright]
+typeCheckingMode = "strict"
+include = ["src", "tests"]

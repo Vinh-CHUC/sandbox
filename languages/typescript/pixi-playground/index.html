@@ -17,12 +17,17 @@
         <button id="slower">−</button>
         <span id="speed"></span>
         <button id="faster">+</button>
+        <span class="group">Zoom</span>
+        <button id="zoom-out" title="Zoom out">−</button>
+        <span id="zoom"></span>
+        <button id="zoom-in" title="Zoom in">+</button>
+        <span id="time"></span>
         <label
           >Throughput over
           <select id="window">
-            <option value="15000">15 s</option>
-            <option value="60000" selected>1 min</option>
-            <option value="300000">5 min</option>
+            <option value="900000">15 min</option>
+            <option value="3600000" selected>1 h</option>
+            <option value="14400000">4 h</option>
           </select>
         </label>
       </div>
