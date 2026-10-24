@@ -1,13 +1,24 @@
 import { describe, expect, it } from "vitest";
-import { Queue, clamp01, lag, smoothstep, type Shift } from "./queue";
+import { Queue } from "./queue";
+import { clamp01, lag, smoothstep, type Item, type Shift } from "./utils";
 
 const RED = 0xff0000;
 const GREEN = 0x00ff00;
 const BLUE = 0x0000ff;
+const WHITE = 0xffffff;
+
+const item = (id: number, color: number, size = 1): Item => ({
+  id,
+  color,
+  size,
+});
 
 describe("clamp01", () => {
   it.each([
-    [0, 0], [0.25, 0.25], [1, 1], [1.4, 1],
+    [0, 0],
+    [0.25, 0.25],
+    [1, 1],
+    [1.4, 1],
   ])("clamp01(%d) = %d", (x, expected) => {
     expect(clamp01(x)).toBe(expected);
   });
@@ -19,7 +30,11 @@ describe("clamp01", () => {
 
 describe("smoothstep", () => {
   it.each([
-    [0, 0], [0.25, 0.15625], [0.5, 0.5], [0.75, 0.84375], [1, 1],
+    [0, 0],
+    [0.25, 0.15625],
+    [0.5, 0.5],
+    [0.75, 0.84375],
+    [1, 1],
   ])("smoothstep(%d) = %d", (x, expected) => {
     expect(smoothstep(x)).toBeCloseTo(expected);
   });
@@ -72,22 +87,22 @@ describe("lag", () => {
 describe("Queue", () => {
   const queueOf = (...colors: number[]) => {
     const q = new Queue();
-    colors.forEach((c) => q.push(c));
+    colors.forEach((color, id) => q.push(item(id, color)));
     return q;
   };
 
-  it("push appends with increasing ids", () => {
+  it("push appends the caller's items", () => {
     expect(queueOf(RED, GREEN, BLUE).items).toEqual([
-      { id: 0, color: RED },
-      { id: 1, color: GREEN },
-      { id: 2, color: BLUE },
+      { id: 0, color: RED, size: 1 },
+      { id: 1, color: GREEN, size: 1 },
+      { id: 2, color: BLUE, size: 1 },
     ]);
   });
 
   it("pop is FIFO", () => {
     const q = queueOf(RED, GREEN);
-    expect(q.pop(0)).toEqual({ id: 0, color: RED });
-    expect(q.pop(0)).toEqual({ id: 1, color: GREEN });
+    expect(q.pop(0)).toEqual({ id: 0, color: RED, size: 1 });
+    expect(q.pop(0)).toEqual({ id: 1, color: GREEN, size: 1 });
     expect(q.items).toEqual([]);
   });
 
@@ -95,17 +110,16 @@ describe("Queue", () => {
     expect(new Queue().pop(0)).toBeUndefined();
   });
 
-  it("ids are never reused, so the view can key boxes by id", () => {
-    const q = queueOf(RED);
-    q.pop(0);
-    q.push(GREEN);
-    expect(q.items).toEqual([{ id: 1, color: GREEN }]);
+  it("stores the item verbatim, so the view can key boxes by the caller's id", () => {
+    const q = new Queue();
+    q.push(item(42, GREEN, 2));
+    expect(q.items).toEqual([{ id: 42, color: GREEN, size: 2 }]);
   });
 
   it("items is readonly from the outside (type-level only)", () => {
     const q = queueOf(RED);
     // @ts-expect-error: 'push' does not exist on type 'readonly Item[]'
-    q.items.push({ id: 9, color: BLUE });
+    q.items.push(item(9, BLUE));
     // ...but it's the same array at runtime: `readonly` is erased
     expect(q.items).toHaveLength(2);
   });
@@ -133,40 +147,75 @@ describe("Queue", () => {
     expect(q.slot(0, 2500)).toBeCloseTo(0);
   });
 
+  describe("size", () => {
+    it("at rest, slot is the cumulative width of the items before it", () => {
+      const q = new Queue();
+      q.push(item(0, RED, 2));
+      q.push(item(1, GREEN, 1));
+      q.push(item(2, BLUE, 3));
+      expect([0, 1, 2].map((i) => q.slot(i, 0))).toEqual([0, 2, 3]);
+    });
+
+    it("removing a wide item shifts the rest by its size", () => {
+      const q = new Queue();
+      q.push(item(0, RED, 2));
+      q.push(item(1, GREEN, 1));
+      q.removeAt(0, 1000); // RED (size 2) out, GREEN owes +2
+      expect(q.slot(0, 1000)).toBeCloseTo(2); // no jump
+      expect(q.slot(0, 1500)).toBeCloseTo(1); // halfway
+      expect(q.slot(0, 2000)).toBeCloseTo(0); // arrived
+    });
+
+    it("inserting a wide item shifts the rest by its size", () => {
+      const q = new Queue();
+      q.push(item(0, GREEN, 1));
+      q.insertAt(0, item(1, RED, 2), 1000); // GREEN owes -2
+      expect(q.slot(1, 1000)).toBeCloseTo(0); // no jump
+      expect(q.slot(1, 1500)).toBeCloseTo(1); // halfway
+      expect(q.slot(1, 2000)).toBeCloseTo(2); // arrived
+    });
+  });
+
   describe("insertAt / removeAt", () => {
     const colors = (q: Queue) => q.items.map((item) => item.color);
-    const slots = (q: Queue, now: number) => q.items.map((_, i) => q.slot(i, now));
+    const slots = (q: Queue, now: number) =>
+      q.items.map((_, i) => q.slot(i, now));
 
     it("insertAt places the item at index", () => {
       const q = queueOf(RED, BLUE);
-      q.insertAt(1, GREEN, 0);
+      q.insertAt(1, item(9, GREEN), 0);
       expect(colors(q)).toEqual([RED, GREEN, BLUE]);
     });
 
     it.each([-1, 3])("insertAt(%d) on a 2-item queue throws", (index) => {
-      expect(() => queueOf(RED, BLUE).insertAt(index, GREEN, 0)).toThrow(RangeError);
+      expect(() =>
+        queueOf(RED, BLUE).insertAt(index, item(9, GREEN), 0),
+      ).toThrow(RangeError);
     });
 
     it("removeAt returns the item at index", () => {
       const q = queueOf(RED, GREEN, BLUE);
-      expect(q.removeAt(1, 0)).toEqual({ id: 1, color: GREEN });
+      expect(q.removeAt(1, 0)).toEqual({ id: 1, color: GREEN, size: 1 });
       expect(colors(q)).toEqual([RED, BLUE]);
     });
 
-    it.each([-1, 3])("removeAt(%d) on a 3-item queue returns undefined", (index) => {
-      expect(queueOf(RED, GREEN, BLUE).removeAt(index, 0)).toBeUndefined();
-    });
+    it.each([-1, 3])(
+      "removeAt(%d) on a 3-item queue returns undefined",
+      (index) => {
+        expect(queueOf(RED, GREEN, BLUE).removeAt(index, 0)).toBeUndefined();
+      },
+    );
 
     it("insertAt: items after the insertion start 1 slot left and slide right", () => {
       const q = queueOf(RED, GREEN, BLUE);
-      q.insertAt(1, 0xffffff, 1000); // GREEN and BLUE now at 2 and 3
+      q.insertAt(1, item(9, WHITE), 1000); // GREEN and BLUE now at 2 and 3
       expect(slots(q, 1000)).toEqual([0, 1, 1, 2]); // inserted item overlaps GREEN, see `entering`
       expect(slots(q, 1500)).toEqual([0, 1, 1.5, 2.5]);
       expect(slots(q, 2000)).toEqual([0, 1, 2, 3]);
     });
 
     it("removeAt: items after the removal start 1 slot right and slide left", () => {
-      const q = queueOf(RED, GREEN, BLUE, 0xffffff);
+      const q = queueOf(RED, GREEN, BLUE, WHITE);
       q.removeAt(1, 1000);
       expect(slots(q, 1000)).toEqual([0, 2, 3]); // RED unaffected
       expect(slots(q, 1500)).toEqual([0, 1.5, 2.5]);
@@ -176,15 +225,17 @@ describe("Queue", () => {
     it("shifts follow items across later edits", () => {
       const q = queueOf(RED, GREEN, BLUE);
       q.removeAt(1, 1000); // BLUE: index 1, starts at 2
-      q.insertAt(0, 0xffffff, 1500); // BLUE: index 2, owes +0.5 (removal) and -1 (insertion)
+      q.insertAt(0, item(9, WHITE), 1500); // BLUE: index 2, owes +0.5 (removal) and -1 (insertion)
       expect(q.slot(2, 1500)).toBeCloseTo(1.5); // no jump: still halfway between 2 and 1
       expect(q.slot(2, 2500)).toBeCloseTo(2);
     });
 
     it("entering decays 1 → 0 for inserted items, is 0 for pushed ones", () => {
       const q = queueOf(RED);
-      q.insertAt(0, GREEN, 1000);
-      expect([1000, 1500, 2000].map((now) => q.entering(0, now))).toEqual([1, 0.5, 0]);
+      q.insertAt(0, item(9, GREEN), 1000);
+      expect([1000, 1500, 2000].map((now) => q.entering(0, now))).toEqual([
+        1, 0.5, 0,
+      ]);
       expect(q.entering(1, 1000)).toBe(0);
     });
 

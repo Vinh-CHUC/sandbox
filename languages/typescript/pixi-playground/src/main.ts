@@ -1,5 +1,6 @@
 import { Application, Assets, Sprite } from "pixi.js";
 import { Queue } from "./queue/model/queue";
+import type { Item } from "./queue/model/utils";
 import { createQueueView } from "./queue/view";
 
 const QUEUE_LENGTH = 8;
@@ -7,14 +8,23 @@ const EDIT_INTERVAL_MS = 700;
 
 const randomColor = () => Math.floor(Math.random() * 0xffffff);
 const randomInt = (n: number) => Math.floor(Math.random() * n);
+/** Mostly one box wide, occasionally two or three */
+const randomSize = () => (Math.random() < 0.5 ? 1 : 1 + randomInt(5));
+
+let nextId = 0;
+const newItem = (): Item => ({
+  id: nextId++,
+  color: randomColor(),
+  size: randomSize(),
+});
 
 /** Pop/push at the ends or remove/insert in the middle, keeping the length around QUEUE_LENGTH */
 const randomEdit = (q: Queue, now: number) => {
   const n = q.items.length;
   const grow = n < QUEUE_LENGTH || (n === QUEUE_LENGTH && Math.random() < 0.5);
   const atEnds = Math.random() < 0.5;
-  if (grow && atEnds) q.push(randomColor());
-  else if (grow) q.insertAt(randomInt(n + 1), randomColor(), now);
+  if (grow && atEnds) q.push(newItem());
+  else if (grow) q.insertAt(randomInt(n + 1), newItem(), now);
   else if (atEnds) q.pop(now);
   else q.removeAt(randomInt(n), now);
 };
@@ -46,7 +56,7 @@ const randomEdit = (q: Queue, now: number) => {
 
   // Conveyor-belt queue: head on the left, popped into the processor
   const queue = new Queue();
-  for (let i = 0; i < QUEUE_LENGTH; i++) queue.push(randomColor());
+  for (let i = 0; i < QUEUE_LENGTH; i++) queue.push(newItem());
   let lastEditAt = performance.now();
   const queueView = createQueueView({ boxSize: 48, gap: 12 });
   queueView.root.position.set(120, 80);
