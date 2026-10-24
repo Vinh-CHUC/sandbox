@@ -4,8 +4,8 @@ Places are drawn at fixed positions, so the viewer needs all of them before play
 queues, stations, inventories and the SKUs each inventory stocks. Items (the things that move)
 are not static: they are discovered from the event tables.
 
-Columns are scalar, numeric ids only (`labels` aside), so every table is also publishable by
-lattice's generic parquet publisher.
+Columns are scalar, numeric ids only (`labels` aside): the most a typical columnar publisher (one
+row per entity, flat scalar fields) can produce, so a real simulation's output can be mapped here.
 
     >>> Sites.validate(pd.DataFrame({"site_id": [1, 2]}))
        site_id
@@ -20,6 +20,11 @@ import pandera.pandas as pa
 from pandera.typing.pandas import Series
 
 from flowtrace.base import Table
+
+
+# A place's `site_id` when it belongs to no site, e.g. a store shared by every site (site ids start
+# at 1, so 0 is free)
+NO_SITE = 0
 
 
 class NodeKind(IntEnum):
@@ -58,9 +63,23 @@ class Inventories(Table):
 
 
 class Skus(Table):
-    """The catalogue of stock-keeping units (part types); int64 to fit e.g. NSNs"""
+    """The catalogue of stock-keeping units (part types); int64 to fit large external codes"""
 
     sku_id: Series[pd.Int64Dtype] = pa.Field(unique=True)
+
+
+class ItemTypes(Table):
+    """The catalogue of item types (e.g. models of a product). Optional, like `Items`."""
+
+    item_type_id: Series[pd.UInt32Dtype] = pa.Field(unique=True)
+
+
+class Items(Table):
+    """What type each item is: a type never changes, so it's static. Optional; items not listed
+    are untyped."""
+
+    item_id: Series[pd.UInt32Dtype] = pa.Field(unique=True)
+    item_type_id: Series[pd.UInt32Dtype]
 
 
 class InventorySkus(Table):
@@ -89,13 +108,14 @@ class Edges(Table):
         unique = ["from_kind", "from_id", "to_kind", "to_id"]
 
 
-LABELLED_TABLES = ("sites", "queues", "stations", "inventories", "skus", "items")
+LABELLED_TABLES = ("sites", "queues", "stations", "inventories", "skus", "items", "item_types")
 
 
 class Labels(Table):
     """
-    Optional display names, the only strings in a trace (so not lattice-publishable: write it
-    separately, e.g. from config). `id` is the row's id in `table`.
+    Optional display names, the only strings in a trace (scalar-only publishers can't write it:
+    write it separately, e.g. from config). `id` is the row's id in `table`. The viewer's
+    `labels.json` takes precedence.
     """
 
     table: Series[str] = pa.Field(isin=list(LABELLED_TABLES))
@@ -114,6 +134,8 @@ def dangling_references(
     skus: pd.DataFrame,
     inventory_skus: pd.DataFrame,
     edges: pd.DataFrame,
+    item_types: pd.DataFrame | None = None,
+    items: pd.DataFrame | None = None,
 ) -> list[str]:
     """
     Cross-table checks pandera can't express on one frame: every id a table refers to exists.
@@ -127,9 +149,9 @@ def dangling_references(
         NodeKind.INVENTORY: set(inventories["inventory_id"]),
     }
     checks = [
-        ("queues.site_id", queues["site_id"], set(sites["site_id"]), "sites"),
-        ("stations.site_id", stations["site_id"], set(sites["site_id"]), "sites"),
-        ("inventories.site_id", inventories["site_id"], set(sites["site_id"]), "sites"),
+        ("queues.site_id", queues["site_id"], {NO_SITE, *sites["site_id"]}, "sites"),
+        ("stations.site_id", stations["site_id"], {NO_SITE, *sites["site_id"]}, "sites"),
+        ("inventories.site_id", inventories["site_id"], {NO_SITE, *sites["site_id"]}, "sites"),
         (
             "inventory_skus.inventory_id",
             inventory_skus["inventory_id"],
@@ -138,6 +160,11 @@ def dangling_references(
         ),
         ("inventory_skus.sku_id", inventory_skus["sku_id"], set(skus["sku_id"]), "skus"),
     ]
+    if items is not None:
+        known_types: set[int] = (
+            set() if item_types is None else {int(t) for t in item_types["item_type_id"]}
+        )
+        checks.append(("items.item_type_id", items["item_type_id"], known_types, "item_types"))
     errors = [
         f"{column} {value} not in {table}"
         for column, values, known, table in checks

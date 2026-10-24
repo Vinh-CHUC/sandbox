@@ -232,7 +232,7 @@ describe("enter with a source / arrival", () => {
     q.push(item(1, RED));
     q.enter(1, item(2, GREEN), w(0), source);
     expect(q.items.map((i) => i.id)).toEqual([1, 2]);
-    expect(q.arrival(1, w(0))).toEqual({ source, t: 0 });
+    expect(q.arrival(1, w(0))).toEqual({ source, t: 0, fadeIn: false });
     expect(q.arrival(1, w(500))?.t).toBeCloseTo(0.5); // smoothstep(0.5) = 0.5
     expect(q.arrival(1, w(1000))).toBeNull(); // landed
   });
@@ -276,5 +276,15 @@ describe("animation duration", () => {
     q.insertAt(0, item(1, RED), w(0));
     expect(q.entering(0, w(5_000))).toBeCloseTo(0.5); // halfway through a 10 s drop-in
     expect(q.entering(0, w(10_000))).toBe(0);
+  });
+});
+
+describe("arrival fade-in", () => {
+  it("is carried on the arrival, for items that weren't drawn where they came from", () => {
+    const q = new Queue();
+    q.enter(0, item(1, RED), w(0), WorldPos(5, 5), true);
+    q.enter(1, item(2, RED), w(0), WorldPos(5, 5));
+    expect(q.arrival(0, w(100))?.fadeIn).toBe(true);
+    expect(q.arrival(1, w(100))?.fadeIn).toBe(false);
   });
 });

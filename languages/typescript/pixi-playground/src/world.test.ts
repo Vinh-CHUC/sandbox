@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { ScreenPos, SimMs, SkuId, WallMs } from "./shared/common";
-import type { Projection } from "./shared/projection";
 import type { Trace, TraceEvent } from "./trace/trace";
 import { World } from "./world";
 
@@ -54,6 +53,8 @@ const trace = (evs: TraceEvent[] = events): Trace => ({
     stations: [{ id: 10, site: 1 }],
     inventories: [{ id: 5, site: 1 }],
     skus: [P],
+    itemTypes: [],
+    itemType: new Map(),
     inventorySkus: new Map([[5, [P]]]),
     edges: [
       { from: { kind: "queue", id: 1 }, to: { kind: "station", id: 10 } },
@@ -109,18 +110,22 @@ describe("World", () => {
 
   it("panning moves the whole drawing, and survives a projection change", () => {
     const world = new World(trace());
+    const framed = { x: world.root.x, y: world.root.y }; // where the projection frames it
     world.panBy(ScreenPos(30, -10));
     world.panBy(ScreenPos(5, 5));
-    expect([world.root.x, world.root.y]).toEqual([35, -5]);
-    const iso: Projection = {
-      kind: "iso",
-      scale: 1,
-      offset: ScreenPos(100, 0),
-    };
-    world.setProjection(iso);
-    expect([world.root.x, world.root.y]).toEqual([135, -5]);
+    expect([world.root.x - framed.x, world.root.y - framed.y]).toEqual([
+      35, -5,
+    ]);
+    world.setProjection({ kind: "isometric", scale: 1 });
     world.resetView();
-    expect([world.root.x, world.root.y]).toEqual([100, 0]);
+    const isoFramed = { x: world.root.x, y: world.root.y };
+    expect(isoFramed).not.toEqual(framed); // each projection frames the scene its own way
+    world.panBy(ScreenPos(35, -5));
+    world.setProjection({ kind: "trimetric", scale: 1 });
+    world.setProjection({ kind: "isometric", scale: 1 });
+    expect([world.root.x - isoFramed.x, world.root.y - isoFramed.y]).toEqual([
+      35, -5,
+    ]);
   });
 
   it("zooms around a point, keeping what's under it in place", () => {
@@ -144,8 +149,160 @@ describe("World", () => {
     expect(world.zoom).toBe(4);
     world.zoomBy(0.0001, ScreenPos(0, 0));
     expect(world.zoom).toBe(0.25);
+    world.resetView();
+    const framed = [world.root.x, world.root.y];
+    world.zoomBy(2, ScreenPos(100, 100));
     world.panBy(ScreenPos(5, 5));
     world.resetView();
-    expect([world.zoom, world.root.x, world.root.y]).toEqual([1, 0, 0]);
+    expect([world.zoom, world.root.x, world.root.y]).toEqual([1, ...framed]);
+  });
+
+  it("KPIs: waiting, blocked, median wait, items moving on vs leaving", () => {
+    const blocked: TraceEvent = {
+      kind: "item_status",
+      seq: 3.5,
+      t: min(5),
+      item: 1,
+      status: 1,
+    };
+    const world = new World(
+      trace([...events.slice(0, 4), blocked, ...events.slice(4)]),
+    );
+    world.tick(min(5), WALL);
+    expect(world.kpis(min(5))).toMatchObject({
+      waiting: 2,
+      blocked: 1,
+      medianWaitMs: null,
+    });
+
+    world.tick(min(10), WALL); // item 2 leaves queue 1 after 10 min
+    expect(world.kpis(min(10))).toMatchObject({
+      waiting: 1,
+      medianWaitMs: 10 * MIN,
+    });
+
+    world.tick(min(30), WALL); // item 2 finishes, into queue 2: a store (it feeds nothing), so done
+    expect(world.kpis(min(30))).toMatchObject({
+      done: 1,
+      waiting: 1,
+      blocked: 1,
+      ready: 1,
+    });
+  });
+
+  it("an item finishing a job and going nowhere has left: done", () => {
+    const world = new World(trace(events.slice(0, -1))); // without the final queue_enter
+    world.tick(min(30), WALL);
+    expect(world.kpis(min(30))).toMatchObject({ done: 1, waiting: 1 });
+  });
+
+  it("describes a queued item: how long it's waited, where, and if it's stuck", () => {
+    const blocked: TraceEvent = {
+      kind: "item_status",
+      seq: 3.5,
+      t: min(5),
+      item: 1,
+      status: 1,
+    };
+    const world = new World(
+      trace([...events.slice(0, 4), blocked, ...events.slice(4)]),
+      {
+        labels: {
+          kinds: { item: { one: "Widget", many: "Widgets" } },
+          names: { queues: { "1": "Intake" } },
+        },
+      },
+    );
+    world.tick(min(12), WALL);
+    expect(world.describeQueued(1, 1, min(12))).toBe(
+      "Widget 1\nwaiting 12 min · 1st in Intake\nblocked",
+    );
+    expect(world.describeQueued(2, 1, min(12))).toBeNull(); // it's at the station by then
+  });
+
+  it("counts an item that leaves and comes back as done, even within one big tick", () => {
+    const back: TraceEvent[] = [
+      ...events.slice(0, -1), // item 2 leaves the world at 30 min…
+      { kind: "queue_enter", seq: 9, t: min(50), item: 2, queue: 1, index: 1 }, // …and is back
+    ];
+    const world = new World(trace(back));
+    world.tick(min(60), WALL); // all of it in a single tick
+    expect(world.kpis(min(60)).done).toBe(1);
+    expect(world.queueItems(1)).toEqual([1, 2]);
+  });
+
+  it("a queue feeding no station is a store: items in it are done, and ready", () => {
+    // Queue 2 feeds nothing: with the store at the end, item 2 lands there after station 10
+    const world = new World(trace());
+    world.tick(min(30), WALL);
+    expect(world.queueItems(2)).toEqual([2]);
+    expect(world.kpis(min(30))).toMatchObject({
+      done: 1,
+      waiting: 1,
+      ready: 1,
+      readyShare: 0.5,
+    });
+
+    // …and leaving it, back to queue 1, is a move along the store → queue 1 edge
+    const back: TraceEvent[] = [
+      { kind: "queue_leave", seq: 10, t: min(40), item: 2, queue: 2 },
+      { kind: "queue_enter", seq: 11, t: min(40), item: 2, queue: 1, index: 1 },
+    ];
+    const again = new World(trace([...events, ...back]));
+    again.tick(min(40), WALL);
+    expect(again.queueItems(2)).toEqual([]);
+    expect(again.queueItems(1)).toEqual([1, 2]);
+    expect(again.kpis(min(40))).toMatchObject({
+      done: 1,
+      ready: 0,
+      waiting: 2,
+    });
+  });
+
+  it("a blocked item's tooltip says which parts it's short of", () => {
+    const short: TraceEvent[] = [
+      {
+        kind: "item_shortage",
+        seq: 3.2,
+        t: min(5),
+        item: 1,
+        inventory: 5,
+        sku: P,
+        missing: 2,
+      },
+      { kind: "item_status", seq: 3.4, t: min(5), item: 1, status: 1 },
+    ];
+    const world = new World(
+      trace([...events.slice(0, 4), ...short, ...events.slice(4)]),
+      {
+        labels: {
+          states: { "1": "awaiting parts" },
+          names: { skus: { "100": "bolt" } },
+        },
+      },
+    );
+    world.tick(min(6), WALL);
+    expect(world.describeQueued(1, 1, min(6))).toBe(
+      "Item 1\nwaiting 6 min · 2nd in Queue 1\nawaiting parts: bolt ×2",
+    );
+  });
+
+  it("names an item with its type, when it has one", () => {
+    const base = trace();
+    const typed: Trace = {
+      ...base,
+      topology: {
+        ...base.topology,
+        itemTypes: [7, 8],
+        itemType: new Map([[1, 8]]),
+      },
+    };
+    const world = new World(typed, {
+      labels: { names: { item_types: { "8": "Model B" } } },
+    });
+    world.tick(min(1), WALL);
+    expect(world.describeQueued(1, 1, min(1))?.split("\n")[0]).toBe(
+      "Item 1 · Model B",
+    );
   });
 });

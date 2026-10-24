@@ -30,3 +30,6 @@ __pycache__/
 # Generated traces (`just trace` in data/), except the small fixture the tests read
 *.parquet
 !src/trace/fixture/*.parquet
+
+# Display names for a trace (domain words stay out of the repo): see labels.example.json
+public/labels.json

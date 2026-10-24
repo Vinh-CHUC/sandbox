@@ -64,7 +64,7 @@ def test_edge_kinds_are_known() -> None:
 
 
 def test_labels_only_for_known_tables() -> None:
-    Labels.validate(pd.DataFrame({"table": ["skus"], "id": [100], "label": ["wheel"]}))
+    Labels.validate(pd.DataFrame({"table": ["skus"], "id": [100], "label": ["bolt"]}))
     with pytest.raises(INVALID):
         Labels.validate(pd.DataFrame({"table": ["nope"], "id": [1], "label": ["?"]}))
 

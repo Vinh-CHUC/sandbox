@@ -46,7 +46,7 @@ export class Queue {
   // - Used to compute `arrival()`, the fly-in from `source` to the item's slot
   private readonly arrivals = new Map<
     ItemId,
-    { source: WorldPos; at: WallMs }
+    { source: WorldPos; at: WallMs; fadeIn: boolean }
   >();
 
   ///////////
@@ -64,16 +64,23 @@ export class Queue {
 
   /**
    * `item` joins at `index` (in [0, items.length]): flying in from `source` (world coords, e.g.
-   * the station it just left) if given, dropping in from the side otherwise
+   * the station it just left) if given, dropping in from the side otherwise. `fadeIn` when it
+   * wasn't drawn where it comes from (e.g. a store's stack), so it doesn't pop into view.
    */
-  enter(index: Index, item: Item, now: WallMs, source?: WorldPos): void {
+  enter(
+    index: Index,
+    item: Item,
+    now: WallMs,
+    source?: WorldPos,
+    fadeIn = false,
+  ): void {
     if (index < 0 || index > this._items.length)
       throw new RangeError(
         `enter: index ${index} out of [0, ${this._items.length}]`,
       );
     this._items.splice(index, 0, item);
     if (source === undefined) this.insertedAt.set(item.id, now);
-    else this.arrivals.set(item.id, { source, at: now });
+    else this.arrivals.set(item.id, { source, at: now, fadeIn });
     this.shiftFrom(index + 1, -item.size, now);
   }
 
@@ -137,10 +144,17 @@ export class Queue {
   }
 
   /** Fly-in of the item at `index`: `t` runs 0 → 1 (eased); null once landed or if it never flew */
-  arrival(index: Index, now: WallMs): { source: WorldPos; t: Fraction } | null {
+  arrival(
+    index: Index,
+    now: WallMs,
+  ): { source: WorldPos; t: Fraction; fadeIn: boolean } | null {
     const a = this.arrivals.get(this.itemAt(index).id);
     if (a === undefined || !isLive(a.at, now, this.moveMs)) return null;
-    return { source: a.source, t: 1 - remaining(a.at, now, this.moveMs) };
+    return {
+      source: a.source,
+      t: 1 - remaining(a.at, now, this.moveMs),
+      fadeIn: a.fadeIn,
+    };
   }
 
   ///////////////////////

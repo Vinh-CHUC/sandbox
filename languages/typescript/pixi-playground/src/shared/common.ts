@@ -27,7 +27,7 @@ export type ScreenPos = Pos & { readonly __brand: "ScreenPos" };
 export const ScreenPos = (x: number, y: number) => ({ x, y }) as ScreenPos;
 export type Extent = { readonly w: number; readonly h: number };
 
-/** A stock-keeping unit: a type of part an inventory stocks (e.g. an NSN) */
+/** A stock-keeping unit: a type of part an inventory stocks */
 export type SkuId = number & { readonly __brand: "SkuId" };
 export const SkuId = (id: number) => id as SkuId;
 export type SkuType = { readonly id: SkuId; readonly color: Color };

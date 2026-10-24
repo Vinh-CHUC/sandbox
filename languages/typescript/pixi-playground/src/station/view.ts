@@ -1,3 +1,4 @@
+import type { Hover } from "../shared/hover";
 import { Container, Graphics, type FederatedPointerEvent } from "pixi.js";
 import {
   WorldPos,
@@ -32,7 +33,7 @@ const drawPad = (pad: Graphics, look: PadLook, p: Projection): void => {
 
 const placeItem = (box: Graphics, look: HeldLook, p: Projection): void => {
   placeAt(box, project(p, look.pos));
-  box.zIndex = depth(look.pos, look.extent);
+  box.zIndex = depth(p, look.pos, look.extent);
   box.alpha = look.alpha;
 };
 
@@ -52,9 +53,6 @@ const drawProgress = (
       : [progress.phase, progress.phase + 0.25];
   drawArc(g, p, center, radius, from, to, { color, width });
 };
-
-/** Show `text` near the pointer (client coords), or hide the tooltip when `text` is null */
-export type Hover = (text: string | null, at: Pos) => void;
 
 // The container will be positioned by a layer upstream, see `setPosition`
 export class StationView {
@@ -83,6 +81,8 @@ export class StationView {
     private readonly station: Station,
     private readonly look: StationLook,
     private readonly onHover?: Hover,
+    /** the station's own name, heading its tooltip */
+    private readonly name = "",
   ) {
     this.station_container.sortableChildren = true;
     // The plate lies on the ground, under whatever the station holds
@@ -144,7 +144,12 @@ export class StationView {
     this.syncBox(held);
     // Live while hovered: progress ticks up, and the station goes "Idle" when its item leaves
     if (this.pointer !== null)
-      this.onHover?.(this.look.describe(this.station, now, wall), this.pointer);
+      this.onHover?.(
+        [this.name, this.look.describe(this.station, now, wall)]
+          .filter((line) => line !== "")
+          .join("\n"),
+        this.pointer,
+      );
   }
 
   /** Keep the box in step with the held item: dropped when it leaves, built when one arrives */
@@ -185,7 +190,7 @@ export class StationView {
     parts.forEach(({ pos, extent }, i) => {
       const g = this.partBoxes[i];
       placeAt(g, project(this.projection, pos));
-      g.zIndex = depth(pos, extent);
+      g.zIndex = depth(this.projection, pos, extent);
     });
   }
 }

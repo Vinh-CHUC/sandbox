@@ -1,0 +1,77 @@
+{
+  "kinds": {
+    "item": {
+      "one": "Order",
+      "many": "Orders"
+    },
+    "station": {
+      "one": "Workstation",
+      "many": "Workstations"
+    },
+    "inventory": {
+      "one": "Stockroom",
+      "many": "Stockrooms"
+    },
+    "sku": {
+      "one": "Component",
+      "many": "Components"
+    },
+    "item_type": {
+      "one": "Model",
+      "many": "Models"
+    }
+  },
+  "states": {
+    "1": "short of components"
+  },
+  "captions": {
+    "ready": "orders ready to ship"
+  },
+  "names": {
+    "sites": {
+      "1": "North plant",
+      "2": "South plant"
+    },
+    "queues": {
+      "1": "Intake",
+      "2": "Assembly",
+      "3": "Intake",
+      "4": "Assembly",
+      "5": "Dispatch"
+    },
+    "inventories": {
+      "1": "Intake stock",
+      "2": "Assembly stock",
+      "3": "Intake stock",
+      "4": "Assembly stock"
+    },
+    "stations": {
+      "1": "Check-in 1",
+      "2": "Check-in 2",
+      "3": "Assembly line 1",
+      "4": "Assembly line 2",
+      "5": "Assembly line 3",
+      "6": "Check-in 1",
+      "7": "Check-in 2",
+      "8": "Assembly line 1",
+      "9": "Assembly line 2",
+      "10": "Assembly line 3"
+    },
+    "skus": {
+      "100": "bolt",
+      "101": "nut",
+      "102": "panel",
+      "103": "hinge",
+      "104": "cable",
+      "105": "gasket",
+      "106": "bracket",
+      "107": "fuse"
+    },
+    "item_types": {
+      "1": "Model A",
+      "2": "Model B",
+      "3": "Model C",
+      "4": "Model D"
+    }
+  }
+}

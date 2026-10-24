@@ -1,5 +1,5 @@
 import { WorldPos, type Extent } from "../shared/common";
-import type { NodeKind, Topology } from "./trace";
+import { NO_SITE, type NodeKind, type Topology } from "./trace";
 import { units } from "../shared/scale";
 
 /**
@@ -8,7 +8,10 @@ import { units } from "../shared/scale";
  * Sites are rows, top to bottom, each fenced in. Within a site, flow runs left to right in columns:
  * the queues nothing flows into come first, then whatever their stations (or they) feed, and so on,
  * following `edges`. A queue is a left-to-right belt whose head points at the stations it feeds,
- * stacked beside it. Each inventory sits under the column of the stations it supplies.
+ * stacked beside it. Each inventory sits under the column of the stations it supplies. A queue that
+ * feeds no station is a store (items sit there ready): it gets a compact spot of its own instead.
+ * Places in no site (`NO_SITE`), e.g. one store shared by every site, go to the right of all the
+ * sites, vertically centred on them, unfenced.
  *
  *   ┌─ Site A ──────────────────────────────────────────────┐
  *   │ [belt q1 ▶]  ▢ s1      [belt q2 ▶]  ▢ s3              │
@@ -27,6 +30,8 @@ export type LayoutConfig = {
   readonly stationSpacing: number;
   /** from a belt's head to its stations */
   readonly stationGap: number;
+  /** how many stacks wide a store is */
+  readonly storeStacks: number;
   /** width kept for a column of stations (their widest item, plus its plate) */
   readonly stationColumn: number;
   /** after a column of stations, before the next belt */
@@ -52,6 +57,7 @@ export const DEFAULT_LAYOUT: LayoutConfig = {
   beltLength: 8,
   stationSpacing: units(2.5),
   stationGap: units(1.67),
+  storeStacks: 4,
   stationColumn: units(4.17),
   columnGap: units(1.67),
   inventoryGap: units(1.39),
@@ -63,8 +69,10 @@ export const DEFAULT_LAYOUT: LayoutConfig = {
 };
 
 export type Placement = {
-  /** each queue's head (`Layout` origin), all flowing left to right */
+  /** each queue's head (`Layout` origin), all flowing left to right; stores aren't in here */
   readonly queues: ReadonlyMap<number, WorldPos>;
+  /** each store's first stack top-left; stacks follow along x */
+  readonly stores: ReadonlyMap<number, WorldPos>;
   /** each station's item top-left */
   readonly stations: ReadonlyMap<number, WorldPos>;
   /** each inventory's first stack top-left; stacks follow along x */
@@ -141,6 +149,31 @@ const suppliesOf = (top: Topology): Map<number, number[]> => {
   return supplies;
 };
 
+/** What one site's layout produced: positions, and the bottom-right corner of its content */
+type SiteLayout = {
+  readonly queues: Map<number, WorldPos>;
+  readonly stores: Map<number, WorldPos>;
+  readonly stations: Map<number, WorldPos>;
+  readonly inventories: Map<number, WorldPos>;
+  readonly right: number;
+  readonly bottom: number;
+};
+
+/** Shift every position of `layout` by `dy`, into `into` */
+const mergeShifted = (
+  into: SiteLayout,
+  layout: SiteLayout,
+  dy: number,
+): void => {
+  const shift = (from: Map<number, WorldPos>, to: Map<number, WorldPos>) => {
+    for (const [id, pos] of from) to.set(id, WorldPos(pos.x, pos.y + dy));
+  };
+  shift(layout.queues, into.queues);
+  shift(layout.stores, into.stores);
+  shift(layout.stations, into.stations);
+  shift(layout.inventories, into.inventories);
+};
+
 export const placeTopology = (
   top: Topology,
   cfg: LayoutConfig = DEFAULT_LAYOUT,
@@ -148,6 +181,10 @@ export const placeTopology = (
   const { box, gap, margin } = cfg;
   const belt = cfg.beltLength * box + (cfg.beltLength - 1) * gap;
   const columnWidth = belt + cfg.stationGap + cfg.stationColumn + cfg.columnGap;
+  // A stack per item type, when the trace has types; `storeStacks` otherwise
+  const storeStacks =
+    top.itemTypes.length > 0 ? top.itemTypes.length : cfg.storeStacks;
+  const storeWidth = storeStacks * (box + gap) - gap;
   const feeds = feedsOf(top);
   const supplies = suppliesOf(top);
   /** station → the queue feeding it (the first one, if several) */
@@ -155,15 +192,16 @@ export const placeTopology = (
   for (const [q, ss] of feeds)
     for (const s of ss) if (!fedBy.has(s)) fedBy.set(s, q);
 
-  const queues = new Map<number, WorldPos>();
-  const stations = new Map<number, WorldPos>();
-  const inventories = new Map<number, WorldPos>();
-  const sites = new Map<number, { pos: WorldPos; extent: Extent }>();
-  let right = 0;
-  // Content of the first site starts inside its fence, under its name
-  let rowTop = margin + cfg.fencePadding + cfg.fenceLabel;
-
-  for (const site of top.sites) {
+  /** Lay out the places of `site`, starting at (`left`, `rowTop`) */
+  const placeSite = (
+    site: number,
+    left: number,
+    rowTop: number,
+  ): SiteLayout => {
+    const queues = new Map<number, WorldPos>();
+    const stores = new Map<number, WorldPos>();
+    const stations = new Map<number, WorldPos>();
+    const inventories = new Map<number, WorldPos>();
     const siteQueues = top.queues
       .filter((q) => q.site === site)
       .map((q) => q.id);
@@ -171,22 +209,31 @@ export const placeTopology = (
       top.stations.filter((s) => s.site === site).map((s) => s.id),
     );
     let rowHeight = cfg.stationSpacing;
-    let x = margin;
+    let x = left;
 
-    const placeStations = (ids: readonly number[], left: number, top: number) =>
+    const placeStations = (ids: readonly number[], at: number, y: number) =>
       ids.forEach((s, i) =>
         stations.set(
           s,
           WorldPos(
-            left,
-            top + i * cfg.stationSpacing + (cfg.stationSpacing - box) / 2,
+            at,
+            y + i * cfg.stationSpacing + (cfg.stationSpacing - box) / 2,
           ),
         ),
       );
 
     for (const column of columnsOf(top, siteQueues)) {
       let blockTop = rowTop;
+      let width = 0;
       for (const q of column) {
+        if (!feeds.has(q)) {
+          // A store: one row of stacks, centred on a station's height
+          stores.set(q, WorldPos(x, blockTop + (cfg.stationSpacing - box) / 2));
+          blockTop += cfg.stationSpacing;
+          width = Math.max(width, storeWidth + cfg.columnGap);
+          continue;
+        }
+        width = columnWidth;
         // Stations fed by several queues stay beside the first one placed
         const own = (feeds.get(q) ?? []).filter(
           (s) => siteStations.has(s) && !stations.has(s),
@@ -198,7 +245,7 @@ export const placeTopology = (
         blockTop += blockHeight;
       }
       rowHeight = Math.max(rowHeight, blockTop - rowTop);
-      x += columnWidth;
+      x += width;
     }
     // Stations no queue feeds get a column at the end
     const loose = [...siteStations]
@@ -212,10 +259,13 @@ export const placeTopology = (
 
     // Each inventory under the stations it supplies: at the start of their queue's belt (or
     // their own column). Several in one column go side by side; unconnected ones go last.
+    const siteInventories = top.inventories
+      .filter((i) => i.site === site)
+      .map((i) => i.id);
     const inventoryTop = rowTop + rowHeight + cfg.inventoryGap;
     const widthOf = (id: number) =>
       (top.inventorySkus.get(id)?.length ?? 0) * (box + gap);
-    let free = margin; // leftmost x not taken by an inventory yet
+    let free = left; // leftmost x not taken by an inventory yet
     const anchorOf = (id: number): number | undefined => {
       const supplied = (supplies.get(id) ?? []).find((s) => stations.has(s));
       if (supplied === undefined) return undefined;
@@ -223,9 +273,6 @@ export const placeTopology = (
       const head = queue === undefined ? undefined : queues.get(queue);
       return head === undefined ? stations.get(supplied)!.x : head.x - belt;
     };
-    const siteInventories = top.inventories
-      .filter((i) => i.site === site)
-      .map((i) => i.id);
     const anchored = siteInventories
       .map((id) => [id, anchorOf(id)] as const)
       .filter(
@@ -236,37 +283,78 @@ export const placeTopology = (
       (id) => anchorOf(id) === undefined,
     );
     for (const [id, anchor] of anchored) {
-      const left = Math.max(anchor, free);
-      inventories.set(id, WorldPos(left, inventoryTop));
-      free = left + widthOf(id) + cfg.columnGap;
+      const at = Math.max(anchor, free);
+      inventories.set(id, WorldPos(at, inventoryTop));
+      free = at + widthOf(id) + cfg.columnGap;
     }
     for (const id of unanchored) {
       inventories.set(id, WorldPos(free, inventoryTop));
       free += widthOf(id) + cfg.columnGap;
     }
 
-    // The fence: around everything placed, plus room for the site's name on top
-    const contentRight = Math.max(x - cfg.columnGap, free - cfg.columnGap);
-    const contentBottom = inventoryTop + box + cfg.inventoryLabels;
-    const fenceTop = rowTop - cfg.fencePadding - cfg.fenceLabel;
+    return {
+      queues,
+      stores,
+      stations,
+      inventories,
+      right: Math.max(x - cfg.columnGap, free - cfg.columnGap),
+      bottom:
+        siteInventories.length === 0
+          ? rowTop + rowHeight
+          : inventoryTop + box + cfg.inventoryLabels,
+    };
+  };
+
+  const placed: SiteLayout = {
+    queues: new Map(),
+    stores: new Map(),
+    stations: new Map(),
+    inventories: new Map(),
+    right: 0,
+    bottom: 0,
+  };
+  const sites = new Map<number, { pos: WorldPos; extent: Extent }>();
+  let right = 0;
+  // Sites are rows, top to bottom; each one's content starts inside its fence, under its name
+  const sitesTop = margin;
+  let fenceTop = sitesTop;
+  for (const site of top.sites) {
+    const rowTop = fenceTop + cfg.fencePadding + cfg.fenceLabel;
+    const layout = placeSite(site, margin, rowTop);
+    mergeShifted(placed, layout, 0);
     const fenceLeft = margin - cfg.fencePadding;
-    sites.set(site, {
+    const fence = {
       pos: WorldPos(fenceLeft, fenceTop),
       extent: {
-        w: contentRight + cfg.fencePadding - fenceLeft,
-        h: contentBottom + cfg.fencePadding - fenceTop,
+        w: layout.right + cfg.fencePadding - fenceLeft,
+        h: layout.bottom + cfg.fencePadding - fenceTop,
       },
-    });
-
-    right = Math.max(right, contentRight + cfg.fencePadding);
-    rowTop =
-      contentBottom + 2 * cfg.fencePadding + cfg.siteGap + cfg.fenceLabel;
+    };
+    sites.set(site, fence);
+    right = Math.max(right, fence.pos.x + fence.extent.w);
+    fenceTop += fence.extent.h + cfg.siteGap;
   }
-  const bottom = rowTop - cfg.fencePadding - cfg.fenceLabel - cfg.siteGap;
+  const sitesBottom = Math.max(sitesTop, fenceTop - cfg.siteGap);
+
+  // Places in no site (e.g. a store shared by every site): to the right of all the sites,
+  // vertically centred on them, unfenced
+  let bottom = sitesBottom;
+  const outside = placeSite(NO_SITE, right + cfg.columnGap, 0);
+  if (outside.right > right + cfg.columnGap) {
+    const dy = Math.max(
+      sitesTop,
+      (sitesTop + sitesBottom - outside.bottom) / 2,
+    );
+    mergeShifted(placed, outside, dy);
+    right = outside.right;
+    bottom = Math.max(bottom, outside.bottom + dy);
+  }
+
   return {
-    queues,
-    stations,
-    inventories,
+    queues: placed.queues,
+    stores: placed.stores,
+    stations: placed.stations,
+    inventories: placed.inventories,
     sites,
     extent: { w: right + margin, h: bottom + margin },
   };

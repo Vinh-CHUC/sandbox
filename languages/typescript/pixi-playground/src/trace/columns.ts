@@ -177,6 +177,30 @@ export const toTrace = (tables: Tables): Trace => {
       sku: SkuId(sku),
       count,
     })),
+    ...rows(tables, "item_status", [...at, "item_id", "status"]).map(
+      ([seq, t, item, status]): TraceEvent => ({
+        kind: "item_status",
+        seq,
+        t: simMs(t),
+        item,
+        status,
+      }),
+    ),
+    ...rows(tables, "item_shortage", [
+      ...at,
+      "item_id",
+      "inventory_id",
+      "sku_id",
+      "missing",
+    ]).map(([seq, t, item, inventory, sku, missing]): TraceEvent => ({
+      kind: "item_shortage",
+      seq,
+      t: simMs(t),
+      item,
+      inventory,
+      sku: SkuId(sku),
+      missing,
+    })),
     ...rows(tables, "stock", [...at, "inventory_id", "sku_id", "count"]).map(
       ([seq, t, inventory, sku, count]): TraceEvent => ({
         kind: "stock",
@@ -213,6 +237,13 @@ export const toTrace = (tables: Tables): Trace => {
       skus: ints("skus", required("skus")["skus"], "sku_id").map(SkuId),
       inventorySkus,
       edges,
+      // Optional: a trace without types has untyped items
+      itemTypes: ints("item_types", tables["item_types"], "item_type_id"),
+      itemType: new Map(
+        rows(tables, "items", ["item_id", "item_type_id"]).map(
+          ([item, type]) => [item, type],
+        ),
+      ),
     },
     events,
     labels,

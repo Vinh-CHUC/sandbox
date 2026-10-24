@@ -8,8 +8,10 @@ How moves read, in `seq` order:
 - `queue_leave` → `station_start`: an item goes from its queue to a station
 - `station_end` → `queue_enter`: from a station into a queue
 
-"Unknown" is a -1 sentinel rather than null, as lattice can't publish nulls.
+"Unknown" is a -1 sentinel rather than null, as scalar-only publishers can't write nulls.
 """
+
+from enum import IntEnum
 
 import pandas as pd
 import pandera.pandas as pa
@@ -19,6 +21,14 @@ from flowtrace.base import Table
 
 FORMAT_VERSION = 1
 UNKNOWN = -1
+
+
+class ItemState(IntEnum):
+    """`item_status.status`: how a queued item is doing"""
+
+    WAITING = 0
+    # Can't be served yet: the parts it needs aren't in stock
+    BLOCKED = 1
 
 
 class Event(Table):
@@ -87,6 +97,29 @@ class Stock(Event):
     inventory_id: Series[pd.UInt32Dtype]
     sku_id: Series[pd.Int64Dtype]
     count: Series[pd.UInt32Dtype]
+
+
+class ItemStatus(Event):
+    """
+    A queued item's state *level*, written when it changes (see `ItemState`); items are WAITING
+    until told otherwise. Optional table.
+    """
+
+    item_id: Series[pd.UInt32Dtype]
+    status: Series[pd.UInt8Dtype] = pa.Field(isin=[s.value for s in ItemState])
+
+
+class ItemShortage(Event):
+    """
+    How many of a SKU a queued item is short of, *level*, written when it changes (0 clears it).
+    A BLOCKED item has at least one; the stock levels must back it up (see the validator).
+    Optional table.
+    """
+
+    item_id: Series[pd.UInt32Dtype]
+    inventory_id: Series[pd.UInt32Dtype]
+    sku_id: Series[pd.Int64Dtype]
+    missing: Series[pd.UInt32Dtype]
 
 
 class Meta(Table):

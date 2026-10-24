@@ -35,7 +35,11 @@ class Trace:
     consumption: pd.DataFrame
     stock: pd.DataFrame
     meta: pd.DataFrame
-    # Optional display names
+    # Optional: queued items' states and shortages, and display names
+    item_status: pd.DataFrame | None = None
+    item_shortage: pd.DataFrame | None = None
+    item_types: pd.DataFrame | None = None
+    items: pd.DataFrame | None = None
     labels: pd.DataFrame | None = None
 
 
@@ -56,6 +60,10 @@ SCHEMAS: dict[str, type[pa.DataFrameModel]] = {
     "consumption": ev.Consumption,
     "stock": ev.Stock,
     "meta": ev.Meta,
+    "item_status": ev.ItemStatus,
+    "item_shortage": ev.ItemShortage,
+    "item_types": st.ItemTypes,
+    "items": st.Items,
     "labels": st.Labels,
 }
 
@@ -67,7 +75,10 @@ EVENT_TABLES = (
     "station_end",
     "consumption",
     "stock",
+    "item_status",
+    "item_shortage",
 )
+OPTIONAL_TABLES = ("item_status", "item_shortage", "item_types", "items", "labels")
 
 
 def validated(trace: Trace) -> Trace:
@@ -94,7 +105,7 @@ def read_trace(directory: Path) -> Trace:
         return pd.read_parquet(path) if path.exists() else None
 
     tables = {f.name: read(f.name) for f in fields(Trace)}
-    missing = [name for name, df in tables.items() if df is None and name != "labels"]
+    missing = [name for name, df in tables.items() if df is None and name not in OPTIONAL_TABLES]
     if missing:
         raise FileNotFoundError(f"{directory}: missing {', '.join(missing)}")
     return validated(Trace(**tables))  # pyright: ignore[reportArgumentType]  (checked above)

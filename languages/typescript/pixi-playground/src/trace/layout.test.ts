@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { SkuId } from "../shared/common";
 import { DEFAULT_LAYOUT, placeTopology } from "./layout";
-import type { Edge, NodeKind, Topology } from "./trace";
+import { NO_SITE, type Edge, type NodeKind, type Topology } from "./trace";
 
 const edge = (fk: NodeKind, fi: number, tk: NodeKind, ti: number): Edge => ({
   from: { kind: fk, id: fi },
@@ -25,6 +25,8 @@ const topology: Topology = {
     { id: 3, site: 2 },
   ],
   skus: [100, 200, 300].map(SkuId),
+  itemTypes: [],
+  itemType: new Map(),
   inventorySkus: new Map([
     [1, [100, 200, 300].map(SkuId)],
     [2, [100, 200].map(SkuId)],
@@ -93,6 +95,51 @@ describe("placeTopology", () => {
     expect(inside(2, p.inventories.get(3)!)).toBe(true); // unconnected: still in its site
     const one = fence(1);
     expect(fence(2).pos.y).toBeGreaterThan(one.pos.y + one.extent.h);
+  });
+
+  it("a queue feeding no station is a store, placed as a compact row after its feeders", () => {
+    const withStore: Topology = {
+      ...topology,
+      queues: [...topology.queues, { id: 9, site: 1 }],
+      edges: [
+        ...topology.edges,
+        edge("station", 12, "queue", 9),
+        edge("queue", 9, "queue", 1),
+      ],
+    };
+    const placed = placeTopology(withStore);
+    expect(placed.queues.has(9)).toBe(false);
+    const store = placed.stores.get(9)!;
+    expect(store.x).toBeGreaterThan(placed.stations.get(12)!.x); // after the stations feeding it
+    expect(placed.queues.get(1)!.x).toBe(q(1).x); // the cycle back doesn't move queue 1
+  });
+
+  it("places in no site go right of every site, centred on them, unfenced", () => {
+    const shared: Topology = {
+      ...topology,
+      queues: [...topology.queues, { id: 9, site: NO_SITE }],
+      edges: [
+        ...topology.edges,
+        edge("station", 12, "queue", 9),
+        edge("station", 22, "queue", 9),
+        edge("queue", 9, "queue", 1),
+        edge("queue", 9, "queue", 3),
+      ],
+    };
+    const placed = placeTopology(shared);
+    const store = placed.stores.get(9)!;
+    const fences = [...placed.sites.values()];
+    const fencesRight = Math.max(...fences.map((f) => f.pos.x + f.extent.w));
+    const fencesTop = Math.min(...fences.map((f) => f.pos.y));
+    const fencesBottom = Math.max(...fences.map((f) => f.pos.y + f.extent.h));
+    expect(store.x).toBeGreaterThan(fencesRight);
+    expect(store.y).toBeGreaterThan(fencesTop);
+    expect(store.y).toBeLessThan(fencesBottom);
+    expect(Math.abs(store.y - (fencesTop + fencesBottom) / 2)).toBeLessThan(
+      DEFAULT_LAYOUT.stationSpacing,
+    );
+    expect(placed.sites.has(NO_SITE)).toBe(false); // no fence
+    expect(store.x).toBeLessThan(placed.extent.w); // and the ground still covers it
   });
 
   it("places everything, inside the extent", () => {

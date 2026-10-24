@@ -2,17 +2,20 @@ import { Application } from "pixi.js";
 import { ScreenPos, SimMs, WallMs, type Pos } from "./shared/common";
 import { SimClock } from "./shared/clock";
 import { GROUND } from "./shared/palette";
-import { units } from "./shared/scale";
 import { FLAT, type Projection } from "./shared/projection";
+import { kpiTiles, type Tile } from "./kpis";
+import { RATE_REFRESH_MS, throttle } from "./shared/draw";
 import { loadTrace, openUrl } from "./trace/load";
+import { fetchLabels, type LabelsFile } from "./trace/naming";
 import type { Trace } from "./trace/trace";
 import { World } from "./world";
 
-/** 2:1 isometric; the offset keeps the (skewed) scene in view */
-const ISO: Projection = {
-  kind: "iso",
-  scale: 0.7,
-  offset: ScreenPos(units(12.5), -units(4.2)),
+/** The views on offer, by the value of their option in the "View" dropdown */
+const PROJECTIONS: Record<string, Projection> = {
+  flat: FLAT,
+  dimetric: { kind: "dimetric", scale: 0.7 },
+  isometric: { kind: "isometric", scale: 0.8 },
+  trimetric: { kind: "trimetric", scale: 0.8 },
 };
 
 /** Playback speeds: a trace spans hours, so 60× (a minute per second) is the default */
@@ -21,6 +24,30 @@ const INITIAL_SPEED = 60;
 
 /** Where `data/` writes traces to; Vite serves `public/` as is */
 const TRACE_URL = `${import.meta.env.BASE_URL}trace`;
+/** Display names, kept out of the repo (git-ignored): see labels.example.json */
+const LABELS_URL = `${import.meta.env.BASE_URL}labels.json`;
+
+/** Show `tiles` in `strip`: one element per KPI, created once, then only their text changes */
+const showTiles = (strip: HTMLElement, tiles: readonly Tile[]) => {
+  for (const tile of tiles) {
+    let el = strip.querySelector<HTMLElement>(`[data-kpi="${tile.id}"]`);
+    if (el === null) {
+      el = document.createElement("div");
+      el.dataset.kpi = tile.id;
+      el.className = "kpi";
+      el.append(
+        document.createElement("strong"),
+        document.createElement("span"),
+      );
+      strip.append(el);
+    }
+    const [value, caption] = el.children;
+    if (value.textContent !== tile.value) value.textContent = tile.value;
+    if (caption.textContent !== tile.caption)
+      caption.textContent = tile.caption;
+    el.classList.toggle("alert", tile.alert);
+  }
+};
 
 const element = (id: string) => document.getElementById(id)!;
 
@@ -45,7 +72,16 @@ const clockTime = (trace: Trace, t: number) =>
   }
 
   const tooltip = element("tooltip");
+  // Optional: without labels.json everything gets generic names ("Queue 2")
+  let labels: LabelsFile = {};
+  try {
+    labels = await fetchLabels(LABELS_URL);
+  } catch (error) {
+    console.warn(`Ignoring ${LABELS_URL}:`, error);
+  }
+
   const world = new World(trace, {
+    labels,
     onHover: (text, at) => {
       tooltip.style.display = text === null ? "none" : "block";
       if (text === null) return;
@@ -102,13 +138,12 @@ const clockTime = (trace: Trace, t: number) =>
     showZoom();
   });
 
-  const toggle = element("projection-toggle");
-  const label = () => (world.projection.kind === "flat" ? "Isometric" : "Flat");
-  toggle.textContent = label();
-  toggle.addEventListener("click", () => {
-    world.setProjection(world.projection.kind === "flat" ? ISO : FLAT);
-    toggle.textContent = label();
-  });
+  // The select is the one source of truth: applied now (its default) and on every change
+  const view = element("projection") as HTMLSelectElement;
+  const applyProjection = () =>
+    world.setProjection(PROJECTIONS[view.value] ?? FLAT);
+  applyProjection();
+  view.addEventListener("change", applyProjection);
 
   // Simulated time: pause and speed controls only touch this clock
   const clock = new SimClock(SPEEDS, INITIAL_SPEED);
@@ -134,6 +169,14 @@ const clockTime = (trace: Trace, t: number) =>
   applyWindow();
 
   const time = element("time");
+  const kpiStrip = element("kpis");
+  // The KPI panel can be hidden, e.g. to show the scene alone
+  const kpiToggle = element("kpi-toggle") as HTMLInputElement;
+  const showKpis = () =>
+    kpiStrip.classList.toggle("hidden", !kpiToggle.checked);
+  kpiToggle.addEventListener("change", showKpis);
+  showKpis();
+  const refreshKpis = throttle(RATE_REFRESH_MS);
   app.ticker.add((ticker) => {
     // Real frame time in, simulated time out, held at the trace's end
     const now = SimMs(Math.min(clock.advance(ticker.deltaMS), trace.endMs));
@@ -142,6 +185,9 @@ const clockTime = (trace: Trace, t: number) =>
       showClock();
     }
     world.tick(now, WallMs(performance.now()));
+    refreshKpis(() =>
+      showTiles(kpiStrip, kpiTiles(world.kpis(now), world.names)),
+    );
     const shown = clockTime(trace, now);
     if (time.textContent !== shown) time.textContent = shown;
   });

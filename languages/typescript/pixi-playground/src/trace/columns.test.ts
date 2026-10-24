@@ -37,7 +37,7 @@ const tables = (): Record<string, Tables[string]> => ({
     start_unix_us: [1_000_000n],
     end_sim_time_us: [60_000_000n],
   },
-  labels: { table: ["skus"], id: [100n], label: ["wheel"] },
+  labels: { table: ["skus"], id: [100n], label: ["bolt"] },
 });
 
 describe("toTrace", () => {
@@ -69,7 +69,7 @@ describe("toTrace", () => {
   it("missing event tables are empty; labels and meta are read", () => {
     const trace = toTrace(tables());
     expect(trace.events.some((e) => e.kind === "queue_move")).toBe(false);
-    expect(trace.labels.get("skus:100")).toBe("wheel");
+    expect(trace.labels.get("skus:100")).toBe("bolt");
     expect([trace.startUnixMs, trace.endMs]).toEqual([1000, 60_000]);
   });
 

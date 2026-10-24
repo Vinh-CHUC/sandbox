@@ -4,12 +4,16 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from flowtrace.events import FORMAT_VERSION, UNKNOWN
+from flowtrace.events import FORMAT_VERSION, UNKNOWN, ItemShortage, ItemStatus
 from flowtrace.static import NodeKind
 from flowtrace.trace import Trace, read_trace, validated, write_trace
 from flowtrace.validate import problems
 
 Q, S, I = NodeKind.QUEUE, NodeKind.STATION, NodeKind.INVENTORY
+
+
+def validated_status(df: pd.DataFrame) -> pd.DataFrame:
+    return ItemStatus.validate(df)
 
 
 def valid_trace() -> Trace:
@@ -133,6 +137,65 @@ def test_inconsistent_events_are_reported(
     t = valid_trace()
     broken = replace(t, **{table: getattr(t, table).assign(**change)})
     assert expected in problems(broken)
+
+
+def test_status_only_for_queued_items() -> None:
+    t = valid_trace()
+    # At the end, item 1 is still in queue 1; item 3 never existed
+    statuses = pd.DataFrame(
+        {"seq": [11, 12], "sim_time_us": [2500, 2500], "item_id": [1, 3], "status": [0, 0]}
+    )
+    assert problems(replace(t, item_status=validated_status(statuses))) == [
+        "seq 12: item 3 gets a status but isn't queued"
+    ]
+
+
+def _shortages(rows: list[tuple[int, int, int, int, int, int]]) -> pd.DataFrame:
+    return ItemShortage.validate(
+        pd.DataFrame(
+            rows, columns=["seq", "sim_time_us", "item_id", "inventory_id", "sku_id", "missing"]
+        )
+    )
+
+
+def _statuses(rows: list[tuple[int, int, int, int]]) -> pd.DataFrame:
+    return ItemStatus.validate(pd.DataFrame(rows, columns=["seq", "sim_time_us", "item_id", "status"]))
+
+
+def test_blocked_means_short_of_something() -> None:
+    t = valid_trace()
+    blocked = replace(t, item_status=_statuses([(11, 2500, 1, 1)]))
+    assert problems(blocked) == ["seq 11: item 1 is blocked but short of nothing"]
+    # Short of 200: stock has 3 of SKU 200, item 1 needs 5
+    short = replace(
+        t,
+        item_shortage=_shortages([(11, 2500, 1, 5, 200, 2)]),
+        item_status=_statuses([(12, 2500, 1, 1)]),
+    )
+    assert problems(short) == []
+
+
+def test_a_shortage_must_be_real_while_claimed() -> None:
+    t = valid_trace()
+    # Item 1 claims 2 short of SKU 200 (stock 3, so it needs 5)…
+    claim = _shortages([(11, 2500, 1, 5, 200, 2)])
+    # …then SKU 200 is restocked to 9, but the claim isn't cleared
+    restock = pd.concat(
+        [t.stock, pd.DataFrame({"seq": [12], "sim_time_us": [2600], "inventory_id": [5], "sku_id": [200], "count": [9]})]
+    )
+    assert problems(replace(t, item_shortage=claim, stock=restock)) == [
+        "at 2600: item 1 is still short of sku 200 but inventory 5 has 9 (needs 5)"
+    ]
+
+
+def test_an_item_cant_leave_its_queue_still_short() -> None:
+    t = valid_trace()
+    # Item 2 becomes short of SKU 100 at seq 4 (in place of the queue_move), then leaves at seq 5
+    no_move = t.queue_move.iloc[0:0]
+    claim = _shortages([(4, 500, 2, 5, 100, 1)])
+    assert problems(replace(t, queue_move=no_move, item_shortage=claim)) == [
+        "seq 5: item 2 leaves queue 1 while still short of parts"
+    ]
 
 
 def test_consumption_needs_a_supply_edge() -> None:

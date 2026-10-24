@@ -15,9 +15,12 @@ export const placeAt = (c: Container, s: ScreenPos): void => {
   c.position.set(s.x, s.y);
 };
 
-/** Painter's order in iso: boxes further along x + y are closer to the viewer */
-export const depth = (pos: WorldPos, { w, h }: Extent): number =>
-  pos.x + pos.y + (w + h) / 2;
+/**
+ * Painter's order: boxes lower on screen (closer to the viewer, in any axonometric view) on top.
+ * The screen height of the box's footprint centre, so it holds whatever the axes' angles.
+ */
+export const depth = (p: Projection, pos: WorldPos, { w, h }: Extent): number =>
+  project(p, WorldPos(pos.x + w / 2, pos.y + h / 2)).y;
 
 const shade = (color: Color, f: number): Color => mixColor(0x000000, color, f);
 const flatten = (corners: readonly ScreenPos[]): number[] =>

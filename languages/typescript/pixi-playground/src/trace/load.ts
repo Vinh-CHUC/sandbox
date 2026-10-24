@@ -19,9 +19,19 @@ export const TABLES = [
   "consumption",
   "stock",
   "meta",
+  "item_status",
+  "item_shortage",
+  "item_types",
+  "items",
   "labels",
 ] as const;
-const OPTIONAL = new Set<string>(["labels"]);
+const OPTIONAL = new Set<string>([
+  "item_status",
+  "item_shortage",
+  "item_types",
+  "items",
+  "labels",
+]);
 
 /** Opens one table's file; resolves to null when an optional table isn't there */
 export type Open = (table: string) => Promise<AsyncBuffer | null>;

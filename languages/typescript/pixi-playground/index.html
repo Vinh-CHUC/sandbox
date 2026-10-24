@@ -12,7 +12,19 @@
     <div id="app">
       <div id="pixi-container"></div>
       <div id="controls">
-        <button id="projection-toggle"></button>
+        <label
+          ><input type="checkbox" id="kpi-toggle" autocomplete="off" checked />
+          KPIs</label
+        >
+        <label
+          >View
+          <select id="projection" autocomplete="off">
+            <option value="flat" selected>Flat</option>
+            <option value="dimetric">Dimetric (2:1)</option>
+            <option value="isometric">Isometric</option>
+            <option value="trimetric">Trimetric</option>
+          </select>
+        </label>
         <button id="pause"></button>
         <button id="slower">−</button>
         <span id="speed"></span>
@@ -24,13 +36,14 @@
         <span id="time"></span>
         <label
           >Throughput over
-          <select id="window">
+          <select id="window" autocomplete="off">
             <option value="900000">15 min</option>
             <option value="3600000" selected>1 h</option>
             <option value="14400000">4 h</option>
           </select>
         </label>
       </div>
+      <div id="kpis"></div>
       <div id="tooltip"></div>
     </div>
     <script type="module" src="/src/main.ts"></script>

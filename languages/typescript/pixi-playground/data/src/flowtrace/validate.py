@@ -19,7 +19,7 @@ from typing import assert_never
 
 import pandas as pd
 
-from flowtrace.events import duplicate_seqs
+from flowtrace.events import ItemState, duplicate_seqs
 from flowtrace.static import NodeKind, dangling_references
 from flowtrace.trace import EVENT_TABLES, Trace, read_trace
 
@@ -87,7 +87,35 @@ class StockLevel:
     count: int
 
 
-type Event = QueueEnter | QueueLeave | QueueMove | StationStart | StationEnd | Consume | StockLevel
+@dataclass(frozen=True)
+class Status:
+    seq: int
+    t: int
+    item: int
+    status: int
+
+
+@dataclass(frozen=True)
+class Shortage:
+    seq: int
+    t: int
+    item: int
+    inventory: int
+    sku: int
+    missing: int
+
+
+type Event = (
+    QueueEnter
+    | QueueLeave
+    | QueueMove
+    | StationStart
+    | StationEnd
+    | Consume
+    | StockLevel
+    | Status
+    | Shortage
+)
 
 
 def _rows(df: pd.DataFrame, columns: list[str]) -> list[list[int]]:
@@ -111,6 +139,24 @@ def stream(trace: Trace) -> list[Event]:
             for r in _rows(trace.consumption, [*meta, "job_id", "inventory_id", "sku_id", "count"])
         ),
         *(StockLevel(*r) for r in _rows(trace.stock, [*meta, "inventory_id", "sku_id", "count"])),
+        *(
+            Status(*r)
+            for r in (
+                []
+                if trace.item_status is None
+                else _rows(trace.item_status, [*meta, "item_id", "status"])
+            )
+        ),
+        *(
+            Shortage(*r)
+            for r in (
+                []
+                if trace.item_shortage is None
+                else _rows(
+                    trace.item_shortage, [*meta, "item_id", "inventory_id", "sku_id", "missing"]
+                )
+            )
+        ),
     ]
     return sorted(events, key=lambda e: e.seq)
 
@@ -139,6 +185,20 @@ class World:
     where: dict[int, Node] = field(default_factory=dict[int, Node])  # item → current place
     left: dict[int, Left] = field(default_factory=dict[int, Left])  # item → where it last was
     stock: dict[tuple[int, int], int] = field(default_factory=dict[tuple[int, int], int])
+    # (item, inventory, sku) → what the item needs in all (stock at the claim + missing)
+    short: dict[tuple[int, int, int], int] = field(default_factory=dict[tuple[int, int, int], int])
+
+    def shortages_of(self, item: int) -> list[tuple[int, int, int]]:
+        return [key for key in self.short if key[0] == item]
+
+    def covered(self) -> list[str]:
+        """Shortages the stock covers by now: they should have been cleared"""
+        return [
+            f"item {item} is still short of sku {sku} but inventory {inv} has {self.stock[(inv, sku)]}"
+            f" (needs {need})"
+            for (item, inv, sku), need in self.short.items()
+            if self.stock.get((inv, sku), 0) >= need
+        ]
 
     def arrive(self, item: int, node: Node, t: int) -> str | None:
         """Place `item` at `node`; the reason it can't, if any"""
@@ -173,9 +233,13 @@ def _step(w: World, e: Event) -> str | None:
         case QueueLeave(item=item, queue=q, t=t):
             if item not in w.queues.get(q, []):
                 return f"item {item} leaves queue {q} but isn't in it"
+            short = w.shortages_of(item)
+            # Leave regardless, so one mistake doesn't cascade into the item's every next event
+            for key in short:
+                del w.short[key]
             w.queues[q].remove(item)
             w.depart(item, t)
-            return None
+            return f"item {item} leaves queue {q} while still short of parts" if short else None
         case QueueMove(item=item, queue=q, index=index):
             members = w.queues.get(q, [])
             if item not in members:
@@ -218,8 +282,34 @@ def _step(w: World, e: Event) -> str | None:
         case StockLevel(inventory=inv, sku=sku, count=count):
             w.stock[(inv, sku)] = count
             return None if (inv, sku) in w.stocked else f"inventory {inv} doesn't stock sku {sku}"
+        case Status(item=item, status=status):
+            kind = w.where.get(item, (None, None))[0]
+            if kind != NodeKind.QUEUE:
+                return f"item {item} gets a status but isn't queued"
+            short = bool(w.shortages_of(item))
+            if status == ItemState.BLOCKED and not short:
+                return f"item {item} is blocked but short of nothing"
+            if status == ItemState.WAITING and short:
+                return f"item {item} is waiting but still short of parts"
+            return None
+        case Shortage(item=item, inventory=inv, sku=sku, missing=missing):
+            if w.where.get(item, (None, None))[0] != NodeKind.QUEUE:
+                return f"item {item} is short of sku {sku} but isn't queued"
+            if (inv, sku) not in w.stocked:
+                return f"inventory {inv} doesn't stock sku {sku}"
+            if missing == 0:
+                w.short.pop((item, inv, sku), None)
+            else:
+                w.short[(item, inv, sku)] = w.stock.get((inv, sku), 0) + missing
+            return None
         case _:
             assert_never(e)
+
+
+def present_events(trace: Trace) -> list[pd.DataFrame]:
+    """Every event table the trace has (optional ones may be missing)"""
+    tables: list[pd.DataFrame | None] = [getattr(trace, name) for name in EVENT_TABLES]
+    return [df for df in tables if df is not None]
 
 
 def problems(trace: Trace) -> list[str]:
@@ -232,10 +322,12 @@ def problems(trace: Trace) -> list[str]:
         trace.skus,
         trace.inventory_skus,
         trace.edges,
+        trace.item_types,
+        trace.items,
     )
     errors += [
         f"seq {s} used by several events"
-        for s in duplicate_seqs(*(getattr(trace, name) for name in EVENT_TABLES))
+        for s in duplicate_seqs(*present_events(trace))
     ]
 
     nodes = zip(trace.edges["from_kind"], trace.edges["from_id"], trace.edges["to_kind"], trace.edges["to_id"])
@@ -246,6 +338,9 @@ def problems(trace: Trace) -> list[str]:
     end = int(trace.meta["end_sim_time_us"].iloc[0])
     previous_t = 0
     for e in stream(trace):
+        if e.t > previous_t:
+            # Everything at `previous_t` is in: a shortage still claimed must still be real
+            errors += [f"at {previous_t}: {error}" for error in w.covered()]
         if e.t < previous_t:
             errors.append(f"seq {e.seq}: time goes back ({e.t} after {previous_t})")
         if e.t > end:
@@ -253,6 +348,7 @@ def problems(trace: Trace) -> list[str]:
         previous_t = max(previous_t, e.t)
         if (error := _step(w, e)) is not None:
             errors.append(f"seq {e.seq}: {error}")
+    errors += [f"at {previous_t}: {error}" for error in w.covered()]
     return errors
 
 

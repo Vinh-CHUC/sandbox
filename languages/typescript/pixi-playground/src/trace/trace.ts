@@ -7,7 +7,10 @@ export type NodeKind = "queue" | "station" | "inventory";
 export type NodeRef = { readonly kind: NodeKind; readonly id: number };
 export type Edge = { readonly from: NodeRef; readonly to: NodeRef };
 
-/** A place, belonging to a site */
+/** A place's site when it belongs to none, e.g. a store shared by every site */
+export const NO_SITE = 0;
+
+/** A place, belonging to a site (or to none, see `NO_SITE`) */
 export type Place = { readonly id: number; readonly site: number };
 
 /** The static part of a trace: every place things flow between, and how they connect */
@@ -19,6 +22,10 @@ export type Topology = {
   readonly skus: readonly SkuId[];
   /** What each inventory carries, in stack order */
   readonly inventorySkus: ReadonlyMap<number, readonly SkuId[]>;
+  /** The item types, if the trace has any (e.g. product models), in catalogue order */
+  readonly itemTypes: readonly number[];
+  /** Each typed item's type; untyped items aren't in here */
+  readonly itemType: ReadonlyMap<ItemId, number>;
   readonly edges: readonly Edge[];
 };
 
@@ -60,6 +67,20 @@ export type TraceEvent =
       readonly count: number;
     })
   | (At & {
+      readonly kind: "item_status";
+      readonly item: ItemId;
+      /** see `ItemState` in data/: 0 waiting, 1 blocked */
+      readonly status: number;
+    })
+  | (At & {
+      readonly kind: "item_shortage";
+      readonly item: ItemId;
+      readonly inventory: number;
+      readonly sku: SkuId;
+      /** how many it's short of; 0 clears the shortage */
+      readonly missing: number;
+    })
+  | (At & {
       readonly kind: "stock";
       readonly inventory: number;
       readonly sku: SkuId;
@@ -67,7 +88,13 @@ export type TraceEvent =
     });
 
 export type LabelTable =
-  "sites" | "queues" | "stations" | "inventories" | "skus" | "items";
+  | "sites"
+  | "queues"
+  | "stations"
+  | "inventories"
+  | "skus"
+  | "items"
+  | "item_types";
 
 export type Trace = {
   readonly topology: Topology;

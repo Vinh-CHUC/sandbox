@@ -239,8 +239,8 @@ export class StationLook {
  * A station's state in words: what it holds, how far along it is, and the parts it used.
  *
  *   tooltip(free, names)  # "Idle"
- *   tooltip(busy, names)  # "Vehicle 42 · processing 63%\nwheel ×3, engine ×1"
- *   tooltip(busy, names)  # "Vehicle 42 · processing for 25 min\n…"   (duration unknown)
+ *   tooltip(busy, names)  # "Widget 42 · processing 63%\nbolt ×3, nut ×1"
+ *   tooltip(busy, names)  # "Widget 42 · processing for 25 min\n…"   (duration unknown)
  */
 export const tooltip = (
   state: StationState,

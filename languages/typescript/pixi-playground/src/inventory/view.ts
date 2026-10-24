@@ -14,6 +14,21 @@ import type { Inventory } from "./inventory";
 import type { Stack } from "./stacks";
 import { formatRate } from "../station/throughput";
 import { sharpText, units } from "../shared/scale";
+import { HoverTracker, type Hover } from "../shared/hover";
+
+/**
+ *   stackTooltip("Repair stores", "TN54 Transmission", 3, "1.5 / h")
+ *   # "Repair stores\nTN54 Transmission\n3 in stock · 1.5 / h used"
+ */
+export const stackTooltip = (
+  inventory: string,
+  sku: string,
+  count: number,
+  rate: string,
+): string =>
+  [inventory, sku, `${count} in stock · ${rate} used`]
+    .filter((line) => line !== "")
+    .join("\n");
 
 /**
  * A floor plate with one box per SKU stack, each labelled with how many units it holds, and with
@@ -28,6 +43,11 @@ export class InventoryView {
   /** How fast each SKU is being consumed (see `formatRate`), under its stack */
   private readonly rates = new Map<SkuId, Text>();
   private readonly refreshRates = throttle(RATE_REFRESH_MS);
+  private readonly hover: HoverTracker<SkuId>;
+  private readonly title = sharpText({
+    text: "",
+    style: { fontSize: units(0.33), fontWeight: "bold", fill: CHARCOAL },
+  });
 
   constructor(
     private readonly inventory: Inventory,
@@ -35,10 +55,19 @@ export class InventoryView {
     private readonly boxSize: number,
     private readonly margin: number,
     private readonly plateColor: Color,
+    /** shown above the plate, and heading a stack's tooltip */
+    private readonly name = "",
+    /** what a stack's SKU is called, in its tooltip */
+    private readonly skuName: (sku: SkuId) => string = String,
+    onHover?: Hover,
   ) {
+    this.hover = new HoverTracker(onHover);
     this.inventory_container.sortableChildren = true;
     this.plate.zIndex = -Infinity;
-    this.inventory_container.addChild(this.plate);
+    this.title.text = name;
+    this.title.anchor.set(0, 1);
+    this.title.zIndex = Infinity;
+    this.inventory_container.addChild(this.plate, this.title);
     for (const sku of stacks.keys()) {
       const label = sharpText({
         text: "",
@@ -77,8 +106,9 @@ export class InventoryView {
     for (const [sku, { pos, color }] of this.stacks) {
       const box = drawBox(new Graphics(), p, extent, this.boxSize, color);
       placeAt(box, project(p, pos));
-      box.zIndex = depth(pos, extent);
+      box.zIndex = depth(p, pos, extent);
       this.boxes.set(sku, box);
+      this.hover.attach(box, sku);
       this.inventory_container.addChild(box);
 
       const centre = WorldPos(
@@ -112,6 +142,14 @@ export class InventoryView {
         if (label.text !== text) label.text = text;
       }
     });
+    this.hover.refresh((sku) =>
+      stackTooltip(
+        this.name,
+        this.skuName(sku),
+        this.inventory.count(sku),
+        formatRate(perMinute(sku)),
+      ),
+    );
   }
 
   /** One plate under all stacks, `margin` beyond them on every side */
@@ -127,5 +165,6 @@ export class InventoryView {
     const extent = { w: maxX - minX, h: maxY - minY };
     drawPlate(this.plate.clear(), p, extent, this.plateColor);
     placeAt(this.plate, project(p, WorldPos(minX, minY)));
+    placeAt(this.title, project(p, WorldPos(minX, minY - units(0.1))));
   }
 }

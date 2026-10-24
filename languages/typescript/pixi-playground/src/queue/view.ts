@@ -1,6 +1,14 @@
-import { Container, Graphics } from "pixi.js";
+import { Container, Graphics, type FederatedPointerEvent } from "pixi.js";
 import type { Queue } from "./model/queue";
-import { lerp, WorldPos, type Item, type WallMs } from "../shared/common";
+import {
+  lerp,
+  WorldPos,
+  type Color,
+  type Item,
+  type ItemId,
+  type Pos,
+  type WallMs,
+} from "../shared/common";
 import { depth, drawBox, drawPlate, placeAt } from "../shared/draw";
 import { CHARCOAL } from "../shared/palette";
 import { FLAT, project, type Projection } from "../shared/projection";
@@ -13,6 +21,7 @@ const BELT_COLOR = CHARCOAL;
 
 export const buildBoxGraphics = (
   item: Item,
+  color: Color,
   layout: Layout,
   p: Projection,
 ): Graphics =>
@@ -21,14 +30,31 @@ export const buildBoxGraphics = (
     p,
     layout.boxExtent(item.size),
     layout.boxSize,
-    item.color,
+    color,
   );
+
+export type QueueViewOptions = {
+  /** shown above the belt's tail end */
+  readonly name?: string;
+  /** an item's colour now, e.g. to flag blocked ones; its own colour by default */
+  readonly colorOf?: (item: Item) => Color;
+  /** the item under the pointer (client coords), or null once the pointer leaves it */
+  readonly onItemHover?: (item: ItemId | null, at: Pos) => void;
+};
 
 // The container will be positioned by a layer upstream, see `setPosition`
 export class QueueView {
   public readonly queue_container = new Container();
-  private readonly boxes = new Map<number, Graphics>();
+  /** One box per queued item, with the colour it was drawn in (redrawn when that changes) */
+  private readonly boxes = new Map<
+    ItemId,
+    { graphic: Graphics; color: Color }
+  >();
   private readonly belt = new Graphics();
+  private readonly title = sharpText({
+    text: "",
+    style: { fontSize: units(0.33), fontWeight: "bold", fill: CHARCOAL },
+  });
   /** "+N" just past the belt's tail end: how many items don't fit on it */
   private readonly elided = sharpText({
     text: "",
@@ -40,13 +66,17 @@ export class QueueView {
   constructor(
     private readonly queue: Queue,
     private readonly layout: Layout,
+    private readonly options: QueueViewOptions = {},
   ) {
     // Painter's order in iso: boxes closer to the viewer on top; the belt under all of them
     this.queue_container.sortableChildren = true;
     this.belt.zIndex = -Infinity;
     this.elided.anchor.set(0.5);
     this.elided.zIndex = Infinity;
-    this.queue_container.addChild(this.belt, this.elided);
+    this.title.text = options.name ?? "";
+    this.title.anchor.set(0, 1);
+    this.title.zIndex = Infinity;
+    this.queue_container.addChild(this.belt, this.elided, this.title);
     this.setProjection(FLAT);
   }
 
@@ -59,7 +89,7 @@ export class QueueView {
   /** Re-place and redraw the belt, and drop the boxes so `render` rebuilds them for `p` */
   public setProjection(p: Projection): void {
     this.projection = p;
-    for (const g of this.boxes.values()) g.destroy();
+    for (const { graphic } of this.boxes.values()) graphic.destroy();
     this.boxes.clear();
     this.drawBelt();
     this.setPosition(this.origin);
@@ -69,23 +99,18 @@ export class QueueView {
   public render(now: WallMs): void {
     const q = this.queue;
     const alive = new Set(q.items.map((item) => item.id));
-    for (const [id, g] of this.boxes) {
+    for (const [id, { graphic }] of this.boxes) {
       // Delete boxes that don't match any queue member anymore
       if (alive.has(id)) continue;
-      g.destroy();
+      graphic.destroy();
       this.boxes.delete(id);
     }
 
     q.items.forEach((item, i) => {
-      let g = this.boxes.get(item.id);
-      if (g === undefined) {
-        g = buildBoxGraphics(item, this.layout, this.projection);
-        this.boxes.set(item.id, g);
-        this.queue_container.addChild(g);
-      }
+      const g = this.boxOf(item);
       const pos = this.boxPos(i, now);
       placeAt(g, project(this.projection, pos));
-      g.zIndex = depth(pos, this.layout.boxExtent(item.size));
+      g.zIndex = depth(this.projection, pos, this.layout.boxExtent(item.size));
       g.alpha = this.alpha(i, now);
       g.visible = g.alpha > 0;
     });
@@ -98,6 +123,29 @@ export class QueueView {
       this.elided.text = `+${hidden}`;
   }
 
+  /** The item's box in its current colour: built on first sight, rebuilt when the colour changes */
+  private boxOf(item: Item): Graphics {
+    const color = this.options.colorOf?.(item) ?? item.color;
+    const box = this.boxes.get(item.id);
+    if (box !== undefined && box.color === color) return box.graphic;
+    box?.graphic.destroy();
+    const graphic = buildBoxGraphics(item, color, this.layout, this.projection);
+    const { onItemHover } = this.options;
+    if (onItemHover !== undefined) {
+      graphic.eventMode = "static";
+      const hover = (e: FederatedPointerEvent) =>
+        onItemHover(item.id, { x: e.clientX, y: e.clientY });
+      graphic.on("pointerover", hover);
+      graphic.on("pointermove", hover);
+      graphic.on("pointerout", (e) =>
+        onItemHover(null, { x: e.clientX, y: e.clientY }),
+      );
+    }
+    this.boxes.set(item.id, { graphic, color });
+    this.queue_container.addChild(graphic);
+    return graphic;
+  }
+
   /**
    * Items past the belt's end fade out (see `Layout.tailAlpha`); one flying in towards such a slot
    * fades away on its way, rather than landing somewhere invisible.
@@ -106,7 +154,10 @@ export class QueueView {
     const q = this.queue;
     const tail = this.layout.tailAlpha(q.slot(index, now), q.items[index].size);
     const arrival = q.arrival(index, now);
-    return arrival === null ? tail : lerp(1, tail, arrival.t);
+    if (arrival === null) return tail;
+    // Coming from somewhere it wasn't drawn (a store): fade in over the first fifth of the flight
+    const fadeIn = arrival.fadeIn ? Math.min(1, arrival.t / 0.2) : 1;
+    return lerp(1, tail, arrival.t) * fadeIn;
   }
 
   /** The belt plate, and the "+N" label centred on the cell just past its tail end */
@@ -121,6 +172,11 @@ export class QueueView {
       BELT_COLOR,
     );
     placeAt(this.belt, project(p, WorldPos(pos.x - m, pos.y - m)));
+    // The name sits just above the belt's tail end
+    placeAt(
+      this.title,
+      project(p, WorldPos(pos.x - m, pos.y - m - units(0.1))),
+    );
 
     const { boxSize, length } = this.layout;
     const cell = this.layout.boxOrigin(this.layout.itemOffset(length, 0), 1);

@@ -1,12 +1,20 @@
 import { describe, expect, it } from "vitest";
-import { skuColor, VEHICLE_RAMP, vehicleColor } from "./palette";
+import { skuColor, ITEM_RAMP, itemColor, itemTypeColor } from "./palette";
 
-describe("vehicleColor", () => {
+describe("itemColor", () => {
   it("cycles through the teal steps by id", () => {
-    expect([0, 1, 2, 3, 4].map(vehicleColor)).toEqual([
-      ...VEHICLE_RAMP,
-      VEHICLE_RAMP[0],
+    expect([0, 1, 2, 3, 4].map(itemColor)).toEqual([
+      ...ITEM_RAMP,
+      ITEM_RAMP[0],
     ]);
+  });
+});
+
+describe("itemTypeColor", () => {
+  it("spans the teal ramp, darkest to lightest", () => {
+    expect(itemTypeColor(0, 4)).toBe(ITEM_RAMP[0]);
+    expect(itemTypeColor(3, 4)).toBe(ITEM_RAMP[ITEM_RAMP.length - 1]);
+    expect(itemTypeColor(0, 1)).toBe(ITEM_RAMP[0]);
   });
 });
 

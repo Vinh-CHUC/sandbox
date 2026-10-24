@@ -155,8 +155,8 @@ describe("tooltip", () => {
   const W = SkuId(1);
   const E = SkuId(2);
   const names: Names = {
-    item: (id) => `Vehicle ${id}`,
-    sku: (id) => (id === W ? "wheel" : "engine"),
+    item: (id) => `Widget ${id}`,
+    sku: (id) => (id === W ? "bolt" : "nut"),
   };
 
   it("free stations are idle", () => {
@@ -165,7 +165,7 @@ describe("tooltip", () => {
 
   it("says when the item is still on its way", () => {
     expect(tooltip(busy({ arrival: 0.4 }), names)).toBe(
-      "Vehicle 7 · arriving\nno parts",
+      "Widget 7 · arriving\nno parts",
     );
   });
 
@@ -175,14 +175,14 @@ describe("tooltip", () => {
       { inventory: 5, sku: E, count: 1 },
     ];
     expect(tooltip(busy({ arrival: 1, progress: 0.634, parts }), names)).toBe(
-      "Vehicle 7 · processing 63%\nwheel ×3, engine ×1",
+      "Widget 7 · processing 63%\nbolt ×3, nut ×1",
     );
   });
 
   it("without an expected duration, says how long it's been at it", () => {
     expect(
       tooltip(busy({ progress: null, elapsedMs: 25 * 60_000 }), names),
-    ).toBe("Vehicle 7 · processing for 25 min\nno parts");
+    ).toBe("Widget 7 · processing for 25 min\nno parts");
   });
 
   it("falls back to ids without names", () => {
