@@ -7,10 +7,11 @@ const GREEN = 0x00ff00;
 const BLUE = 0x0000ff;
 const WHITE = 0xffffff;
 
-const item = (id: number, color: number, size = 1): Item => ({
+const item = (id: number, color: number, size = 1, processMs = 1000): Item => ({
   id,
   color,
   size,
+  processMs,
 });
 
 describe("clamp01", () => {
@@ -93,16 +94,16 @@ describe("Queue", () => {
 
   it("push appends the caller's items", () => {
     expect(queueOf(RED, GREEN, BLUE).items).toEqual([
-      { id: 0, color: RED, size: 1 },
-      { id: 1, color: GREEN, size: 1 },
-      { id: 2, color: BLUE, size: 1 },
+      { id: 0, color: RED, size: 1, processMs: 1000 },
+      { id: 1, color: GREEN, size: 1, processMs: 1000 },
+      { id: 2, color: BLUE, size: 1, processMs: 1000 },
     ]);
   });
 
   it("pop is FIFO", () => {
     const q = queueOf(RED, GREEN);
-    expect(q.pop(0)).toEqual({ id: 0, color: RED, size: 1 });
-    expect(q.pop(0)).toEqual({ id: 1, color: GREEN, size: 1 });
+    expect(q.pop(0)).toEqual({ id: 0, color: RED, size: 1, processMs: 1000 });
+    expect(q.pop(0)).toEqual({ id: 1, color: GREEN, size: 1, processMs: 1000 });
     expect(q.items).toEqual([]);
   });
 
@@ -113,7 +114,9 @@ describe("Queue", () => {
   it("stores the item verbatim, so the view can key boxes by the caller's id", () => {
     const q = new Queue();
     q.push(item(42, GREEN, 2));
-    expect(q.items).toEqual([{ id: 42, color: GREEN, size: 2 }]);
+    expect(q.items).toEqual([
+      { id: 42, color: GREEN, size: 2, processMs: 1000 },
+    ]);
   });
 
   it("items is readonly from the outside (type-level only)", () => {
@@ -195,7 +198,12 @@ describe("Queue", () => {
 
     it("removeAt returns the item at index", () => {
       const q = queueOf(RED, GREEN, BLUE);
-      expect(q.removeAt(1, 0)).toEqual({ id: 1, color: GREEN, size: 1 });
+      expect(q.removeAt(1, 0)).toEqual({
+        id: 1,
+        color: GREEN,
+        size: 1,
+        processMs: 1000,
+      });
       expect(colors(q)).toEqual([RED, BLUE]);
     });
 

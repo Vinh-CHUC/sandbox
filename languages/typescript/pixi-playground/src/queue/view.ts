@@ -1,30 +1,21 @@
 import { Container, Graphics } from "pixi.js";
 import type { Queue } from "./model/queue";
 import type { Item } from "./model/utils";
-import { boxWidth, stride, type Layout } from "./layout";
+import { type Layout } from "./layout";
 
 export type QueueView = {
   readonly root: Container;
   readonly render: (q: Queue, now: number) => void;
 };
 
-export const buildBoxGraphics = (item: Item, layout: Layout): Graphics =>
-  new Graphics()
-    .roundRect(0, 0, boxWidth(item.size, layout), layout.boxSize, 6)
-    .fill(item.color);
+export const buildBoxGraphics = (item: Item, layout: Layout): Graphics => {
+  const { w, h } = layout.boxExtent(item.size);
+  return new Graphics().roundRect(0, 0, w, h, 6).fill(item.color);
+};
 
-/** Slot -1 is the "processor" that consumes the head of the queue */
 export const createQueueView = (layout: Layout): QueueView => {
   const root = new Container();
   const boxes = new Map<number, Graphics>();
-  const { boxSize } = layout;
-  const step = stride(layout);
-
-  const processor = new Graphics()
-    .rect(0, 0, boxSize, boxSize)
-    .stroke({ width: 3, color: 0xffffff });
-  processor.x = -step;
-  root.addChild(processor);
 
   const render = (q: Queue, now: number) => {
     const alive = new Set(q.items.map((item) => item.id));
@@ -42,9 +33,10 @@ export const createQueueView = (layout: Layout): QueueView => {
         boxes.set(item.id, g);
         root.addChild(g);
       }
-      g.x = q.slot(i, now) * step;
-      // Drop inserted items in from above, otherwise they'd overlap the item they displace
-      g.y = -q.entering(i, now) * step;
+      const pos = layout.itemOffset(q.slot(i, now), q.entering(i, now));
+      const { x, y } = layout.boxOrigin(pos, item.size);
+      g.x = x;
+      g.y = y;
     });
   };
 

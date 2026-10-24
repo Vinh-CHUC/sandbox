@@ -24,6 +24,8 @@ export type Item = {
   readonly id: ItemId;
   readonly color: Color;
   readonly size: Size;
+  /** How long a station takes to process this item */
+  readonly processMs: Ms;
 };
 
 /** `delta` slots of displacement still owed by an item, decaying to 0 from time `at` (ms) */
