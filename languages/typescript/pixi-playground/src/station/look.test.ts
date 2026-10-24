@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { Layout } from "../queue/layout";
 import { PartId, WorldPos, type Item } from "../shared/common";
-import { StationLook, type LookConfig } from "./look";
+import { StationLook, tooltip, type LookConfig } from "./look";
 import { Station, type Busy, type StationConfig } from "./station";
 
 const cfg: LookConfig = {
@@ -107,6 +107,31 @@ describe("StationLook parts", () => {
       origin,
     );
     expect(unknown.held!.parts).toEqual([]);
+  });
+});
+
+describe("tooltip", () => {
+  const W = PartId("wheel");
+  const E = PartId("engine");
+
+  it("free stations are idle", () => {
+    expect(tooltip({ kind: "free" })).toBe("Idle");
+  });
+
+  it("says when the item is still on its way", () => {
+    expect(tooltip(busy({ arrival: 0.4 }))).toBe(
+      "Vehicle #7 · arriving\nno parts",
+    );
+  });
+
+  it("lists the parts used, with progress once processing", () => {
+    const parts = [
+      { part: W, count: 3 },
+      { part: E, count: 1 },
+    ];
+    expect(tooltip(busy({ arrival: 1, progress: 0.634, parts }))).toBe(
+      "Vehicle #7 · processing 63%\nwheel ×3, engine ×1",
+    );
   });
 });
 

@@ -17,7 +17,16 @@
         <button id="slower">−</button>
         <span id="speed"></span>
         <button id="faster">+</button>
+        <label
+          >Throughput over
+          <select id="window">
+            <option value="15000">15 s</option>
+            <option value="60000" selected>1 min</option>
+            <option value="300000">5 min</option>
+          </select>
+        </label>
       </div>
+      <div id="tooltip"></div>
     </div>
     <script type="module" src="/src/main.ts"></script>
   </body>

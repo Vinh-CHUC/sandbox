@@ -95,7 +95,15 @@ const pickParts = (parts: readonly PartId[]): PartRequest => {
   // Append the application canvas to the document body
   document.getElementById("pixi-container")!.appendChild(app.canvas);
 
-  const world = new World(SPEC, { newItem, pickParts });
+  const tooltip = document.getElementById("tooltip")!;
+  const world = new World(SPEC, { newItem, pickParts }, (text, at) => {
+    tooltip.style.display = text === null ? "none" : "block";
+    if (text === null) return;
+    if (tooltip.textContent !== text) tooltip.textContent = text;
+    // Just below-right of the pointer, so it doesn't sit under it
+    tooltip.style.left = `${at.x + 12}px`;
+    tooltip.style.top = `${at.y + 12}px`;
+  });
   app.stage.addChild(world.root);
 
   const toggle = document.getElementById("projection-toggle")!;
@@ -121,6 +129,13 @@ const pickParts = (parts: readonly PartId[]): PartRequest => {
   onClick("pause", () => clock.togglePause());
   onClick("slower", () => clock.slower());
   onClick("faster", () => clock.faster());
+
+  // Throughput labels: which sliding window they average over
+  const windowSelect = button("window") as HTMLSelectElement;
+  const applyWindow = () =>
+    world.setThroughputWindow(Number(windowSelect.value));
+  windowSelect.addEventListener("change", applyWindow);
+  applyWindow();
   showClock();
 
   let lastEditAt = clock.now;

@@ -33,3 +33,14 @@ body {
   min-width: 3em;
   text-align: center;
 }
+
+#tooltip {
+  position: fixed;
+  display: none;
+  pointer-events: none;
+  padding: 6px 10px;
+  border-radius: 4px;
+  background: rgba(20, 28, 36, 0.9);
+  white-space: pre;
+  font-size: 13px;
+}

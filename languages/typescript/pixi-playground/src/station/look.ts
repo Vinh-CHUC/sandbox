@@ -95,6 +95,16 @@ export class StationLook {
     private readonly stacks: ReadonlyMap<PartId, Stack> = new Map(),
   ) {}
 
+  /** What a tooltip says about `station` at `now`, see `tooltip` */
+  public describe(station: Station, now: Ms): string {
+    return tooltip(station.state(now, this.stationCfg));
+  }
+
+  /** Where a station's rate label is centred: just above its plate, over its first box */
+  public labelPos(): WorldPos {
+    return WorldPos(this.layout.boxSize / 2, -this.cfg.margin - 10);
+  }
+
   /** The appearance of `station` at `now`, for a view placed at `origin` */
   public at(station: Station, now: Ms, origin: WorldPos): Appearance {
     return this.of(station.state(now, this.stationCfg), origin);
@@ -164,6 +174,25 @@ export class StationLook {
     });
   }
 }
+
+/**
+ * A station's state in words: what it holds, how far along it is, and the parts it used.
+ *
+ *   tooltip(free)  # "Idle"
+ *   tooltip(busy)  # "Vehicle #42 · processing 63%\nwheel ×3, engine ×1"
+ */
+export const tooltip = (state: StationState): string => {
+  if (state.kind === "free") return "Idle";
+  const status =
+    state.arrival < 1
+      ? "arriving"
+      : `processing ${Math.round(state.progress * 100)}%`;
+  const parts =
+    state.parts.length === 0
+      ? "no parts"
+      : state.parts.map(({ part, count }) => `${part} ×${count}`).join(", ");
+  return `Vehicle #${state.item.id} · ${status}\n${parts}`;
+};
 
 /* ── helpers ───────────────────────────────────────────────────────────── */
 

@@ -1,19 +1,30 @@
 import { Container, Graphics, Text } from "pixi.js";
 import { WorldPos, type Color, type PartId } from "../shared/common";
-import { depth, drawBox, drawPlate, placeAt } from "../shared/draw";
+import {
+  depth,
+  drawBox,
+  drawPlate,
+  placeAt,
+  RATE_REFRESH_MS,
+  throttle,
+} from "../shared/draw";
 import { FLAT, project, type Projection } from "../shared/projection";
 import type { Inventory } from "./inventory";
 import type { Stack } from "./stacks";
 
 /**
- * A floor plate with one box per part stack, each labelled with how many parts it holds. Stacks
- * are in absolute world coords, so the container itself stays at the world's origin.
+ * A floor plate with one box per part stack, each labelled with how many parts it holds, and with
+ * how fast that part is being consumed underneath. Stacks are in absolute world coords, so the
+ * container itself stays at the world's origin.
  */
 export class InventoryView {
   public readonly inventory_container = new Container();
   private readonly plate = new Graphics();
   private readonly boxes = new Map<PartId, Graphics>();
   private readonly labels = new Map<PartId, Text>();
+  /** Parts consumed per minute, under each stack */
+  private readonly rates = new Map<PartId, Text>();
+  private readonly refreshRates = throttle(RATE_REFRESH_MS);
 
   constructor(
     private readonly inventory: Inventory,
@@ -35,6 +46,15 @@ export class InventoryView {
       label.zIndex = Infinity;
       this.labels.set(part, label);
       this.inventory_container.addChild(label);
+
+      const rate = new Text({
+        text: "",
+        style: { fontSize: 11, fill: 0xffffff },
+      });
+      rate.anchor.set(0.5);
+      rate.zIndex = Infinity;
+      this.rates.set(part, rate);
+      this.inventory_container.addChild(rate);
     }
     this.setProjection(FLAT);
   }
@@ -57,15 +77,25 @@ export class InventoryView {
         pos.y + this.boxSize / 2,
       );
       placeAt(this.labels.get(part)!, project(p, centre, this.boxSize));
+      // Under the stack, past the plate's near edge
+      const under = WorldPos(centre.x, pos.y + this.boxSize + this.margin + 10);
+      placeAt(this.rates.get(part)!, project(p, under));
     }
   }
 
-  public render(): void {
+  /** Refresh the counts every frame, and the consumption rates at most once per RATE_REFRESH_MS */
+  public render(perMinute: (part: PartId) => number): void {
     for (const [part, label] of this.labels) {
       const text = String(this.inventory.count(part));
       // Only touch the text when it changes: setting it re-renders the label
       if (label.text !== text) label.text = text;
     }
+    this.refreshRates(() => {
+      for (const [part, label] of this.rates) {
+        const text = `${perMinute(part).toFixed(1)} / min`;
+        if (label.text !== text) label.text = text;
+      }
+    });
   }
 
   /** One plate under all stacks, `margin` beyond them on every side */

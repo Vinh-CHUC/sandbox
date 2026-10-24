@@ -121,4 +121,20 @@ describe("World", () => {
     world.tick(650);
     expect(world.stock(P)).toBe(10); // already full
   });
+
+  it("counts each finished item in its station's throughput", () => {
+    const world = new World(spec(), random());
+    world.tick(0); // item 0 → the station
+    expect(world.throughput(S, 0, 1000)).toBe(0);
+    world.tick(1900); // item 0 finishes (900 fly-in + 1000 processing)
+    expect(world.throughput(S, 0, 1900)).toBeCloseTo(60_000 / 1900); // 1 in 1.9 s
+    world.setThroughputWindow(1_000);
+    expect(world.throughput(S, 0, 1900)).toBeCloseTo(60); // 1 in the last 1 s
+  });
+
+  it("counts the parts each dispatch takes in that part's throughput", () => {
+    const world = new World(spec(), random([{ part: P, count: 2 }]));
+    world.tick(0); // item 0 → the station, taking 2 × P
+    expect(world.partThroughput(P, 1000)).toBeCloseTo(120); // 2 in 1 s
+  });
 });

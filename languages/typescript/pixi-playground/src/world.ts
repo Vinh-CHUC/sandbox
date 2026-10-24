@@ -20,13 +20,16 @@ import { GridView } from "./shared/grid";
 import { cameraOffset, FLAT, type Projection } from "./shared/projection";
 import { DEFAULT_LOOK, StationLook } from "./station/look";
 import { DEFAULT_CONFIG, Station, StationBoard } from "./station/station";
-import { StationView } from "./station/view";
+import { Throughput } from "./station/throughput";
+import { StationView, type Hover } from "./station/view";
 
 const BOX = 36;
 const GAP = 8;
 const QUEUE_LENGTH = 5;
 /** Every this often (simulated), one more part goes back on a stack, cycling through the parts */
 const RESTOCK_INTERVAL_MS = 200;
+/** The longest throughput window that can be asked for: older completions are forgotten */
+export const MAX_THROUGHPUT_WINDOW_MS = 5 * 60_000;
 
 export type ConveyorId = string & { readonly __brand: "ConveyorId" };
 export const ConveyorId = (id: string) => id as ConveyorId;
@@ -170,9 +173,19 @@ export class World {
   private _projection: Projection = FLAT;
   private readonly conveyors = new Map<ConveyorId, Conveyor>();
   private readonly boards: {
+    readonly id: BoardId;
     readonly board: StationBoard;
     readonly positions: readonly WorldPos[];
+    /** per station, in the board's order: its view and its completions */
+    readonly stations: readonly {
+      readonly view: StationView;
+      readonly throughput: Throughput;
+    }[];
   }[] = [];
+  /** Parts consumed, per part type */
+  private readonly consumption = new Map<PartId, Throughput>();
+  /** Sliding window for the stations' and stacks' per-minute labels */
+  private throughputWindowMs: Ms = 60_000;
   private readonly queueViews: QueueView[] = [];
   private readonly stationViews: StationView[] = [];
   private readonly inventory: Inventory;
@@ -187,6 +200,8 @@ export class World {
   constructor(
     spec: WorldSpec,
     private readonly random: WorldRandom,
+    /** called while a station is hovered, see `Hover`; omitted in tests */
+    onHover?: Hover,
   ) {
     const { newItem } = random;
     const fedIds = new Set(
@@ -216,6 +231,8 @@ export class World {
       spec.inventory.parts.map(({ id }) => id),
       spec.inventory.capacity,
     );
+    for (const part of this.inventory.parts)
+      this.consumption.set(part, new Throughput(MAX_THROUGHPUT_WINDOW_MS));
     this.inventoryView = new InventoryView(
       this.inventory,
       stacks,
@@ -233,16 +250,20 @@ export class World {
     const boardsById = new Map<BoardId, StationBoard>();
     for (const { id, positions } of spec.boards) {
       // Stations know nothing of where they sit: each one's view is placed instead
-      const stations = positions.map((target) => {
+      const placed = positions.map((target) => {
         const station = new Station();
-        const view = new StationView(station, look);
+        const view = new StationView(station, look, onHover);
         view.setPosition(target);
         this.stationViews.push(view);
-        return station;
+        return {
+          station,
+          view,
+          throughput: new Throughput(MAX_THROUGHPUT_WINDOW_MS),
+        };
       });
-      const board = new StationBoard(stations);
+      const board = new StationBoard(placed.map(({ station }) => station));
       boardsById.set(id, board);
-      this.boards.push({ board, positions });
+      this.boards.push({ id, board, positions, stations: placed });
     }
 
     this.downstream = resolveEdges(
@@ -276,6 +297,25 @@ export class World {
     for (const view of this.stationViews) view.setProjection(p);
   }
 
+  /** Change the window the throughput labels average over, capped at MAX_THROUGHPUT_WINDOW_MS */
+  public setThroughputWindow(ms: Ms): void {
+    this.throughputWindowMs = Math.min(ms, MAX_THROUGHPUT_WINDOW_MS);
+  }
+
+  /** Items per minute finished by station `index` of board `id`, over the current window */
+  public throughput(id: BoardId, index: number, now: Ms): number {
+    const entry = this.boards.find((b) => b.id === id);
+    const station = entry?.stations[index];
+    return station?.throughput.perMinute(now, this.throughputWindowMs) ?? 0;
+  }
+
+  /** `part`s consumed per minute, over the current window */
+  public partThroughput(part: PartId, now: Ms): number {
+    return (
+      this.consumption.get(part)?.perMinute(now, this.throughputWindowMs) ?? 0
+    );
+  }
+
   /** How many of `part` the inventory holds */
   public stock(part: PartId): number {
     return this.inventory.count(part);
@@ -305,23 +345,32 @@ export class World {
   /** Restock, move finished items out of stations, feed free stations, then redraw everything */
   public tick(now: Ms): void {
     this.restock(now);
-    for (const { board, positions } of this.boards) {
+    for (const { board, positions, stations } of this.boards) {
       const next = this.downstream.ofBoard.get(board);
-      for (const { item, index } of board.reap(now, DEFAULT_CONFIG))
+      for (const { item, index } of board.reap(now, DEFAULT_CONFIG)) {
+        stations[index].throughput.record(now);
         // Without a downstream conveyor the item just disappears
         next?.queue.arrive(item, positions[index], now);
+      }
     }
     for (const c of this.conveyors.values()) {
       const next = this.downstream.ofConveyor.get(c);
       // Pop as long as a station is free and the inventory has what the next item needs
       if (next?.kind === "stations")
-        while (
-          transfer(c, next, now, this.random.pickParts(this.inventory.parts))
-        );
+        for (;;) {
+          const parts = this.random.pickParts(this.inventory.parts);
+          if (!transfer(c, next, now, parts)) break;
+          for (const { part, count } of parts)
+            this.consumption.get(part)?.record(now, count);
+        }
     }
     for (const view of this.queueViews) view.render(now);
-    for (const view of this.stationViews) view.render(now);
-    this.inventoryView.render();
+    for (const { stations } of this.boards)
+      for (const { view, throughput } of stations)
+        view.render(now, () =>
+          throughput.perMinute(now, this.throughputWindowMs),
+        );
+    this.inventoryView.render((part) => this.partThroughput(part, now));
   }
 
   /** One part per RESTOCK_INTERVAL_MS, round-robin; catches up after long frames (e.g. at 4×) */

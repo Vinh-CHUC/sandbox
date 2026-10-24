@@ -64,3 +64,20 @@ export const drawPlate = (
   const at = (x: number, y: number) => project(p, WorldPos(x, y));
   return g.poly(flatten([at(0, 0), at(w, 0), at(w, h), at(0, h)])).fill(color);
 };
+
+/** Live rate labels change at most this often, in real time, so they stay readable at any speed */
+export const RATE_REFRESH_MS = 1000;
+
+/**
+ * Runs what it's given at most once per `ms` of *real* time (`performance.now()`), dropping the
+ * calls in between; the first call always runs.
+ */
+export const throttle = (ms: number) => {
+  let last = -Infinity;
+  return (run: () => void): void => {
+    const now = performance.now();
+    if (now - last < ms) return;
+    last = now;
+    run();
+  };
+};
