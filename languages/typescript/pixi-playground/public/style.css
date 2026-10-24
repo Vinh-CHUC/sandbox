@@ -14,11 +14,22 @@ body {
   align-items: center;
 }
 
-#projection-toggle {
+#controls {
   position: absolute;
   top: 12px;
   left: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+#controls button {
   padding: 6px 12px;
   font: inherit;
   cursor: pointer;
+}
+
+#speed {
+  min-width: 3em;
+  text-align: center;
 }

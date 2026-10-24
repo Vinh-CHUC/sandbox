@@ -1,5 +1,6 @@
 import { Application } from "pixi.js";
 import { ScreenPos, WorldPos, type Item } from "./shared/common";
+import { SimClock } from "./shared/clock";
 import { FLAT, type Projection } from "./shared/projection";
 import { BoardId, ConveyorId, World, type WorldSpec } from "./world";
 
@@ -80,9 +81,27 @@ const newItem = (): Item => ({
     toggle.textContent = label();
   });
 
-  let lastEditAt = performance.now();
-  app.ticker.add(() => {
-    const now = performance.now();
+  // Simulated time: pause and speed controls only touch this clock
+  const clock = new SimClock();
+  const button = (id: string) => document.getElementById(id)!;
+  const showClock = () => {
+    button("pause").textContent = clock.paused ? "▶" : "⏸";
+    button("speed").textContent = `${clock.speed}×`;
+  };
+  const onClick = (id: string, action: () => void) =>
+    button(id).addEventListener("click", () => {
+      action();
+      showClock();
+    });
+  onClick("pause", () => clock.togglePause());
+  onClick("slower", () => clock.slower());
+  onClick("faster", () => clock.faster());
+  showClock();
+
+  let lastEditAt = clock.now;
+  app.ticker.add((ticker) => {
+    // Real frame time in, simulated time out: everything below runs on the latter
+    const now = clock.advance(ticker.deltaMS);
     if (now - lastEditAt >= EDIT_INTERVAL_MS) {
       world.randomEdit(now);
       lastEditAt = now;
