@@ -1,8 +1,16 @@
 import { Application } from "pixi.js";
-import type { Item } from "./shared/common";
+import { ScreenPos, WorldPos, type Item } from "./shared/common";
+import { FLAT, type Projection } from "./shared/projection";
 import { BoardId, ConveyorId, World, type WorldSpec } from "./world";
 
 const EDIT_INTERVAL_MS = 400;
+
+/** 2:1 isometric; the offset keeps the (skewed) scene in view */
+const ISO: Projection = {
+  kind: "iso",
+  scale: 0.7,
+  offset: ScreenPos(250, -100),
+};
 
 const C1 = ConveyorId("C1");
 const C2 = ConveyorId("C2");
@@ -13,25 +21,21 @@ const S2 = BoardId("S2");
 // tails extend leftwards from each origin; stations are stacked around each conveyor's axis.
 const SPEC: WorldSpec = {
   conveyors: [
-    { id: C1, origin: { x: 600, y: 240 }, direction: "ltr" },
-    { id: C2, origin: { x: 1400, y: 240 }, direction: "ltr" },
+    { id: C1, origin: WorldPos(600, 240), direction: "ltr" },
+    { id: C2, origin: WorldPos(1400, 240), direction: "ltr" },
   ],
   boards: [
     {
       id: S1,
       // item top-left, in stage coords
-      positions: [
-        { x: 720, y: 100 },
-        { x: 720, y: 240 },
-        { x: 720, y: 380 },
-      ],
+      positions: [WorldPos(720, 100), WorldPos(720, 240), WorldPos(720, 380)],
     },
     {
       id: S2,
       positions: [
-        { x: 1520, y: 100 },
-        { x: 1520, y: 240 },
-        { x: 1520, y: 380 },
+        WorldPos(1520, 100),
+        WorldPos(1520, 240),
+        WorldPos(1520, 380),
       ],
     },
   ],
@@ -66,7 +70,15 @@ const newItem = (): Item => ({
   document.getElementById("pixi-container")!.appendChild(app.canvas);
 
   const world = new World(SPEC, newItem);
-  for (const container of world.containers) app.stage.addChild(container);
+  app.stage.addChild(world.root);
+
+  const toggle = document.getElementById("projection-toggle")!;
+  const label = () => (world.projection.kind === "flat" ? "Isometric" : "Flat");
+  toggle.textContent = label();
+  toggle.addEventListener("click", () => {
+    world.setProjection(world.projection.kind === "flat" ? ISO : FLAT);
+    toggle.textContent = label();
+  });
 
   let lastEditAt = performance.now();
   app.ticker.add(() => {

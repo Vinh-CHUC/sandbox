@@ -1,21 +1,25 @@
 import { Container, Graphics } from "pixi.js";
-import type { Extent, ItemId, Pos } from "../shared/common";
+import { WorldPos, type Extent, type ItemId } from "../shared/common";
+import { depth, drawBox, drawPlate, placeAt } from "../shared/draw";
+import { FLAT, project, type Projection } from "../shared/projection";
 import type { HeldLook, PadLook, StationLook } from "./look";
 import type { Station } from "./station";
 
 /** White so the station's progress colour can drive it via `tint` */
-const buildItemBox = ({ w: width, h: height }: Extent): Graphics =>
-  new Graphics().roundRect(0, 0, width, height, 6).fill(0xffffff);
+const buildItemBox = (
+  extent: Extent,
+  height: number,
+  p: Projection,
+): Graphics => drawBox(new Graphics(), p, extent, height, 0xffffff);
 
-const drawPad = (pad: Graphics, look: PadLook): void => {
-  pad.clear().roundRect(0, 0, look.extent.w, look.extent.h, 8).fill(look.color);
-  pad.x = look.pos.x;
-  pad.y = look.pos.y;
+const drawPad = (pad: Graphics, look: PadLook, p: Projection): void => {
+  drawPlate(pad.clear(), p, look.extent, look.color);
+  placeAt(pad, project(p, look.pos));
 };
 
-const placeItem = (box: Graphics, look: HeldLook): void => {
-  box.x = look.pos.x;
-  box.y = look.pos.y;
+const placeItem = (box: Graphics, look: HeldLook, p: Projection): void => {
+  placeAt(box, project(p, look.pos));
+  box.zIndex = depth(look.pos, look.extent);
   box.alpha = look.alpha;
   box.tint = look.tint;
 };
@@ -27,24 +31,37 @@ export class StationView {
   /** The held item's box, if any: at most one, since a station holds one item */
   private box: { readonly id: ItemId; readonly graphic: Graphics } | null =
     null;
+  private origin = WorldPos(0, 0);
+  private projection: Projection = FLAT;
 
   constructor(
     private readonly station: Station,
     private readonly look: StationLook,
   ) {
+    this.station_container.sortableChildren = true;
+    // The plate lies on the ground, under whatever the station holds
+    this.pad.zIndex = -Infinity;
     this.station_container.addChild(this.pad);
   }
 
-  /** Place the station on the stage; the pad and item box stay relative to this origin */
-  public setPosition(target: Pos): void {
-    this.station_container.position.set(target.x, target.y);
+  /** Place the station in the world; the pad and item box stay relative to this origin */
+  public setPosition(target: WorldPos): void {
+    this.origin = target;
+    placeAt(this.station_container, project(this.projection, target));
+  }
+
+  /** Re-place the station, and drop the item box so `render` rebuilds it for `p` */
+  public setProjection(p: Projection): void {
+    this.projection = p;
+    this.box?.graphic.destroy();
+    this.box = null;
+    this.setPosition(this.origin);
   }
 
   public render(now: number): void {
-    const origin = this.station_container.position;
-    const { pad, held } = this.look.at(this.station, now, origin);
+    const { pad, held } = this.look.at(this.station, now, this.origin);
     // Plate is always drawn, sized to the held item (or a base box when free)
-    drawPad(this.pad, pad);
+    drawPad(this.pad, pad, this.projection);
     this.syncBox(held);
   }
 
@@ -57,11 +74,11 @@ export class StationView {
     // Free station: plate only
     if (held === null) return;
     if (this.box === null) {
-      const graphic = buildItemBox(held.extent);
+      const graphic = buildItemBox(held.extent, held.height, this.projection);
       this.station_container.addChild(graphic);
       this.box = { id: held.id, graphic };
     }
     // Fly-in position, heartbeat alpha and progress tint
-    placeItem(this.box.graphic, held);
+    placeItem(this.box.graphic, held, this.projection);
   }
 }

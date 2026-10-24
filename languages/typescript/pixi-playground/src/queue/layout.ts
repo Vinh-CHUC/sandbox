@@ -1,4 +1,4 @@
-import type { Extent, Pos, Size } from "../shared/common";
+import { WorldPos, type Extent, type Pos, type Size } from "../shared/common";
 
 /** Which way a queue advances, from its tail to its head */
 export type Direction = "ltr" | "rtl" | "ttb" | "btt";
@@ -20,7 +20,7 @@ export const isVertical = (d: Direction): boolean => d === "ttb" || d === "btt";
 /**
  * The geometry of a conveyor belt: box size, spacing, and flow direction.
  *
- * Deliberately unaware of where the queue sits on screen: every `Pos` is relative to the queue
+ * Deliberately unaware of where the queue sits on screen: every `WorldPos` is relative to the queue
  * origin (the head's anchor, slot 0). The owner places the whole belt by positioning the pixi
  * container holding its boxes, so children inherit the translation and no method here adds an
  * origin. Callers that cross containers (e.g. dispatching to a station) add it themselves.
@@ -54,25 +54,22 @@ export class Layout {
   }
 
   /** Pixel offset from the queue origin for a fractional `slot` and `entering` amount */
-  public itemOffset(slot: number, entering: number): Pos {
+  public itemOffset(slot: number, entering: number): WorldPos {
     const { slot: s, cross: c } = AXES[this.direction];
     const d = this.stride;
-    return {
-      x: (slot * s.x + entering * c.x) * d,
-      y: (slot * s.y + entering * c.y) * d,
-    };
+    return WorldPos(
+      (slot * s.x + entering * c.x) * d,
+      (slot * s.y + entering * c.y) * d,
+    );
   }
 
   /**
    * Top-left corner to draw an item's box at, given its slot position. The box spans `size`
    * slots *toward the tail*, i.e. along the slot axis, which may be negative.
    */
-  public boxOrigin(pos: Pos, size: Size): Pos {
+  public boxOrigin(pos: WorldPos, size: Size): WorldPos {
     const { slot: s } = AXES[this.direction];
     const { w, h } = this.boxExtent(size);
-    return {
-      x: pos.x + (s.x < 0 ? -w : 0),
-      y: pos.y + (s.y < 0 ? -h : 0),
-    };
+    return WorldPos(pos.x + (s.x < 0 ? -w : 0), pos.y + (s.y < 0 ? -h : 0));
   }
 }

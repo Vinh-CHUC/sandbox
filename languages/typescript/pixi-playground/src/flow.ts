@@ -1,14 +1,14 @@
 import type { Layout } from "./queue/layout";
 import type { Queue } from "./queue/model/queue";
-import type { Ms, Pos, Size } from "./shared/common";
+import { WorldPos, type Ms, type Size } from "./shared/common";
 import type { StationBoard } from "./station/station";
 
 /** A queue placed on the stage: enough to know where its head sits */
 export type Conveyor = {
   readonly queue: Queue;
   readonly layout: Layout;
-  /** where the queue's head sits, in stage coords */
-  readonly origin: Pos;
+  /** where the queue's head sits, in world coords */
+  readonly origin: WorldPos;
 };
 
 /** Where a conveyor's popped head goes next */
@@ -16,10 +16,10 @@ export type Node =
   | { readonly kind: "queue"; readonly conveyor: Conveyor }
   | { readonly kind: "stations"; readonly board: StationBoard };
 
-/** Stage-coords top-left of the head item's box, so a hand-off starts exactly where it sat */
-export const headBox = (c: Conveyor, size: Size): Pos => {
+/** World-coords top-left of the head item's box, so a hand-off starts exactly where it sat */
+export const headBox = (c: Conveyor, size: Size): WorldPos => {
   const o = c.layout.boxOrigin(c.layout.itemOffset(0, 0), size);
-  return { x: c.origin.x + o.x, y: c.origin.y + o.y };
+  return WorldPos(c.origin.x + o.x, c.origin.y + o.y);
 };
 
 /** Queues grow unbounded; stations need a free one */

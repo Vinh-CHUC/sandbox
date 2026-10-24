@@ -1,9 +1,12 @@
-import type { Container } from "pixi.js";
+import { Container } from "pixi.js";
 import { transfer, type Conveyor, type Node } from "./flow";
 import { Layout, type Direction } from "./queue/layout";
 import { Queue } from "./queue/model/queue";
 import { QueueView } from "./queue/view";
-import type { Item, Ms, Pos } from "./shared/common";
+import type { Extent, Item, Ms, WorldPos } from "./shared/common";
+import { placeAt } from "./shared/draw";
+import { GridView } from "./shared/grid";
+import { cameraOffset, FLAT, type Projection } from "./shared/projection";
 import { DEFAULT_LOOK, StationLook } from "./station/look";
 import { DEFAULT_CONFIG, Station, StationBoard } from "./station/station";
 import { StationView } from "./station/view";
@@ -17,16 +20,16 @@ export const ConveyorId = (id: string) => id as ConveyorId;
 export type BoardId = string & { readonly __brand: "BoardId" };
 export const BoardId = (id: string) => id as BoardId;
 
-/** A queue whose head sits at `origin` (stage coords), flowing in `direction` */
+/** A queue whose head sits at `origin` (world coords), flowing in `direction` */
 export type ConveyorSpec = {
   readonly id: ConveyorId;
-  readonly origin: Pos;
+  readonly origin: WorldPos;
   readonly direction: Direction;
 };
-/** A pool of stations, one per position (item top-left, in stage coords) */
+/** A pool of stations, one per position (item top-left, in world coords) */
 export type BoardSpec = {
   readonly id: BoardId;
-  readonly positions: readonly Pos[];
+  readonly positions: readonly WorldPos[];
 };
 export type QueueRef = { readonly kind: "queue"; readonly id: ConveyorId };
 export type StationsRef = { readonly kind: "stations"; readonly id: BoardId };
@@ -109,12 +112,29 @@ export const resolveEdges = (
   return { ofConveyor, ofBoard };
 };
 
+/** The ground the grid covers: everything in `spec`, plus a few cells of slack, from (0, 0) */
+const gridExtent = (spec: WorldSpec, step: number): Extent => {
+  const all = [
+    ...spec.conveyors.map(({ origin }) => origin),
+    ...spec.boards.flatMap(({ positions }) => positions),
+  ];
+  const slack = 4 * step;
+  return {
+    w: Math.max(0, ...all.map((p) => p.x)) + slack,
+    h: Math.max(0, ...all.map((p) => p.y)) + slack,
+  };
+};
+
 /** Builds the models and their views from a `WorldSpec`, and drives them over time */
 export class World {
+  /** Everything drawn: the grid, then every view, for `app.stage.addChild` */
+  public readonly root = new Container();
+  private readonly grid: GridView;
+  private _projection: Projection = FLAT;
   private readonly conveyors = new Map<ConveyorId, Conveyor>();
   private readonly boards: {
     readonly board: StationBoard;
-    readonly positions: readonly Pos[];
+    readonly positions: readonly WorldPos[];
   }[] = [];
   private readonly queueViews: QueueView[] = [];
   private readonly stationViews: StationView[] = [];
@@ -165,14 +185,27 @@ export class World {
     }
 
     this.downstream = resolveEdges(spec.edges, this.conveyors, boardsById);
-  }
 
-  /** Every view's root container, for `app.stage.addChild` */
-  public get containers(): readonly Container[] {
-    return [
+    this.grid = new GridView(gridExtent(spec, BOX + GAP), BOX + GAP);
+    this.root.addChild(
+      this.grid.graphic,
       ...this.queueViews.map((v) => v.queue_container),
       ...this.stationViews.map((v) => v.station_container),
-    ];
+    );
+    this.setProjection(FLAT);
+  }
+
+  public get projection(): Projection {
+    return this._projection;
+  }
+
+  /** Redraw the whole world under `p`: models and their world coords are untouched */
+  public setProjection(p: Projection): void {
+    this._projection = p;
+    placeAt(this.root, cameraOffset(p));
+    this.grid.setProjection(p);
+    for (const view of this.queueViews) view.setProjection(p);
+    for (const view of this.stationViews) view.setProjection(p);
   }
 
   /** The items currently on conveyor `id`, head first */

@@ -6,7 +6,7 @@ import {
   type PickStation,
   type StationConfig,
 } from "./station";
-import type { Item } from "../shared/common";
+import { WorldPos, type Item } from "../shared/common";
 
 const cfg: StationConfig = { dispatchMs: 100 };
 
@@ -17,7 +17,7 @@ const item = (id: number, processMs = 1000): Item => ({
   processMs,
 });
 
-const at = (x: number, y: number) => ({ x, y });
+const at = (x: number, y: number) => WorldPos(x, y);
 
 describe("Station", () => {
   it("starts free", () => {

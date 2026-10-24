@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { Layout } from "../queue/layout";
-import type { Item } from "../shared/common";
+import { WorldPos, type Item } from "../shared/common";
 import { StationLook, type LookConfig } from "./look";
 import { Station, type Busy, type StationConfig } from "./station";
 
@@ -17,7 +17,7 @@ const cfg: LookConfig = {
 const stationCfg: StationConfig = { dispatchMs: 100 };
 const layout = new Layout(20, 5, "ltr");
 const look = new StationLook(stationCfg, layout, cfg);
-const at = (x: number, y: number) => ({ x, y });
+const at = (x: number, y: number) => WorldPos(x, y);
 const origin = at(100, 0); // where the station sits on the stage
 
 const item = (size = 1): Item => ({ id: 7, color: 0, size, processMs: 1000 });

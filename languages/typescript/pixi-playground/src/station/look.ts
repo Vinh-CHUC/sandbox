@@ -3,12 +3,12 @@ import {
   lerp,
   mixColor,
   smoothstep,
+  WorldPos,
   type Color,
   type Extent,
   type Fraction,
   type ItemId,
   type Ms,
-  type Pos,
   type Size,
 } from "../shared/common";
 import type { Busy, Station, StationConfig, StationState } from "./station";
@@ -40,17 +40,19 @@ export const DEFAULT_LOOK: LookConfig = {
 
 export type PadLook = {
   /** top-left of the plate */
-  readonly pos: Pos;
+  readonly pos: WorldPos;
   readonly extent: Extent;
   readonly color: Color;
 };
 
 export type HeldLook = {
   readonly id: ItemId;
-  /** the item's box dimensions */
+  /** the item's box footprint */
   readonly extent: Extent;
+  /** how tall the box stands (iso only) */
+  readonly height: number;
   /** top-left of the item's box: tweened from the queue head to (0, 0) */
-  readonly pos: Pos;
+  readonly pos: WorldPos;
   readonly alpha: Fraction;
   readonly tint: Color;
 };
@@ -76,12 +78,12 @@ export class StationLook {
   ) {}
 
   /** The appearance of `station` at `now`, for a view placed at `origin` */
-  public at(station: Station, now: Ms, origin: Pos): Appearance {
+  public at(station: Station, now: Ms, origin: WorldPos): Appearance {
     return this.of(station.state(now, this.stationCfg), origin);
   }
 
-  /** `origin` is only needed to bring the dispatch `source` (stage coords) into local coords */
-  public of(state: StationState, origin: Pos): Appearance {
+  /** `origin` is only needed to bring the dispatch `source` (world coords) into local coords */
+  public of(state: StationState, origin: WorldPos): Appearance {
     return state.kind === "free"
       ? { pad: this.pad(1), held: null }
       : { pad: this.pad(state.item.size), held: this.held(state, origin) };
@@ -92,23 +94,24 @@ export class StationLook {
     const { margin } = this.cfg;
     const { w, h } = this.layout.boxExtent(size);
     return {
-      pos: { x: -margin, y: -margin },
+      pos: WorldPos(-margin, -margin),
       extent: { w: w + 2 * margin, h: h + 2 * margin },
       color: this.cfg.padColor,
     };
   }
 
-  private held(busy: Busy, origin: Pos): HeldLook {
+  private held(busy: Busy, origin: WorldPos): HeldLook {
     const { cfg } = this;
-    // Fly in from the queue head (stage coords) to the local origin
+    // Fly in from the queue head (world coords) to the local origin
     const t = smoothstep(busy.arrival);
     return {
       id: busy.item.id,
       extent: this.layout.boxExtent(busy.item.size),
-      pos: {
-        x: lerp(busy.source.x - origin.x, 0, t),
-        y: lerp(busy.source.y - origin.y, 0, t),
-      },
+      height: this.layout.boxSize,
+      pos: WorldPos(
+        lerp(busy.source.x - origin.x, 0, t),
+        lerp(busy.source.y - origin.y, 0, t),
+      ),
       alpha: lerp(
         cfg.alphaMin,
         cfg.alphaMax,

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { Queue } from "./queue";
-import type { Item } from "../../shared/common";
+import { WorldPos, type Item } from "../../shared/common";
 import { lag, type Shift } from "./utils";
 
 const RED = 0xff0000;
@@ -224,7 +224,7 @@ describe("Queue", () => {
 });
 
 describe("arrive / arrival", () => {
-  const source = { x: 10, y: 20 };
+  const source = WorldPos(10, 20);
 
   it("appends at the tail, flying in from `source` over MOVE_DURATION_MS", () => {
     const q = new Queue();

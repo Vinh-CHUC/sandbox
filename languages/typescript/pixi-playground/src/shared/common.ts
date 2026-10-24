@@ -8,8 +8,14 @@ export type Size = number;
 /** In [0, 1] */
 export type Fraction = number;
 
-// The true position along the 2D pane, no isometric/3D at this point
+/** A plain 2D vector; actual positions are either a `WorldPos` or a `ScreenPos` */
 export type Pos = { readonly x: number; readonly y: number };
+/** Position on the world's ground plane (px), whatever the projection: what models and looks use */
+export type WorldPos = Pos & { readonly __brand: "WorldPos" };
+export const WorldPos = (x: number, y: number) => ({ x, y }) as WorldPos;
+/** Position in pixi's coords, i.e. a projected `WorldPos`: only views deal with these */
+export type ScreenPos = Pos & { readonly __brand: "ScreenPos" };
+export const ScreenPos = (x: number, y: number) => ({ x, y }) as ScreenPos;
 export type Extent = { readonly w: number; readonly h: number };
 
 export type Item = {

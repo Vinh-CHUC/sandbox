@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { Item } from "./shared/common";
+import { WorldPos, type Item } from "./shared/common";
 import {
   BoardId,
   ConveyorId,
@@ -17,7 +17,7 @@ const items = () => {
 const C = ConveyorId("C");
 const D = ConveyorId("D");
 const S = BoardId("S");
-const origin = { x: 0, y: 0 };
+const origin = WorldPos(0, 0);
 
 // C → S → D
 const spec = (
@@ -30,7 +30,7 @@ const spec = (
     { id: C, origin, direction: "ltr" },
     { id: D, origin, direction: "ltr" },
   ],
-  boards: [{ id: S, positions: [{ x: 50, y: 0 }] }],
+  boards: [{ id: S, positions: [WorldPos(50, 0)] }],
   edges,
 });
 
@@ -47,8 +47,8 @@ describe("resolveEdges", () => {
 });
 
 describe("World", () => {
-  it("one container per conveyor and per station", () => {
-    expect(new World(spec(), items()).containers).toHaveLength(2 + 1);
+  it("draws the grid, then one container per conveyor and per station", () => {
+    expect(new World(spec(), items()).root.children).toHaveLength(1 + 2 + 1);
   });
 
   it("only roots start filled", () => {
