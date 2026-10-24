@@ -1,9 +1,13 @@
-import { Container, Graphics } from "pixi.js";
+import { Container, Graphics, Text } from "pixi.js";
 import type { Queue } from "./model/queue";
 import { lerp, WorldPos, type Item } from "../shared/common";
-import { depth, drawBox, placeAt } from "../shared/draw";
+import { depth, drawBox, drawPlate, placeAt } from "../shared/draw";
 import { FLAT, project, type Projection } from "../shared/projection";
 import { type Layout } from "./layout";
+
+/** The belt plate under the boxes, `BELT_MARGIN` beyond them on every side */
+const BELT_MARGIN = 6;
+const BELT_COLOR = 0x22303c;
 
 export const buildBoxGraphics = (
   item: Item,
@@ -22,6 +26,12 @@ export const buildBoxGraphics = (
 export class QueueView {
   public readonly queue_container = new Container();
   private readonly boxes = new Map<number, Graphics>();
+  private readonly belt = new Graphics();
+  /** "+N" just past the belt's tail end: how many items don't fit on it */
+  private readonly elided = new Text({
+    text: "",
+    style: { fontSize: 14, fontWeight: "bold", fill: 0xffffff },
+  });
   private origin = WorldPos(0, 0);
   private projection: Projection = FLAT;
 
@@ -29,8 +39,13 @@ export class QueueView {
     private readonly queue: Queue,
     private readonly layout: Layout,
   ) {
-    // Painter's order in iso: boxes closer to the viewer on top
+    // Painter's order in iso: boxes closer to the viewer on top; the belt under all of them
     this.queue_container.sortableChildren = true;
+    this.belt.zIndex = -Infinity;
+    this.elided.anchor.set(0.5);
+    this.elided.zIndex = Infinity;
+    this.queue_container.addChild(this.belt, this.elided);
+    this.setProjection(FLAT);
   }
 
   /** Place the whole belt in the world; box offsets stay relative to this origin */
@@ -39,11 +54,12 @@ export class QueueView {
     placeAt(this.queue_container, project(this.projection, origin));
   }
 
-  /** Re-place the belt, and drop the boxes so `render` rebuilds them for `p` */
+  /** Re-place and redraw the belt, and drop the boxes so `render` rebuilds them for `p` */
   public setProjection(p: Projection): void {
     this.projection = p;
     for (const g of this.boxes.values()) g.destroy();
     this.boxes.clear();
+    this.drawBelt();
     this.setPosition(this.origin);
   }
 
@@ -67,7 +83,46 @@ export class QueueView {
       const pos = this.boxPos(i, now);
       placeAt(g, project(this.projection, pos));
       g.zIndex = depth(pos, this.layout.boxExtent(item.size));
+      g.alpha = this.alpha(i, now);
+      g.visible = g.alpha > 0;
     });
+
+    const hidden = q.items.filter(
+      (item, i) => this.layout.tailAlpha(q.slot(i, now), item.size) < 1,
+    ).length;
+    this.elided.visible = hidden > 0;
+    if (hidden > 0 && this.elided.text !== `+${hidden}`)
+      this.elided.text = `+${hidden}`;
+  }
+
+  /**
+   * Items past the belt's end fade out (see `Layout.tailAlpha`); one flying in towards such a slot
+   * fades away on its way, rather than landing somewhere invisible.
+   */
+  private alpha(index: number, now: number): number {
+    const q = this.queue;
+    const tail = this.layout.tailAlpha(q.slot(index, now), q.items[index].size);
+    const arrival = q.arrival(index, now);
+    return arrival === null ? tail : lerp(1, tail, arrival.t);
+  }
+
+  /** The belt plate, and the "+N" label centred on the cell just past its tail end */
+  private drawBelt(): void {
+    const p = this.projection;
+    const { pos, extent } = this.layout.belt();
+    const m = BELT_MARGIN;
+    drawPlate(
+      this.belt.clear(),
+      p,
+      { w: extent.w + 2 * m, h: extent.h + 2 * m },
+      BELT_COLOR,
+    );
+    placeAt(this.belt, project(p, WorldPos(pos.x - m, pos.y - m)));
+
+    const { boxSize, length } = this.layout;
+    const cell = this.layout.boxOrigin(this.layout.itemOffset(length, 0), 1);
+    const centre = WorldPos(cell.x + boxSize / 2, cell.y + boxSize / 2);
+    placeAt(this.elided, project(p, centre));
   }
 
   /** Top-left of the box at `index`, in world coords relative to the belt's origin */

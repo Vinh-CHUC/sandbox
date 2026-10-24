@@ -69,3 +69,26 @@ describe("itemOffset", () => {
     expect(at("ttb", 0, 1)).toEqual({ x: -60, y: 0 });
   });
 });
+
+describe("belt", () => {
+  it("is a `length`-slot box at the head, extending towards the tail", () => {
+    // ltr: the tail is leftwards, so the belt ends at the origin
+    expect(new Layout(48, 12, "ltr", 2).belt()).toEqual({
+      pos: { x: -108, y: 0 },
+      extent: { w: 108, h: 48 },
+    });
+  });
+});
+
+describe("tailAlpha", () => {
+  const belt = new Layout(48, 12, "ltr", 8);
+  it.each([
+    [0, 1, 1], // head item
+    [5, 3, 1], // ends exactly at the belt's end
+    [5.5, 3, 0.5], // half a slot past
+    [6, 3, 0], // a whole slot past: gone
+    [12, 1, 0], // way past
+  ])("slot %d, size %d → %d", (slot, size, expected) => {
+    expect(belt.tailAlpha(slot, size)).toBeCloseTo(expected);
+  });
+});

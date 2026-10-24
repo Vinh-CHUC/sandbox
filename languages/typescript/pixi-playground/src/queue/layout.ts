@@ -1,4 +1,11 @@
-import { WorldPos, type Extent, type Pos, type Size } from "../shared/common";
+import {
+  clamp01,
+  WorldPos,
+  type Extent,
+  type Fraction,
+  type Pos,
+  type Size,
+} from "../shared/common";
 
 /** Which way a queue advances, from its tail to its head */
 export type Direction = "ltr" | "rtl" | "ttb" | "btt";
@@ -17,8 +24,12 @@ const AXES: Record<Direction, { readonly slot: Pos; readonly cross: Pos }> = {
 
 export const isVertical = (d: Direction): boolean => d === "ttb" || d === "btt";
 
+/** How many slots a belt shows before its tail is elided, unless the spec says otherwise */
+export const DEFAULT_BELT_LENGTH = 8;
+
 /**
- * The geometry of a conveyor belt: box size, spacing, and flow direction.
+ * The geometry of a conveyor belt: box size, spacing, flow direction, and how many slots long the
+ * visible belt is (items beyond it are elided).
  *
  * Deliberately unaware of where the queue sits on screen: every `WorldPos` is relative to the queue
  * origin (the head's anchor, slot 0). The owner places the whole belt by positioning the pixi
@@ -30,6 +41,7 @@ export class Layout {
     readonly boxSize: number,
     readonly gap: number,
     readonly direction: Direction,
+    readonly length: number = DEFAULT_BELT_LENGTH,
   ) {}
 
   /** Distance between the near edges of two adjacent slots */
@@ -71,5 +83,26 @@ export class Layout {
     const { slot: s } = AXES[this.direction];
     const { w, h } = this.boxExtent(size);
     return WorldPos(pos.x + (s.x < 0 ? -w : 0), pos.y + (s.y < 0 ? -h : 0));
+  }
+
+  /** The visible belt: a box `length` slots long sitting at slot 0, top-left and footprint */
+  public belt(): { readonly pos: WorldPos; readonly extent: Extent } {
+    return {
+      pos: this.boxOrigin(this.itemOffset(0, 0), this.length),
+      extent: this.boxExtent(this.length),
+    };
+  }
+
+  /**
+   * How visible an item at (fractional) `slot` is: 1 while it fits on the belt, fading to 0 as its
+   * tail end sticks out by up to one more slot.
+   *
+   *   tailAlpha(5, 3)    # 1     ends at slot 8: fits a length-8 belt
+   *   tailAlpha(5.5, 3)  # 0.5   half a slot past the end
+   *   tailAlpha(7, 3)    # 0     two slots past
+   */
+  public tailAlpha(slot: number, size: Size): Fraction {
+    const overflow = slot + size - this.length;
+    return 1 - clamp01(Math.max(0, overflow));
   }
 }

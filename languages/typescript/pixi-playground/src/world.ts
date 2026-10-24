@@ -38,6 +38,8 @@ export type ConveyorSpec = {
   readonly id: ConveyorId;
   readonly origin: WorldPos;
   readonly direction: Direction;
+  /** visible belt length in slots; items beyond it are elided (default `DEFAULT_BELT_LENGTH`) */
+  readonly length?: number;
 };
 /** A pool of stations, one per position (item top-left, in world coords) */
 export type BoardSpec = {
@@ -190,8 +192,8 @@ export class World {
     const fedIds = new Set(
       spec.edges.flatMap(({ to }) => (to.kind === "queue" ? [to.id] : [])),
     );
-    for (const { id, origin, direction } of spec.conveyors) {
-      const layout = new Layout(BOX, GAP, direction);
+    for (const { id, origin, direction, length } of spec.conveyors) {
+      const layout = new Layout(BOX, GAP, direction, length);
       const queue = new Queue();
       const conveyor = { queue, layout, origin };
       // Fed conveyors start empty: their items come from upstream
