@@ -18,6 +18,15 @@ export type ScreenPos = Pos & { readonly __brand: "ScreenPos" };
 export const ScreenPos = (x: number, y: number) => ({ x, y }) as ScreenPos;
 export type Extent = { readonly w: number; readonly h: number };
 
+export type PartId = string & { readonly __brand: "PartId" };
+export const PartId = (id: string) => id as PartId;
+export type PartType = { readonly id: PartId; readonly color: Color };
+/** What a vehicle needs from the inventory: distinct parts, each with how many */
+export type PartRequest = readonly {
+  readonly part: PartId;
+  readonly count: number;
+}[];
+
 export type Item = {
   readonly id: ItemId;
   readonly color: Color;

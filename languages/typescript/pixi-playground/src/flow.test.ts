@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import { canAccept, headBox, transfer, type Conveyor, type Node } from "./flow";
 import { Layout } from "./queue/layout";
 import { Queue } from "./queue/model/queue";
-import { WorldPos, type Item } from "./shared/common";
+import { Inventory } from "./inventory/inventory";
+import { PartId, WorldPos, type Item } from "./shared/common";
 import { Station, StationBoard } from "./station/station";
 
 const item = (id: number, size = 1): Item => ({
@@ -41,7 +42,11 @@ describe("transfer", () => {
   it("queue → stations: dispatches into a free station", () => {
     const station = new Station();
     const from = conveyor([1]);
-    const to: Node = { kind: "stations", board: new StationBoard([station]) };
+    const to: Node = {
+      kind: "stations",
+      board: new StationBoard([station]),
+      inventory: new Inventory([], 0),
+    };
     expect(transfer(from, to, 0)).toBe(true);
     expect(station.item?.id).toBe(1);
   });
@@ -51,6 +56,7 @@ describe("transfer", () => {
     const to: Node = {
       kind: "stations",
       board: new StationBoard([new Station()]),
+      inventory: new Inventory([], 0),
     };
     transfer(from, to, 0);
     expect(canAccept(to)).toBe(false);
@@ -66,6 +72,22 @@ describe("transfer", () => {
     expect(transfer(from, node, 500)).toBe(false); // mid-flight
     expect(transfer(from, node, 1000)).toBe(true); // landed (MOVE_DURATION_MS)
     expect(ids(to)).toEqual([1]);
+  });
+
+  it("queue → stations: takes the item's parts from the inventory", () => {
+    const P = PartId("p");
+    const inventory = new Inventory([P], 3);
+    const to: Node = {
+      kind: "stations",
+      board: new StationBoard([new Station(), new Station()]),
+      inventory,
+    };
+    const from = conveyor([1, 2]);
+    expect(transfer(from, to, 0, [{ part: P, count: 2 }])).toBe(true);
+    expect(inventory.count(P)).toBe(1);
+    // Not enough left for the next one: it stays in the queue
+    expect(transfer(from, to, 0, [{ part: P, count: 2 }])).toBe(false);
+    expect(ids(from)).toEqual([2]);
   });
 
   it("nothing moves when `from` is empty", () => {

@@ -2,7 +2,7 @@ import { Container, Graphics } from "pixi.js";
 import { WorldPos, type Extent, type ItemId } from "../shared/common";
 import { depth, drawBox, drawPlate, placeAt } from "../shared/draw";
 import { FLAT, project, type Projection } from "../shared/projection";
-import type { HeldLook, PadLook, StationLook } from "./look";
+import type { HeldLook, PadLook, PartLook, StationLook } from "./look";
 import type { Station } from "./station";
 
 /** White so the station's progress colour can drive it via `tint` */
@@ -31,6 +31,8 @@ export class StationView {
   /** The held item's box, if any: at most one, since a station holds one item */
   private box: { readonly id: ItemId; readonly graphic: Graphics } | null =
     null;
+  /** One cube per part unit flying in with the held item */
+  private partBoxes: Graphics[] = [];
   private origin = WorldPos(0, 0);
   private projection: Projection = FLAT;
 
@@ -55,6 +57,7 @@ export class StationView {
     this.projection = p;
     this.box?.graphic.destroy();
     this.box = null;
+    this.syncParts([]);
     this.setPosition(this.origin);
   }
 
@@ -70,6 +73,7 @@ export class StationView {
     if (this.box !== null && this.box.id !== held?.id) {
       this.box.graphic.destroy();
       this.box = null;
+      this.syncParts([]);
     }
     // Free station: plate only
     if (held === null) return;
@@ -80,5 +84,29 @@ export class StationView {
     }
     // Fly-in position, heartbeat alpha and progress tint
     placeItem(this.box.graphic, held, this.projection);
+    this.syncParts(held.parts);
+  }
+
+  /** Keep one cube per flying part: rebuilt when the set changes (new item, or arrival) */
+  private syncParts(parts: readonly PartLook[]): void {
+    if (parts.length !== this.partBoxes.length) {
+      for (const g of this.partBoxes) g.destroy();
+      this.partBoxes = parts.map(({ extent, height, color }) => {
+        const g = drawBox(
+          new Graphics(),
+          this.projection,
+          extent,
+          height,
+          color,
+        );
+        this.station_container.addChild(g);
+        return g;
+      });
+    }
+    parts.forEach(({ pos, extent }, i) => {
+      const g = this.partBoxes[i];
+      placeAt(g, project(this.projection, pos));
+      g.zIndex = depth(pos, extent);
+    });
   }
 }

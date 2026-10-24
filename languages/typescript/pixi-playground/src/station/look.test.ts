@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { Layout } from "../queue/layout";
-import { WorldPos, type Item } from "../shared/common";
+import { PartId, WorldPos, type Item } from "../shared/common";
 import { StationLook, type LookConfig } from "./look";
 import { Station, type Busy, type StationConfig } from "./station";
 
@@ -12,6 +12,7 @@ const cfg: LookConfig = {
   toColor: 0x00ff00,
   margin: 8,
   padColor: 0x123456,
+  partSize: 10,
 };
 
 const stationCfg: StationConfig = { dispatchMs: 100 };
@@ -25,6 +26,7 @@ const busy = (over: Partial<Busy> = {}): Busy => ({
   kind: "busy",
   item: item(),
   source: at(0, 0),
+  parts: [],
   arrival: 1,
   progress: 0,
   processedMs: 0,
@@ -69,6 +71,42 @@ describe("StationLook.of", () => {
       id: 7,
       extent: { w: 70, h: 20 }, // boxWidth(3) = 70
     });
+  });
+});
+
+describe("StationLook parts", () => {
+  const P = PartId("p");
+  // origin (100, 0); P's stack sits at (200, 0); boxSize 20, partSize 10 → inset 5
+  const withStacks = new StationLook(
+    stationCfg,
+    layout,
+    cfg,
+    new Map([[P, { pos: at(200, 0), color: 0xabcdef }]]),
+  );
+  const parts = (arrival: number) =>
+    withStacks.of(busy({ arrival, parts: [{ part: P, count: 2 }] }), origin)
+      .held!.parts;
+
+  it("one cube per unit, starting on the stack, side by side", () => {
+    expect(parts(0).map((p) => p.pos)).toEqual([at(105, 5), at(117, 5)]);
+    expect(parts(0)[0]).toMatchObject({
+      extent: { w: 10, h: 10 },
+      height: 10,
+      color: 0xabcdef,
+    });
+  });
+
+  it("flies with the item, then disappears on arrival", () => {
+    expect(parts(0.5)[0].pos.x).toBeCloseTo(55); // smoothstep(0.5) = 0.5: halfway to 5
+    expect(parts(1)).toEqual([]);
+  });
+
+  it("parts without a known stack are skipped", () => {
+    const unknown = look.of(
+      busy({ arrival: 0, parts: [{ part: P, count: 1 }] }),
+      origin,
+    );
+    expect(unknown.held!.parts).toEqual([]);
   });
 });
 

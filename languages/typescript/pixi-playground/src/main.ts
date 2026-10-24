@@ -1,5 +1,12 @@
 import { Application } from "pixi.js";
-import { ScreenPos, WorldPos, type Item } from "./shared/common";
+import {
+  PartId,
+  ScreenPos,
+  WorldPos,
+  type Item,
+  type PartRequest,
+  type PartType,
+} from "./shared/common";
 import { SimClock } from "./shared/clock";
 import { FLAT, type Projection } from "./shared/projection";
 import { BoardId, ConveyorId, World, type WorldSpec } from "./world";
@@ -12,6 +19,14 @@ const ISO: Projection = {
   scale: 0.7,
   offset: ScreenPos(250, -100),
 };
+
+const PART_TYPES: readonly PartType[] = [
+  { id: PartId("wheel"), color: 0x2c3e50 },
+  { id: PartId("seat"), color: 0x9b59b6 },
+  { id: PartId("engine"), color: 0xe67e22 },
+  { id: PartId("door"), color: 0x1abc9c },
+  { id: PartId("light"), color: 0xf1c40f },
+];
 
 const C1 = ConveyorId("C1");
 const C2 = ConveyorId("C2");
@@ -40,6 +55,8 @@ const SPEC: WorldSpec = {
       ],
     },
   ],
+  // Below the stations, between S1 and S2: it supplies both
+  inventory: { origin: WorldPos(1000, 520), parts: PART_TYPES, capacity: 100 },
   edges: [
     { from: { kind: "queue", id: C1 }, to: { kind: "stations", id: S1 } },
     { from: { kind: "stations", id: S1 }, to: { kind: "queue", id: C2 } },
@@ -60,6 +77,14 @@ const newItem = (): Item => ({
   processMs: randomProcessMs(),
 });
 
+/** 2 or 3 distinct parts, 1 to 3 of each */
+const pickParts = (parts: readonly PartId[]): PartRequest => {
+  const shuffled = [...parts].sort(() => Math.random() - 0.5);
+  return shuffled
+    .slice(0, 2 + randomInt(2))
+    .map((part) => ({ part, count: 1 + randomInt(3) }));
+};
+
 (async () => {
   // Create a new application
   const app = new Application();
@@ -70,7 +95,7 @@ const newItem = (): Item => ({
   // Append the application canvas to the document body
   document.getElementById("pixi-container")!.appendChild(app.canvas);
 
-  const world = new World(SPEC, newItem);
+  const world = new World(SPEC, { newItem, pickParts });
   app.stage.addChild(world.root);
 
   const toggle = document.getElementById("projection-toggle")!;

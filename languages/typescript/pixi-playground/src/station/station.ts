@@ -3,6 +3,7 @@ import {
   type Fraction,
   type Item,
   type Ms,
+  type PartRequest,
   type WorldPos,
 } from "../shared/common";
 
@@ -20,6 +21,8 @@ type Occupancy = {
   readonly item: Item;
   /** where the item came from (queue head at pop time): the dispatch tween's origin */
   readonly source: WorldPos;
+  /** parts taken from the inventory for this item: they fly in alongside it */
+  readonly parts: PartRequest;
   readonly dispatchedAt: Ms;
 };
 
@@ -28,6 +31,7 @@ export type Busy = {
   readonly kind: "busy";
   readonly item: Item;
   readonly source: WorldPos;
+  readonly parts: PartRequest;
   /** 0 → 1 while the item flies in; 1 once it has arrived */
   readonly arrival: Fraction;
   /** 0 → 1 over the item's own processing time, once dispatched */
@@ -53,10 +57,15 @@ export class Station {
     return this.occupancy?.item ?? null;
   }
 
-  /** send `item` flying in from `source`; ignored when already busy */
-  public dispatch(item: Item, source: WorldPos, now: Ms): void {
+  /** send `item` (and the `parts` it needs) flying in from `source`; ignored when already busy */
+  public dispatch(
+    item: Item,
+    source: WorldPos,
+    now: Ms,
+    parts: PartRequest = [],
+  ): void {
     if (this.occupancy !== null) return;
-    this.occupancy = { item, source, dispatchedAt: now };
+    this.occupancy = { item, source, parts, dispatchedAt: now };
   }
 
   public state(now: Ms, cfg: StationConfig): StationState {
@@ -68,6 +77,7 @@ export class Station {
       kind: "busy",
       item: o.item,
       source: o.source,
+      parts: o.parts,
       arrival: clamp01((now - o.dispatchedAt) / cfg.dispatchMs),
       progress: clamp01(processedMs / o.item.processMs),
       processedMs,
@@ -104,11 +114,16 @@ export class StationBoard {
     return this.stations.some((s) => s.isFree);
   }
 
-  /** dispatch `item` into a free station; false when none is free */
-  dispatch(item: Item, source: WorldPos, now: Ms): boolean {
+  /** dispatch `item` (and its `parts`) into a free station; false when none is free */
+  dispatch(
+    item: Item,
+    source: WorldPos,
+    now: Ms,
+    parts: PartRequest = [],
+  ): boolean {
     const station = this.pick(this.stations.filter((s) => s.isFree));
     if (station === undefined) return false;
-    station.dispatch(item, source, now);
+    station.dispatch(item, source, now, parts);
     return true;
   }
 
