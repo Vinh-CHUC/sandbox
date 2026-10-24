@@ -21,10 +21,10 @@ import { CHARCOAL } from "../shared/palette";
 import type { ArcLook, HeldLook, PadLook, PartLook, StationLook } from "./look";
 import type { Station } from "./station";
 import { formatRate } from "./throughput";
-import { sharpText, units } from "../shared/scale";
+import { FONT, sharpText } from "../shared/scale";
 
 const buildItemBox = (look: HeldLook, p: Projection): Graphics =>
-  drawBox(new Graphics(), p, look.extent, look.height, look.color);
+  drawBox(new Graphics(), p, look.extent, look.height, look.skin);
 
 const drawPad = (pad: Graphics, look: PadLook, p: Projection): void => {
   drawPlate(pad.clear(), p, look.extent, look.color);
@@ -74,7 +74,7 @@ export class StationView {
   private readonly refreshRate = throttle(RATE_REFRESH_MS);
   private readonly rate = sharpText({
     text: "",
-    style: { fontSize: units(0.33), fill: CHARCOAL },
+    style: { fontSize: FONT.caption, fill: CHARCOAL },
   });
 
   constructor(
@@ -175,13 +175,13 @@ export class StationView {
   private syncParts(parts: readonly PartLook[]): void {
     if (parts.length !== this.partBoxes.length) {
       for (const g of this.partBoxes) g.destroy();
-      this.partBoxes = parts.map(({ extent, height, color }) => {
+      this.partBoxes = parts.map(({ extent, height, skin }) => {
         const g = drawBox(
           new Graphics(),
           this.projection,
           extent,
           height,
-          color,
+          skin,
         );
         this.station_container.addChild(g);
         return g;

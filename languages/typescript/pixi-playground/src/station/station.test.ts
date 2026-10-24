@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { SimMs, SkuId, WallMs, WorldPos, type Item } from "../shared/common";
 import { Station, type Busy, type StationConfig } from "./station";
+import { plain } from "../shared/skin";
 
 const cfg: StationConfig = { flightMs: 100 };
-const item = (id: number): Item => ({ id, color: 0, size: 1 });
+const item = (id: number): Item => ({ id, skin: plain(0), size: 1 });
 const at = (x: number, y: number) => WorldPos(x, y);
 const sim = SimMs;
 const wall = WallMs;

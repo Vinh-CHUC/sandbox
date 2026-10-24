@@ -13,7 +13,7 @@ import { FLAT, project, type Projection } from "../shared/projection";
 import type { Inventory } from "./inventory";
 import type { Stack } from "./stacks";
 import { formatRate } from "../station/throughput";
-import { sharpText, units } from "../shared/scale";
+import { FONT, LABEL_GAP, sharpText, units } from "../shared/scale";
 import { HoverTracker, type Hover } from "../shared/hover";
 
 /**
@@ -46,7 +46,7 @@ export class InventoryView {
   private readonly hover: HoverTracker<SkuId>;
   private readonly title = sharpText({
     text: "",
-    style: { fontSize: units(0.33), fontWeight: "bold", fill: CHARCOAL },
+    style: { fontSize: FONT.title, fontWeight: "bold", fill: CHARCOAL },
   });
 
   constructor(
@@ -87,7 +87,7 @@ export class InventoryView {
 
       const rate = sharpText({
         text: "",
-        style: { fontSize: units(0.31), fill: CHARCOAL },
+        style: { fontSize: FONT.caption, fill: CHARCOAL },
       });
       rate.anchor.set(0.5);
       rate.zIndex = Infinity;
@@ -103,8 +103,8 @@ export class InventoryView {
     for (const g of this.boxes.values()) g.destroy();
     this.boxes.clear();
     const extent = { w: this.boxSize, h: this.boxSize };
-    for (const [sku, { pos, color }] of this.stacks) {
-      const box = drawBox(new Graphics(), p, extent, this.boxSize, color);
+    for (const [sku, { pos, skin }] of this.stacks) {
+      const box = drawBox(new Graphics(), p, extent, this.boxSize, skin);
       placeAt(box, project(p, pos));
       box.zIndex = depth(p, pos, extent);
       this.boxes.set(sku, box);
@@ -119,7 +119,7 @@ export class InventoryView {
       // Under the stack, past the plate's near edge
       const under = WorldPos(
         centre.x,
-        pos.y + this.boxSize + this.margin + units(0.28),
+        pos.y + this.boxSize + this.margin + LABEL_GAP + FONT.caption / 2,
       );
       placeAt(this.rates.get(sku)!, project(p, under));
     }
@@ -165,6 +165,6 @@ export class InventoryView {
     const extent = { w: maxX - minX, h: maxY - minY };
     drawPlate(this.plate.clear(), p, extent, this.plateColor);
     placeAt(this.plate, project(p, WorldPos(minX, minY)));
-    placeAt(this.title, project(p, WorldPos(minX, minY - units(0.1))));
+    placeAt(this.title, project(p, WorldPos(minX, minY - LABEL_GAP)));
   }
 }

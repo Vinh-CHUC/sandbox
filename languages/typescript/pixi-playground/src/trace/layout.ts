@@ -61,9 +61,9 @@ export const DEFAULT_LAYOUT: LayoutConfig = {
   stationColumn: units(4.17),
   columnGap: units(1.67),
   inventoryGap: units(1.39),
-  inventoryLabels: units(0.83),
+  inventoryLabels: units(1.1),
   fencePadding: units(0.67),
-  fenceLabel: units(0.61),
+  fenceLabel: units(0.85),
   siteGap: units(1.11),
   margin: units(1.11),
 };

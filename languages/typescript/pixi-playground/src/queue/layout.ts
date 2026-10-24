@@ -94,28 +94,47 @@ export class Layout {
   }
 
   /**
-   * The nearest slot on the belt for an item of `size`: `slot` itself if it fits, the belt's tail
-   * end otherwise. Where to fly to (or from) an item whose real slot is elided, rather than some
-   * point far past the belt (over whatever lies upstream).
+   * The belt shows slots `[from, from + length[` (`from` > 0 once scrolled toward the tail). The
+   * nearest slot on it for an item of `size`: `slot` itself if it's shown, the window's nearest end
+   * otherwise. Where to fly to (or from) an item whose real slot is elided, rather than some point
+   * far past the belt (over whatever lies upstream).
    *
-   *   clampToBelt(3, 1)   # 3   fits a length-8 belt
-   *   clampToBelt(31, 1)  # 7   the last slot
-   *   clampToBelt(31, 3)  # 5   the last place a size-3 item fits
+   *   clampToBelt(3, 1)      # 3    fits a length-8 belt
+   *   clampToBelt(31, 1)     # 7    the last slot
+   *   clampToBelt(31, 3)     # 5    the last place a size-3 item fits
+   *   clampToBelt(2, 1, 8)   # 8    scrolled past it: the window's head end
    */
-  public clampToBelt(slot: number, size: Size): number {
-    return Math.max(0, Math.min(slot, this.length - size));
+  public clampToBelt(slot: number, size: Size, from = 0): number {
+    return Math.max(from, Math.min(slot, from + this.length - size));
   }
 
   /**
-   * How visible an item at (fractional) `slot` is: 1 while it fits on the belt, fading to 0 as its
-   * tail end sticks out by up to one more slot.
+   * How visible an item at (fractional) `slot` is, with the window at `from`: 1 while it's shown,
+   * fading to 0 as it sticks out of either end by up to one more slot.
    *
-   *   tailAlpha(5, 3)    # 1     ends at slot 8: fits a length-8 belt
-   *   tailAlpha(5.5, 3)  # 0.5   half a slot past the end
-   *   tailAlpha(7, 3)    # 0     two slots past
+   *   windowAlpha(5, 3)       # 1     ends at slot 8: fits a length-8 belt
+   *   windowAlpha(5.5, 3)     # 0.5   half a slot past the tail end
+   *   windowAlpha(7, 3)       # 0     two slots past
+   *   windowAlpha(7.5, 1, 8)  # 0.5   half a slot before the head end
    */
-  public tailAlpha(slot: number, size: Size): Fraction {
-    const overflow = slot + size - this.length;
-    return 1 - clamp01(Math.max(0, overflow));
+  public windowAlpha(slot: number, size: Size, from = 0): Fraction {
+    const shown = slot - from;
+    const tail = Math.max(0, shown + size - this.length);
+    const head = Math.max(0, -shown);
+    return (1 - clamp01(tail)) * (1 - clamp01(head));
+  }
+
+  /**
+   * Where the window goes `pages` belt lengths on from `from`, for `total` slots of items: never
+   * before the head, nor past where the last item shows at the tail end.
+   *
+   *   page(0, 1, 30)    # 8
+   *   page(16, 1, 30)   # 22   the last full window
+   *   page(8, -1, 30)   # 0
+   *   page(22, 0, 10)   # 2    the queue shrank: pulled back
+   */
+  public page(from: number, pages: number, total: number): number {
+    const last = Math.max(0, total - this.length);
+    return Math.max(0, Math.min(from + pages * this.length, last));
   }
 }

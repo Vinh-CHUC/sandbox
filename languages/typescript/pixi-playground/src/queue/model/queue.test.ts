@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { Queue } from "./queue";
 import { WallMs, WorldPos, type Item } from "../../shared/common";
 import { lag, type Shift } from "./utils";
+import { plain } from "../../shared/skin";
 
 const RED = 0xff0000;
 const GREEN = 0x00ff00;
@@ -10,7 +11,7 @@ const WHITE = 0xffffff;
 
 const item = (id: number, color: number, size = 1): Item => ({
   id,
-  color,
+  skin: plain(color),
   size,
 });
 
@@ -67,16 +68,16 @@ describe("Queue", () => {
 
   it("push appends the caller's items", () => {
     expect(queueOf(RED, GREEN, BLUE).items).toEqual([
-      { id: 0, color: RED, size: 1 },
-      { id: 1, color: GREEN, size: 1 },
-      { id: 2, color: BLUE, size: 1 },
+      { id: 0, skin: plain(RED), size: 1 },
+      { id: 1, skin: plain(GREEN), size: 1 },
+      { id: 2, skin: plain(BLUE), size: 1 },
     ]);
   });
 
   it("pop is FIFO", () => {
     const q = queueOf(RED, GREEN);
-    expect(q.pop(w(0))).toEqual({ id: 0, color: RED, size: 1 });
-    expect(q.pop(w(0))).toEqual({ id: 1, color: GREEN, size: 1 });
+    expect(q.pop(w(0))).toEqual({ id: 0, skin: plain(RED), size: 1 });
+    expect(q.pop(w(0))).toEqual({ id: 1, skin: plain(GREEN), size: 1 });
     expect(q.items).toEqual([]);
   });
 
@@ -87,7 +88,7 @@ describe("Queue", () => {
   it("stores the item verbatim, so the view can key boxes by the caller's id", () => {
     const q = new Queue();
     q.push(item(42, GREEN, 2));
-    expect(q.items).toEqual([{ id: 42, color: GREEN, size: 2 }]);
+    expect(q.items).toEqual([{ id: 42, skin: plain(GREEN), size: 2 }]);
   });
 
   it("items is readonly from the outside (type-level only)", () => {
@@ -151,7 +152,8 @@ describe("Queue", () => {
   });
 
   describe("insertAt / removeAt", () => {
-    const colors = (q: Queue) => q.items.map((item) => item.color);
+    const colors = (q: Queue) =>
+      q.items.map(({ skin }) => (skin.kind === "plain" ? skin.color : null));
     const slots = (q: Queue, now: number) =>
       q.items.map((_, i) => q.slot(i, w(now)));
 
@@ -171,7 +173,7 @@ describe("Queue", () => {
       const q = queueOf(RED, GREEN, BLUE);
       expect(q.removeAt(1, w(0))).toEqual({
         id: 1,
-        color: GREEN,
+        skin: plain(GREEN),
         size: 1,
       });
       expect(colors(q)).toEqual([RED, BLUE]);

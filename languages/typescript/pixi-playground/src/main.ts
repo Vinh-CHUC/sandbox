@@ -1,4 +1,4 @@
-import { Application } from "pixi.js";
+import { Application, Point } from "pixi.js";
 import { ScreenPos, SimMs, WallMs, type Pos } from "./shared/common";
 import { SimClock } from "./shared/clock";
 import { GROUND } from "./shared/palette";
@@ -7,6 +7,13 @@ import { kpiTiles, type Tile } from "./kpis";
 import { RATE_REFRESH_MS, throttle } from "./shared/draw";
 import { loadTrace, openUrl } from "./trace/load";
 import { fetchLabels, type LabelsFile } from "./trace/naming";
+import {
+  fetchTheme,
+  loadSkins,
+  NO_SKINS,
+  themeUrl,
+  type Skins,
+} from "./theme/theme";
 import type { Trace } from "./trace/trace";
 import { World } from "./world";
 
@@ -26,6 +33,31 @@ const INITIAL_SPEED = 60;
 const TRACE_URL = `${import.meta.env.BASE_URL}trace`;
 /** Display names, kept out of the repo (git-ignored): see labels.example.json */
 const LABELS_URL = `${import.meta.env.BASE_URL}labels.json`;
+/** Sprites for the boxes, also git-ignored: `?theme=<name>` picks one of `public/themes/` */
+const THEME_URL = new URL(
+  themeUrl(import.meta.env.BASE_URL, location.search),
+  location.href,
+).href;
+/** The themes on offer in the "Theme" dropdown: a JSON list of names, written with the themes */
+const THEMES_URL = `${import.meta.env.BASE_URL}themes/index.json`;
+
+/** List the themes in `select` (the current one selected); picking one reloads with it */
+const offerThemes = async (select: HTMLSelectElement) => {
+  const response = await fetch(THEMES_URL);
+  const names: unknown = response.ok ? await response.json() : [];
+  if (!Array.isArray(names) || names.length === 0) return;
+  const current = new URLSearchParams(location.search).get("theme") ?? "";
+  for (const name of names.map(String))
+    select.append(new Option(name, name, false, name === current));
+  select.value = current;
+  select.closest("label")?.classList.remove("hidden");
+  select.addEventListener("change", () => {
+    const params = new URLSearchParams(location.search);
+    if (select.value === "") params.delete("theme");
+    else params.set("theme", select.value);
+    location.search = params.toString();
+  });
+};
 
 /** Show `tiles` in `strip`: one element per KPI, created once, then only their text changes */
 const showTiles = (strip: HTMLElement, tiles: readonly Tile[]) => {
@@ -80,8 +112,20 @@ const clockTime = (trace: Trace, t: number) =>
     console.warn(`Ignoring ${LABELS_URL}:`, error);
   }
 
+  // Optional too: without a theme every box is plain
+  let skins: Skins = NO_SKINS;
+  try {
+    skins = await loadSkins(await fetchTheme(THEME_URL), THEME_URL);
+  } catch (error) {
+    console.warn(`Ignoring ${THEME_URL}:`, error);
+  }
+  offerThemes(element("theme") as HTMLSelectElement).catch((error) =>
+    console.warn(`No themes on offer at ${THEMES_URL}:`, error),
+  );
+
   const world = new World(trace, {
     labels,
+    skins,
     onHover: (text, at) => {
       tooltip.style.display = text === null ? "none" : "block";
       if (text === null) return;
@@ -133,7 +177,14 @@ const clockTime = (trace: Trace, t: number) =>
     zoomAroundCentre(1 / ZOOM_STEP),
   );
   showZoom();
-  app.canvas.addEventListener("dblclick", () => {
+  app.canvas.addEventListener("dblclick", (e) => {
+    // Clicking something clickable (e.g. a belt's "+N") twice isn't a reset
+    const at = new Point();
+    app.renderer.events.mapPositionToPoint(at, e.clientX, e.clientY);
+    if (
+      app.renderer.events.rootBoundary.hitTest(at.x, at.y)?.cursor === "pointer"
+    )
+      return;
     world.resetView();
     showZoom();
   });

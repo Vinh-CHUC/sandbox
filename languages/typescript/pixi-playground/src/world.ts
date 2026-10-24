@@ -21,7 +21,6 @@ import { placeAt } from "./shared/draw";
 import { MAX_ZOOM } from "./shared/scale";
 import {
   CHARCOAL,
-  CORAL,
   ITEM_RAMP,
   itemColor,
   itemShade,
@@ -41,6 +40,8 @@ import { StationView } from "./station/view";
 import { DEFAULT_LAYOUT, placeTopology } from "./trace/layout";
 import { Replay } from "./trace/replay";
 import { naming, type LabelsFile, type Naming } from "./trace/naming";
+import { plain, skinOf, type Skin } from "./shared/skin";
+import { NO_SKINS, type Skins } from "./theme/theme";
 import type { Trace, TraceEvent } from "./trace/trace";
 
 const { box: BOX, gap: GAP, beltLength: BELT_LENGTH } = DEFAULT_LAYOUT;
@@ -60,6 +61,8 @@ export type WorldOptions = {
   readonly onHover?: Hover;
   /** display names, see `naming`; generic ones ("Queue 2") without */
   readonly labels?: LabelsFile;
+  /** textures for item types and SKUs, see `loadSkins`; plain boxes for whatever has none */
+  readonly skins?: Skins;
 };
 
 /** Where things stand, for the KPI strip (see `kpiTiles`) */
@@ -167,6 +170,7 @@ export class World {
   private throughputWindowMs: Ms = 60 * 60_000;
 
   private readonly onHover?: Hover;
+  private readonly skins: Skins;
   /** Which store stack an item goes on, see the constructor */
   private readonly stackOf: (item: ItemId) => number;
 
@@ -179,9 +183,10 @@ export class World {
     this.typeIndex = new Map(top.itemTypes.map((type, i) => [type, i]));
     // A store's stacks: one per item type if the trace has types, else one per item shade
     const typed = top.itemTypes.length > 0;
-    const stackColors = typed
-      ? top.itemTypes.map((_, i) => itemTypeColor(i, top.itemTypes.length))
-      : ITEM_RAMP;
+    const skins = (this.skins = options.skins ?? NO_SKINS);
+    const stackSkins = typed
+      ? top.itemTypes.map((type) => this.typeSkin(type))
+      : ITEM_RAMP.map(plain);
     const stackOf = (item: ItemId) =>
       typed
         ? (this.typeIndex.get(this.itemType.get(item) ?? -1) ?? 0)
@@ -210,7 +215,10 @@ export class World {
       const skus = top.inventorySkus.get(id) ?? [];
       const ownStacks = layoutStacks(
         at(placement.inventories, "inventory", id),
-        skus.map((sku) => ({ id: sku, color: skuColors.get(sku) ?? CHARCOAL })),
+        skus.map((sku) => ({
+          id: sku,
+          skin: skinOf(skins.skus.get(sku), skuColors.get(sku) ?? CHARCOAL),
+        })),
         stride,
       );
       stacks.set(id, ownStacks);
@@ -255,7 +263,7 @@ export class World {
           DEFAULT_LOOK.margin,
           n.name("queues", id),
           animationMs,
-          stackColors,
+          stackSkins,
           stackOf,
           typed ? top.itemTypes.map((t) => n.name("item_types", t)) : [],
           options.onHover,
@@ -269,8 +277,7 @@ export class World {
       const view = new QueueView(queue, layout, {
         name: n.name("queues", id),
         // Blocked items stand out: coral is kept for trouble
-        colorOf: (item) =>
-          this.states.get(item.id) === BLOCKED ? CORAL : item.color,
+        alertOf: (item) => this.states.get(item.id) === BLOCKED,
         onItemHover: (item, at) => {
           this.hovered = item === null ? null : { item, queue: id, at };
           if (item === null) options.onHover?.(null, at);
@@ -363,8 +370,9 @@ export class World {
     this.placeRoot();
   }
 
-  /** Back to the projection's own framing, at zoom 1 */
+  /** Back to the projection's own framing, at zoom 1, with every belt showing its head */
   public resetView(): void {
+    for (const { view } of this.queues.values()) view.resetScroll();
     this.pan = ScreenPos(0, 0);
     this._zoom = 1;
     this.placeRoot();
@@ -659,13 +667,11 @@ export class World {
   private itemOf(id: ItemId): Item {
     let item = this.items.get(id);
     if (item === undefined) {
-      // Coloured by type when it has one (a shade of teal per type), by id otherwise
-      const type = this.typeIndex.get(this.itemType.get(id) ?? -1);
-      const color =
-        type === undefined
-          ? itemColor(id)
-          : itemTypeColor(type, this.typeIndex.size);
-      item = { id, color, size: 1 };
+      // Skinned by type when it has one, by id otherwise
+      const type = this.itemType.get(id);
+      const skin =
+        type === undefined ? plain(itemColor(id)) : this.typeSkin(type);
+      item = { id, skin, size: 1 };
       this.items.set(id, item);
     }
     return item;
@@ -686,16 +692,26 @@ export class World {
 
   /**
    * World coords of the box at `index` in `q`, as drawn at wall time `now`; for an elided item,
-   * the belt's tail end (so it leaves from there, not from a point far past the belt)
+   * the nearest end of the belt (so it leaves from there, not from a point far off the belt)
    */
   private slotPos(q: QueueEntry, index: number, now: WallMs): WorldPos {
     const item = q.queue.items[index];
+    // Relative to where the belt's scrolled to
+    const off = q.view.offset(now);
     const offset = q.layout.itemOffset(
-      q.layout.clampToBelt(q.queue.slot(index, now), item.size),
+      q.layout.clampToBelt(q.queue.slot(index, now), item.size, off) - off,
       q.queue.entering(index, now),
     );
     const local = q.layout.boxOrigin(offset, item.size);
     return WorldPos(q.origin.x + local.x, q.origin.y + local.y);
+  }
+
+  /** An item type's sprites, else its shade of teal (by its place in the catalogue) */
+  private typeSkin(type: number): Skin {
+    return skinOf(
+      this.skins.itemTypes.get(type),
+      itemTypeColor(this.typeIndex.get(type) ?? 0, this.typeIndex.size),
+    );
   }
 
   private stationRunning(job: number, seq: number): number {

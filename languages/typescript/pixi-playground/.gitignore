@@ -33,3 +33,10 @@ __pycache__/
 
 # Display names for a trace (domain words stay out of the repo): see labels.example.json
 public/labels.json
+
+# Box sprites (see src/theme/theme.ts): the real sets and their generator stay out, like labels.json;
+# only the domain-free example theme is kept
+public/theme.json
+public/themes/*
+!public/themes/example/
+sprites/

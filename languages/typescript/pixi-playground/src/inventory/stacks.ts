@@ -1,12 +1,8 @@
-import {
-  WorldPos,
-  type Color,
-  type SkuId,
-  type SkuType,
-} from "../shared/common";
+import { WorldPos, type SkuId, type SkuType } from "../shared/common";
+import type { Skin } from "../shared/skin";
 
 /** Where a SKU's stack sits (box top-left, world coords) and how it's painted */
-export type Stack = { readonly pos: WorldPos; readonly color: Color };
+export type Stack = { readonly pos: WorldPos; readonly skin: Skin };
 
 /**
  * Lay `skus` out in a row along x from `origin`, one `stride` apart.
@@ -19,8 +15,8 @@ export const layoutStacks = (
   stride: number,
 ): Map<SkuId, Stack> =>
   new Map(
-    skus.map(({ id, color }, i) => [
+    skus.map(({ id, skin }, i) => [
       id,
-      { pos: WorldPos(origin.x + i * stride, origin.y), color },
+      { pos: WorldPos(origin.x + i * stride, origin.y), skin },
     ]),
   );

@@ -1,3 +1,5 @@
+import type { Skin } from "./skin";
+
 /** A duration in milliseconds, on whichever clock: the difference of two timestamps */
 export type Ms = number;
 /**
@@ -30,7 +32,7 @@ export type Extent = { readonly w: number; readonly h: number };
 /** A stock-keeping unit: a type of part an inventory stocks */
 export type SkuId = number & { readonly __brand: "SkuId" };
 export const SkuId = (id: number) => id as SkuId;
-export type SkuType = { readonly id: SkuId; readonly color: Color };
+export type SkuType = { readonly id: SkuId; readonly skin: Skin };
 /** `count` units of `sku` taken from `inventory` */
 export type PartUse = {
   readonly inventory: number;
@@ -38,10 +40,10 @@ export type PartUse = {
   readonly count: number;
 };
 
-/** Something that flows through queues and stations; colour and size are presentation only */
+/** Something that flows through queues and stations; skin and size are presentation only */
 export type Item = {
   readonly id: ItemId;
-  readonly color: Color;
+  readonly skin: Skin;
   readonly size: Size;
 };
 

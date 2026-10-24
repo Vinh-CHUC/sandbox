@@ -3,7 +3,6 @@ import {
   lerp,
   smoothstep,
   WorldPos,
-  type Color,
   type Item,
   type ItemId,
   type Ms,
@@ -12,8 +11,9 @@ import {
 import { depth, drawBox, drawPlate, placeAt } from "../shared/draw";
 import { CHARCOAL, WHITE } from "../shared/palette";
 import { FLAT, project, type Projection } from "../shared/projection";
-import { sharpText, units } from "../shared/scale";
+import { FONT, LABEL_GAP, sharpText, units } from "../shared/scale";
 import { HoverTracker, type Hover } from "../shared/hover";
+import type { Skin } from "../shared/skin";
 
 /**
  *   storeTooltip("Ready for service", "Foxhound", 12)   # "Ready for service\nFoxhound: 12"
@@ -34,7 +34,7 @@ type Flight = {
 
 /**
  * A store, where items sit ready: drawn like an inventory, a plate with one stack per kind of
- * item (e.g. per item type, in its colour), each with how many it holds, and the store's name and total above.
+ * item (e.g. per item type, in its skin), each with how many it holds, and the store's name and total above.
  * Arriving items fly in to the stack of their shade and fade into it. Absolute world coords: the
  * container stays at the world's origin.
  */
@@ -62,8 +62,8 @@ export class StoreView {
     private readonly name: string,
     /** how long a fly-in takes, in wall ms */
     private readonly flightMs: Ms,
-    /** one colour per stack, e.g. per item type */
-    private readonly stackColors: readonly Color[],
+    /** one skin per stack, e.g. per item type */
+    private readonly stackSkins: readonly Skin[],
     /** which stack an item goes on */
     private readonly stackOf: (item: ItemId) => number,
     /** what each stack holds, e.g. its item type's name; "" if nothing to say */
@@ -71,16 +71,16 @@ export class StoreView {
     onHover?: Hover,
   ) {
     this.hover = new HoverTracker(onHover);
-    this.stackCounts = stackColors.map(() => 0);
+    this.stackCounts = stackSkins.map(() => 0);
     this.store_container.sortableChildren = true;
     this.plate.zIndex = -Infinity;
     this.title = sharpText({
       text: name,
-      style: { fontSize: units(0.33), fontWeight: "bold", fill: CHARCOAL },
+      style: { fontSize: FONT.title, fontWeight: "bold", fill: CHARCOAL },
     });
     this.title.anchor.set(0, 1);
     this.title.zIndex = Infinity;
-    this.counts = stackColors.map(() => {
+    this.counts = stackSkins.map(() => {
       const label = sharpText({
         text: "0",
         style: {
@@ -112,7 +112,7 @@ export class StoreView {
       this.projection,
       { w: this.boxSize, h: this.boxSize },
       this.boxSize,
-      item.color,
+      item.skin,
     );
     this.store_container.addChild(graphic);
     this.flights.set(item.id, { flight: { item, source, at: wall }, graphic });
@@ -127,7 +127,7 @@ export class StoreView {
 
     const m = this.margin;
     const w =
-      this.stackColors.length * this.stride - (this.stride - this.boxSize);
+      this.stackSkins.length * this.stride - (this.stride - this.boxSize);
     drawPlate(
       this.plate.clear(),
       p,
@@ -137,13 +137,13 @@ export class StoreView {
     placeAt(this.plate, project(p, WorldPos(this.pos.x - m, this.pos.y - m)));
     placeAt(
       this.title,
-      project(p, WorldPos(this.pos.x - m, this.pos.y - m - units(0.1))),
+      project(p, WorldPos(this.pos.x - m, this.pos.y - m - LABEL_GAP)),
     );
 
     const extent = { w: this.boxSize, h: this.boxSize };
-    this.stackColors.forEach((color, shade) => {
+    this.stackSkins.forEach((skin, shade) => {
       const pos = this.stackPos(shade);
-      const stack = drawBox(new Graphics(), p, extent, this.boxSize, color);
+      const stack = drawBox(new Graphics(), p, extent, this.boxSize, skin);
       placeAt(stack, project(p, pos));
       stack.zIndex = depth(p, pos, extent);
       this.stacks.push(stack);
@@ -159,7 +159,7 @@ export class StoreView {
 
   /** Redraw: `members` are the items in the store now; flights run on wall time */
   public render(members: Iterable<ItemId>, wall: WallMs): void {
-    const counts = this.stackColors.map(() => 0);
+    const counts = this.stackSkins.map(() => 0);
     let total = 0;
     for (const id of members) {
       counts[this.stackOf(id)]++;

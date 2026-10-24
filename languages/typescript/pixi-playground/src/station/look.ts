@@ -15,8 +15,9 @@ import {
   type WallMs,
 } from "../shared/common";
 import { CHARCOAL } from "../shared/palette";
+import type { Skin } from "../shared/skin";
 import type { Busy, Station, StationConfig, StationState } from "./station";
-import { units } from "../shared/scale";
+import { FONT, LABEL_GAP, units } from "../shared/scale";
 
 /** Everything visual that is the same for every station */
 export type LookConfig = {
@@ -57,13 +58,13 @@ export type PadLook = {
   readonly color: Color;
 };
 
-/** One part unit in flight, a small cube in its part's colour */
+/** One part unit in flight, a small cube in its part's skin */
 export type PartLook = {
   /** top-left of the cube, in the station's local coords */
   readonly pos: WorldPos;
   readonly extent: Extent;
   readonly height: number;
-  readonly color: Color;
+  readonly skin: Skin;
 };
 
 export type HeldLook = {
@@ -75,8 +76,8 @@ export type HeldLook = {
   /** top-left of the item's box: tweened from the queue head to (0, 0) */
   readonly pos: WorldPos;
   readonly alpha: Fraction;
-  /** the item's own colour: what a station is doing shows in its arc instead */
-  readonly color: Color;
+  /** the item's own skin: what a station is doing shows in its arc instead */
+  readonly skin: Skin;
   /** parts flying in alongside the item, one per unit; empty once it has arrived */
   readonly parts: readonly PartLook[];
 };
@@ -141,7 +142,10 @@ export class StationLook {
 
   /** Where a station's rate label is centred: just above its plate, over its first box */
   public labelPos(): WorldPos {
-    return WorldPos(this.layout.boxSize / 2, -this.cfg.margin - units(0.28));
+    return WorldPos(
+      this.layout.boxSize / 2,
+      -this.cfg.margin - LABEL_GAP - FONT.caption / 2,
+    );
   }
 
   /** The appearance of `station` at simulated `now` and wall time `wall`, placed at `origin` */
@@ -189,7 +193,7 @@ export class StationLook {
         lerp(busy.source.y - origin.y, 0, t),
       ),
       alpha: lerp(cfg.alphaMin, cfg.alphaMax, heartbeatT(busy.shownMs, cfg)),
-      color: busy.item.color,
+      skin: busy.item.skin,
       parts: this.parts(busy, origin, t),
     };
   }
@@ -228,7 +232,7 @@ export class StationLook {
           ),
           extent: { w: size, h: size },
           height: size,
-          color: stack.color,
+          skin: stack.skin,
         };
       });
     });

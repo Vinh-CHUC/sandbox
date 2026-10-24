@@ -14,6 +14,19 @@ export const UNIT = 48;
  */
 export const units = (k: number): number => Math.round(k * UNIT);
 
+/** Label font sizes (stack counts keep their own: they sit on the boxes) */
+export const FONT = {
+  /** a queue's, store's or inventory's name */
+  title: units(0.46),
+  /** rates under stations and stacks */
+  caption: units(0.4),
+  /** a site's name, in its fence's corner */
+  site: units(0.55),
+} as const;
+
+/** Between a label and what it labels */
+export const LABEL_GAP = units(0.25);
+
 /** The most the camera can zoom in: text is rendered sharp enough for that */
 export const MAX_ZOOM = 4;
 

@@ -3,6 +3,7 @@ import { Layout } from "../queue/layout";
 import { SimMs, SkuId, WallMs, WorldPos, type Item } from "../shared/common";
 import { StationLook, tooltip, type LookConfig, type Names } from "./look";
 import { Station, type Busy, type StationConfig } from "./station";
+import { plain } from "../shared/skin";
 
 const cfg: LookConfig = {
   heartbeatMs: 400,
@@ -22,7 +23,7 @@ const look = new StationLook(stationCfg, layout, cfg);
 const at = (x: number, y: number) => WorldPos(x, y);
 const origin = at(100, 0); // where the station sits on the stage
 
-const item = (size = 1): Item => ({ id: 7, color: 0, size });
+const item = (size = 1): Item => ({ id: 7, skin: plain(0), size });
 const busy = (over: Partial<Busy> = {}): Busy => ({
   kind: "busy",
   item: item(),
@@ -66,9 +67,9 @@ describe("StationLook.of", () => {
   });
 
   it("the item keeps its own colour, whatever the progress", () => {
-    const red = { id: 7, color: 0xff0000, size: 1 };
-    expect(held({ item: red, progress: 0 }).color).toBe(0xff0000);
-    expect(held({ item: red, progress: 1 }).color).toBe(0xff0000);
+    const red = { id: 7, skin: plain(0xff0000), size: 1 };
+    expect(held({ item: red, progress: 0 }).skin).toEqual(plain(0xff0000));
+    expect(held({ item: red, progress: 1 }).skin).toEqual(plain(0xff0000));
   });
 
   it("carries the item's id and box extent for the view", () => {
@@ -119,7 +120,7 @@ describe("StationLook parts", () => {
     cfg,
     (inventory, sku) =>
       inventory === 5 && sku === P
-        ? { pos: at(200, 0), color: 0xabcdef }
+        ? { pos: at(200, 0), skin: plain(0xabcdef) }
         : undefined,
   );
   const parts = (arrival: number) =>
@@ -133,7 +134,7 @@ describe("StationLook parts", () => {
     expect(parts(0)[0]).toMatchObject({
       extent: { w: 10, h: 10 },
       height: 10,
-      color: 0xabcdef,
+      skin: plain(0xabcdef),
     });
   });
 

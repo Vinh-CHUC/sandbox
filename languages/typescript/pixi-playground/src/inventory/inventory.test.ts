@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { SkuId, WorldPos } from "../shared/common";
 import { Inventory } from "./inventory";
 import { layoutStacks } from "./stacks";
+import { plain } from "../shared/skin";
 
 const A = SkuId(100);
 const B = SkuId(200);
@@ -30,11 +31,14 @@ describe("layoutStacks", () => {
     const stacks = layoutStacks(
       WorldPos(100, 50),
       [
-        { id: A, color: 1 },
-        { id: B, color: 2 },
+        { id: A, skin: plain(1) },
+        { id: B, skin: plain(2) },
       ],
       44,
     );
-    expect(stacks.get(B)).toEqual({ pos: { x: 144, y: 50 }, color: 2 });
+    expect(stacks.get(B)).toEqual({
+      pos: { x: 144, y: 50 },
+      skin: plain(2),
+    });
   });
 });

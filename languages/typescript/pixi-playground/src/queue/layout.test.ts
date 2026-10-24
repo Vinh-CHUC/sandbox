@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { WallMs } from "../shared/common";
 import { Queue } from "./model/queue";
 import { isVertical, Layout, type Direction } from "./layout";
+import { plain } from "../shared/skin";
 
 const layout = new Layout(48, 12, "ltr");
 
@@ -20,7 +21,7 @@ describe("layout", () => {
   const gaps = (direction: Direction, sizes: number[]): number[] => {
     const ly = new Layout(48, 12, direction);
     const q = new Queue();
-    sizes.forEach((size, id) => q.push({ id, color: 0, size }));
+    sizes.forEach((size, id) => q.push({ id, skin: plain(0), size }));
 
     const spans = q.items
       .map((item, i) => {
@@ -79,7 +80,7 @@ describe("belt", () => {
   });
 });
 
-describe("tailAlpha", () => {
+describe("windowAlpha", () => {
   const belt = new Layout(48, 12, "ltr", 8);
   it.each([
     [0, 1, 1], // head item
@@ -88,7 +89,17 @@ describe("tailAlpha", () => {
     [6, 3, 0], // a whole slot past: gone
     [12, 1, 0], // way past
   ])("slot %d, size %d → %d", (slot, size, expected) => {
-    expect(belt.tailAlpha(slot, size)).toBeCloseTo(expected);
+    expect(belt.windowAlpha(slot, size)).toBeCloseTo(expected);
+  });
+
+  it.each([
+    [8, 1, 1], // the window's head
+    [7.5, 1, 0.5], // half a slot before it
+    [7, 1, 0], // a whole slot before: gone
+    [15, 1, 1], // the window's last slot
+    [16, 1, 0], // past its tail
+  ])("scrolled to 8: slot %d, size %d → %d", (slot, size, expected) => {
+    expect(belt.windowAlpha(slot, size, 8)).toBeCloseTo(expected);
   });
 });
 
@@ -102,5 +113,25 @@ describe("clampToBelt", () => {
     [6.5, 2, 6], // part-way off: pulled back on
   ])("slot %d, size %d → %d", (slot, size, expected) => {
     expect(belt.clampToBelt(slot, size)).toBe(expected);
+  });
+
+  it("scrolled: clamps to the window's ends", () => {
+    expect(belt.clampToBelt(2, 1, 8)).toBe(8);
+    expect(belt.clampToBelt(10, 1, 8)).toBe(10);
+    expect(belt.clampToBelt(31, 1, 8)).toBe(15);
+  });
+});
+
+describe("page", () => {
+  const belt = new Layout(48, 12, "ltr", 8);
+  it.each([
+    [0, 1, 30, 8], // a page on
+    [16, 1, 30, 22], // the last full window
+    [8, -1, 30, 0], // back
+    [0, -1, 30, 0], // not before the head
+    [0, 1, 5, 0], // all fits: nowhere to go
+    [22, 0, 10, 2], // the queue shrank: pulled back
+  ])("from %d, %d page(s), %d slots → %d", (from, pages, total, expected) => {
+    expect(belt.page(from, pages, total)).toBe(expected);
   });
 });

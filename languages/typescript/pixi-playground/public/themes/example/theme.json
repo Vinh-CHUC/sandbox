@@ -1,0 +1,58 @@
+{
+  "item_types": {
+    "1": {
+      "top": "vehicle-1-top.svg",
+      "side": "vehicle-1-side.svg",
+      "end": "vehicle-1-end.svg"
+    },
+    "2": {
+      "top": "vehicle-2-top.svg",
+      "side": "vehicle-2-side.svg",
+      "end": "vehicle-2-end.svg"
+    },
+    "3": {
+      "top": "vehicle-3-top.svg",
+      "side": "vehicle-3-side.svg",
+      "end": "vehicle-3-end.svg"
+    },
+    "4": {
+      "top": "vehicle-4-top.svg",
+      "side": "vehicle-4-side.svg",
+      "end": "vehicle-4-end.svg"
+    }
+  },
+  "skus": {
+    "100": {
+      "top": "part-100-top.svg",
+      "side": "part-100-side.svg"
+    },
+    "101": {
+      "top": "part-101-top.svg",
+      "side": "part-101-side.svg"
+    },
+    "102": {
+      "top": "part-102-top.svg",
+      "side": "part-102-side.svg"
+    },
+    "103": {
+      "top": "part-103-top.svg",
+      "side": "part-103-side.svg"
+    },
+    "104": {
+      "top": "part-104-top.svg",
+      "side": "part-104-side.svg"
+    },
+    "105": {
+      "top": "part-105-top.svg",
+      "side": "part-105-side.svg"
+    },
+    "106": {
+      "top": "part-106-top.svg",
+      "side": "part-106-side.svg"
+    },
+    "107": {
+      "top": "part-107-top.svg",
+      "side": "part-107-side.svg"
+    }
+  }
+}
