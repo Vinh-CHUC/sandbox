@@ -7,7 +7,14 @@ import { labelKey, type LabelTable, type Trace } from "./trace";
  */
 
 export type Kind =
-  "site" | "queue" | "station" | "inventory" | "sku" | "item" | "item_type";
+  | "site"
+  | "queue"
+  | "station"
+  | "inventory"
+  | "sku"
+  | "item"
+  | "item_type"
+  | "road";
 export type KindName = { readonly one: string; readonly many: string };
 
 /** The shape of `labels.json`; every part is optional */
@@ -31,6 +38,7 @@ const DEFAULT_KINDS: Record<Kind, KindName> = {
   sku: { one: "SKU", many: "SKUs" },
   item: { one: "Item", many: "Items" },
   item_type: { one: "Type", many: "Types" },
+  road: { one: "Road", many: "Roads" },
 };
 const DEFAULT_STATES: Record<string, string> = {
   "0": "waiting",
@@ -45,6 +53,7 @@ const TABLE_KIND: Record<LabelTable, Kind> = {
   skus: "sku",
   items: "item",
   item_types: "item_type",
+  roads: "road",
 };
 
 export type Naming = {

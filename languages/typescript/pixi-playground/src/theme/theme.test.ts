@@ -3,11 +3,11 @@ import { faceUrls, parseTheme, themeUrl } from "./theme";
 
 describe("themeUrl", () => {
   it.each([
-    ["", "/theme.json"],
-    ["?theme=", "/theme.json"],
+    ["", null],
+    ["?theme=", null],
     ["?theme=rts", "/themes/rts/theme.json"],
     ["?speed=2&theme=a b", "/themes/a%20b/theme.json"],
-  ])("%j → %s", (search, expected) => {
+  ])("%j → %j", (search, expected) => {
     expect(themeUrl("/", search)).toBe(expected);
   });
 });

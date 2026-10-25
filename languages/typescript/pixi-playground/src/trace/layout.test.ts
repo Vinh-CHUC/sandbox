@@ -27,6 +27,7 @@ const topology: Topology = {
   skus: [100, 200, 300].map(SkuId),
   itemTypes: [],
   itemType: new Map(),
+  roads: [],
   inventorySkus: new Map([
     [1, [100, 200, 300].map(SkuId)],
     [2, [100, 200].map(SkuId)],
@@ -140,6 +141,37 @@ describe("placeTopology", () => {
     );
     expect(placed.sites.has(NO_SITE)).toBe(false); // no fence
     expect(store.x).toBeLessThan(placed.extent.w); // and the ground still covers it
+  });
+
+  it("a road: from each inventory's right end to a lane right of the sites, which spread apart", () => {
+    const withRoad: Topology = {
+      ...topology,
+      roads: [{ id: 7, a: 1, b: 3, length: 30 }],
+    };
+    const placed = placeTopology(withRoad);
+    const path = placed.roads.get(7)!;
+    const end = (id: number, stacks: number) => {
+      const inv = placed.inventories.get(id)!;
+      const { box, gap } = DEFAULT_LAYOUT;
+      return { x: inv.x + stacks * (box + gap), y: inv.y + box / 2 };
+    };
+    expect(path).toHaveLength(4);
+    expect(path[0]).toEqual(end(1, 3));
+    expect(path[3]).toEqual(end(3, 1));
+    // Along a lane right of every fence: out, down, back
+    const fences = [...placed.sites.values()];
+    const fencesRight = Math.max(...fences.map((f) => f.pos.x + f.extent.w));
+    expect(path[1].x).toBe(path[2].x);
+    expect(path[1].x - DEFAULT_LAYOUT.roadWidth / 2).toBeGreaterThan(
+      fencesRight,
+    );
+    expect([path[1].y, path[2].y]).toEqual([path[0].y, path[3].y]);
+    expect(placed.extent.w).toBeGreaterThan(path[1].x);
+    // The sites spread apart; without roads there are none
+    const gap = (pl: typeof placed) =>
+      pl.sites.get(2)!.pos.y - pl.sites.get(1)!.pos.y;
+    expect(gap(placed)).toBeGreaterThan(gap(p));
+    expect(p.roads.size).toBe(0);
   });
 
   it("places everything, inside the extent", () => {

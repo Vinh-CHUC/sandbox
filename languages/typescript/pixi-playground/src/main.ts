@@ -5,7 +5,7 @@ import { GROUND } from "./shared/palette";
 import { FLAT, type Projection } from "./shared/projection";
 import { kpiTiles, type Tile } from "./kpis";
 import { RATE_REFRESH_MS, throttle } from "./shared/draw";
-import { loadTrace, openUrl } from "./trace/load";
+import { loadTrace, openUrl, scenarioOf, traceUrl } from "./trace/load";
 import { fetchLabels, type LabelsFile } from "./trace/naming";
 import {
   fetchTheme,
@@ -29,35 +29,53 @@ const PROJECTIONS: Record<string, Projection> = {
 const SPEEDS = [1, 10, 60, 300, 1200];
 const INITIAL_SPEED = 60;
 
-/** Where `data/` writes traces to; Vite serves `public/` as is */
-const TRACE_URL = `${import.meta.env.BASE_URL}trace`;
+/** Where `data/` writes traces to, one per scenario (`?scenario=`); Vite serves `public/` as is */
+const TRACE_URL = traceUrl(import.meta.env.BASE_URL, location.search);
+/** The scenarios on offer in the "Scenario" dropdown: a JSON list of names, written with them */
+const TRACES_URL = `${import.meta.env.BASE_URL}traces/index.json`;
 /** Display names, kept out of the repo (git-ignored): see labels.example.json */
 const LABELS_URL = `${import.meta.env.BASE_URL}labels.json`;
-/** Sprites for the boxes, also git-ignored: `?theme=<name>` picks one of `public/themes/` */
-const THEME_URL = new URL(
-  themeUrl(import.meta.env.BASE_URL, location.search),
-  location.href,
-).href;
+/** Sprites for the boxes, also git-ignored: `?theme=<name>` picks one of `public/themes/`, none
+ * means plain boxes */
+const THEME_PATH = themeUrl(import.meta.env.BASE_URL, location.search);
+const THEME_URL =
+  THEME_PATH === null ? null : new URL(THEME_PATH, location.href).href;
 /** The themes on offer in the "Theme" dropdown: a JSON list of names, written with the themes */
 const THEMES_URL = `${import.meta.env.BASE_URL}themes/index.json`;
 
-/** List the themes in `select` (the current one selected); picking one reloads with it */
-const offerThemes = async (select: HTMLSelectElement) => {
-  const response = await fetch(THEMES_URL);
+/**
+ * List the names at `url` (a JSON list) in `select`, `current` selected; picking one reloads with
+ * it as `?<param>=` (dropped for an empty value)
+ */
+const offerChoices = async (
+  select: HTMLSelectElement,
+  url: string,
+  param: string,
+  current: string,
+) => {
+  const response = await fetch(url);
   const names: unknown = response.ok ? await response.json() : [];
   if (!Array.isArray(names) || names.length === 0) return;
-  const current = new URLSearchParams(location.search).get("theme") ?? "";
   for (const name of names.map(String))
     select.append(new Option(name, name, false, name === current));
   select.value = current;
   select.closest("label")?.classList.remove("hidden");
   select.addEventListener("change", () => {
     const params = new URLSearchParams(location.search);
-    if (select.value === "") params.delete("theme");
-    else params.set("theme", select.value);
+    if (select.value === "") params.delete(param);
+    else params.set(param, select.value);
     location.search = params.toString();
   });
 };
+const offer = (
+  id: string,
+  url: string,
+  param: string,
+  current: string,
+): Promise<void> =>
+  offerChoices(element(id) as HTMLSelectElement, url, param, current).catch(
+    (error) => console.warn(`Nothing on offer at ${url}:`, error),
+  );
 
 /** Show `tiles` in `strip`: one element per KPI, created once, then only their text changes */
 const showTiles = (strip: HTMLElement, tiles: readonly Tile[]) => {
@@ -93,6 +111,8 @@ const clockTime = (trace: Trace, t: number) =>
   await app.init({ background: GROUND, resizeTo: window });
   element("pixi-container").appendChild(app.canvas);
 
+  // Offered first, so another scenario can be picked even if this one's trace is missing
+  void offer("scenario", TRACES_URL, "scenario", scenarioOf(location.search));
   let trace: Trace;
   try {
     trace = await loadTrace(openUrl(TRACE_URL));
@@ -112,15 +132,19 @@ const clockTime = (trace: Trace, t: number) =>
     console.warn(`Ignoring ${LABELS_URL}:`, error);
   }
 
-  // Optional too: without a theme every box is plain
+  // Optional too: without a theme (the default) every box is plain
   let skins: Skins = NO_SKINS;
-  try {
-    skins = await loadSkins(await fetchTheme(THEME_URL), THEME_URL);
-  } catch (error) {
-    console.warn(`Ignoring ${THEME_URL}:`, error);
-  }
-  offerThemes(element("theme") as HTMLSelectElement).catch((error) =>
-    console.warn(`No themes on offer at ${THEMES_URL}:`, error),
+  if (THEME_URL !== null)
+    try {
+      skins = await loadSkins(await fetchTheme(THEME_URL), THEME_URL);
+    } catch (error) {
+      console.warn(`Ignoring ${THEME_URL}:`, error);
+    }
+  void offer(
+    "theme",
+    THEMES_URL,
+    "theme",
+    new URLSearchParams(location.search).get("theme") ?? "",
   );
 
   const world = new World(trace, {

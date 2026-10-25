@@ -1,42 +1,51 @@
 # Logs
+# log directory
 logs
+# any log file
 *.log
+# npm crash logs
 npm-debug.log*
+# yarn debug logs
 yarn-debug.log*
+# yarn error logs
 yarn-error.log*
+# pnpm debug logs
 pnpm-debug.log*
+# lerna (monorepo tool) debug logs
 lerna-debug.log*
 
+# installed dependencies
 node_modules
+# vite build output
 dist
+# vite SSR build output
 dist-ssr
+# local-only overrides, e.g. .env.local
 *.local
 
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
-.DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
-
 # Python caches (data/)
+# bytecode cache directories
 __pycache__/
+# stray compiled bytecode
 *.pyc
 
 # Generated traces (`just trace` in data/), except the small fixture the tests read
+# any generated trace
 *.parquet
+# ...but keep the test fixture
 !src/trace/fixture/*.parquet
+# traces served to the app
+public/traces/
 
 # Display names for a trace (domain words stay out of the repo): see labels.example.json
+# real labels, kept local
 public/labels.json
 
 # Box sprites (see src/theme/theme.ts): the real sets and their generator stay out, like labels.json;
 # only the domain-free example theme is kept
-public/theme.json
+# all themes...
 public/themes/*
+# ...except the example one
 !public/themes/example/
+# sprite generator
 sprites/

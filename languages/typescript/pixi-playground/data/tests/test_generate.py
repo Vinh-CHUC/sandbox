@@ -1,5 +1,7 @@
+import json
 import subprocess
 import sys
+from dataclasses import replace
 from pathlib import Path
 
 import pandas as pd
@@ -7,7 +9,15 @@ import pytest
 
 from flowtrace.events import UNKNOWN, ItemState
 from flowtrace.static import NO_SITE
-from flowtrace.generate import Config, StageConfig, layout, simulate
+from flowtrace.generate import (
+    SCENARIOS,
+    US_PER_MIN,
+    Config,
+    RoadConfig,
+    StageConfig,
+    layout,
+    simulate,
+)
 from flowtrace.trace import Trace, read_trace
 from flowtrace.validate import problems
 
@@ -34,13 +44,67 @@ def test_exercises_every_feature_the_viewer_handles() -> None:
     assert (t.stock["count"] < Config().initial_stock).any()
 
 
-def test_cli_writes_a_readable_trace(tmp_path: Path) -> None:
+def test_cli_writes_a_readable_trace_per_scenario(tmp_path: Path) -> None:
     subprocess.run(
         [sys.executable, "-m", "flowtrace.generate", "--out", str(tmp_path), "--hours", "2"],
         check=True,
         capture_output=True,
     )
-    assert problems(read_trace(tmp_path)) == []
+    assert json.loads((tmp_path / "index.json").read_text()) == list(SCENARIOS)
+    for name in SCENARIOS:
+        assert problems(read_trace(tmp_path / name)) == []
+
+
+@pytest.mark.parametrize("name", SCENARIOS)
+def test_every_scenario_gives_a_consistent_trace(name: str) -> None:
+    t = simulate(replace(SCENARIOS[name], hours=6), 1)
+    assert problems(t) == []
+    assert len(t.sites) == SCENARIOS[name].sites
+    assert (t.roads is not None) == (name == "road")
+
+
+def test_a_road_ships_stock_from_one_end_to_the_other() -> None:
+    cfg = SCENARIOS["road"]
+    assert cfg.road is not None
+    t = simulate(cfg, 1)
+    assert t.roads is not None and t.road_enter is not None and t.road_leave is not None
+    road = t.roads.iloc[0]
+    ends = {int(road["a_inventory_id"]), int(road["b_inventory_id"])}
+    trips = t.road_enter.merge(t.road_leave, on="shipment_id", suffixes=("", "_arrived"))
+    assert len(trips) > 5
+    assert set(trips["from_inventory_id"]) <= ends
+    # length / speed minutes each
+    assert (trips["sim_time_us_arrived"] - trips["sim_time_us"] == cfg.road.length * US_PER_MIN).all()
+    # The other end's stock rises by the batch as it arrives
+    levels = t.stock.sort_values("seq").assign(count=lambda d: d["count"].astype("int64"))
+    rises = levels.assign(rise=levels.groupby(["inventory_id", "sku_id"])["count"].diff())
+    for source, sku, count, t in zip(
+        trips["from_inventory_id"], trips["sku_id"], trips["count"], trips["sim_time_us_arrived"]
+    ):
+        to = (ends - {int(source)}).pop()
+        at = (rises["sim_time_us"] == t) & (rises["inventory_id"] == to) & (rises["sku_id"] == sku)
+        # The first change then: a job may draw on it at the same instant
+        assert list(rises.loc[at, "rise"])[0] == count
+    assert (trips["count"] <= cfg.road.batch).all()
+
+
+def test_routine_shipments_keep_traffic_going_without_shortages() -> None:
+    # Plenty of everything: nothing ever runs short, yet stock travels both ways
+    plenty = Config(hours=6, sites=2, road=RoadConfig(), initial_stock=1000, reorder_point=6)
+    t = simulate(plenty, 1)
+    assert t.road_enter is not None and t.item_shortage is not None
+    assert len(t.item_shortage) == 0
+    assert len(t.road_enter) > 10
+    assert t.road_enter["from_inventory_id"].nunique() == 2
+    assert problems(t) == []
+    # And none when asked for none
+    quiet = simulate(replace(plenty, road=RoadConfig(routine_every_min=0)), 1)
+    assert quiet.road_enter is not None and len(quiet.road_enter) == 0
+
+
+def test_no_road_without_two_sites() -> None:
+    t = simulate(Config(hours=2, sites=1, road=RoadConfig()), 1)
+    assert t.roads is None and t.road_enter is None
 
 
 def test_each_stage_draws_from_its_own_inventory() -> None:

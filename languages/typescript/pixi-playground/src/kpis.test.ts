@@ -12,6 +12,8 @@ const kpis: Kpis = {
   stockOuts: 0,
   ready: 30,
   readyShare: 0.25,
+  inTransit: null,
+  transferred: 0,
 };
 const trace = { labels: new Map<string, string>() };
 
@@ -52,6 +54,19 @@ describe("kpiTiles", () => {
     expect(alerts(kpis)).toEqual(["blocked"]);
     expect(alerts({ ...kpis, blocked: 0, stockOuts: 2 })).toEqual([
       "stock_outs",
+    ]);
+  });
+
+  it("adds the roads' tiles only when there are roads", () => {
+    const ids = (k: Kpis) => kpiTiles(k, naming(trace)).map((t) => t.id);
+    expect(ids(kpis)).not.toContain("in_transit");
+    const tiles = kpiTiles(
+      { ...kpis, inTransit: 12, transferred: 30 },
+      naming(trace),
+    ).slice(-2);
+    expect(tiles.map((t) => [t.id, t.value, t.caption])).toEqual([
+      ["in_transit", "12", "SKUs in transit"],
+      ["transferred", "30", "SKUs transferred"],
     ]);
   });
 

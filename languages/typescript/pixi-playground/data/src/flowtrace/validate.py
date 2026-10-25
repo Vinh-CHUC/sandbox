@@ -10,6 +10,8 @@ together. It returns all violations, each tagged with the offending `seq`:
 Moves: an item that leaves a place and arrives somewhere else *at the same `sim_time_us`* has
 moved, and the move must follow an edge. Arriving later than it left (or for the first time)
 means it came from outside the world, which needs no edge.
+
+Shipments: stock leaves one end of a road and reaches the other no sooner than its speed allows.
 """
 
 import sys
@@ -105,6 +107,25 @@ class Shortage:
     missing: int
 
 
+@dataclass(frozen=True)
+class RoadEnter:
+    seq: int
+    t: int
+    shipment: int
+    road: int
+    source: int  # inventory
+    sku: int
+    count: int
+    speed: float  # cells per minute
+
+
+@dataclass(frozen=True)
+class RoadLeave:
+    seq: int
+    t: int
+    shipment: int
+
+
 type Event = (
     QueueEnter
     | QueueLeave
@@ -115,11 +136,22 @@ type Event = (
     | StockLevel
     | Status
     | Shortage
+    | RoadEnter
+    | RoadLeave
 )
 
 
 def _rows(df: pd.DataFrame, columns: list[str]) -> list[list[int]]:
     return [[int(v) for v in row] for row in df[columns].itertuples(index=False)]
+
+
+def _road_enters(df: pd.DataFrame | None) -> list[RoadEnter]:
+    """Like `_rows`, but `speed` is a float"""
+    if df is None:
+        return []
+    columns = ["seq", "sim_time_us", "shipment_id", "road_id", "from_inventory_id", "sku_id", "count"]
+    speeds = [float(v) for v in df["speed"]]
+    return [RoadEnter(*r, speed=speed) for r, speed in zip(_rows(df, columns), speeds)]
 
 
 def stream(trace: Trace) -> list[Event]:
@@ -157,6 +189,11 @@ def stream(trace: Trace) -> list[Event]:
                 )
             )
         ),
+        *_road_enters(trace.road_enter),
+        *(
+            RoadLeave(*r)
+            for r in ([] if trace.road_leave is None else _rows(trace.road_leave, [*meta, "shipment_id"]))
+        ),
     ]
     return sorted(events, key=lambda e: e.seq)
 
@@ -164,6 +201,18 @@ def stream(trace: Trace) -> list[Event]:
 # ── Replay state ──────────────────────────────────────────────────────────────────────────────
 
 type Node = tuple[NodeKind, int]
+
+US_PER_MIN = 60_000_000
+
+
+@dataclass(frozen=True)
+class Road:
+    a: int  # inventories
+    b: int
+    length: int  # cells
+
+    def other(self, end: int) -> int:
+        return self.b if end == self.a else self.a
 
 
 @dataclass(frozen=True)
@@ -187,6 +236,9 @@ class World:
     stock: dict[tuple[int, int], int] = field(default_factory=dict[tuple[int, int], int])
     # (item, inventory, sku) → what the item needs in all (stock at the claim + missing)
     short: dict[tuple[int, int, int], int] = field(default_factory=dict[tuple[int, int, int], int])
+    roads: dict[int, Road] = field(default_factory=dict[int, Road])
+    shipments: dict[int, RoadEnter] = field(default_factory=dict[int, RoadEnter])  # on the road
+    delivered: set[int] = field(default_factory=set[int])
 
     def shortages_of(self, item: int) -> list[tuple[int, int, int]]:
         return [key for key in self.short if key[0] == item]
@@ -302,6 +354,34 @@ def _step(w: World, e: Event) -> str | None:
             else:
                 w.short[(item, inv, sku)] = w.stock.get((inv, sku), 0) + missing
             return None
+        case RoadEnter(shipment=shipment, road=r, source=inv, sku=sku, count=count):
+            road = w.roads.get(r)
+            if shipment in w.shipments or shipment in w.delivered:
+                return f"shipment {shipment} sets off twice"
+            if road is None:
+                return f"shipment {shipment} takes road {r}, which doesn't exist"
+            if inv not in (road.a, road.b):
+                return f"shipment {shipment} sets off from inventory {inv}, not an end of road {r}"
+            if (inv, sku) not in w.stocked or (road.other(inv), sku) not in w.stocked:
+                return f"shipment {shipment} carries sku {sku}, which road {r}'s ends don't both stock"
+            level = w.stock.get((inv, sku))
+            if level is None or level < count:
+                return f"shipment {shipment} takes {count} × sku {sku} from inventory {inv}, which has {level}"
+            w.stock[(inv, sku)] = level - count
+            w.shipments[shipment] = e
+            return None
+        case RoadLeave(shipment=shipment, t=t):
+            start = w.shipments.pop(shipment, None)
+            if start is None:
+                return f"shipment {shipment} arrives but isn't on the road"
+            w.delivered.add(shipment)
+            road = w.roads[start.road]
+            to = road.other(start.source)
+            w.stock[(to, start.sku)] = w.stock.get((to, start.sku), 0) + start.count
+            # Its trip takes length / speed minutes; to the µs, as the sim rounds down
+            if t - start.t < int(road.length / start.speed * US_PER_MIN):
+                return f"shipment {shipment} arrives faster than its speed allows"
+            return None
         case _:
             assert_never(e)
 
@@ -324,6 +404,7 @@ def problems(trace: Trace) -> list[str]:
         trace.edges,
         trace.item_types,
         trace.items,
+        trace.roads,
     )
     errors += [
         f"seq {s} used by several events"
@@ -334,6 +415,17 @@ def problems(trace: Trace) -> list[str]:
     w = World(
         edges={((NodeKind(fk), int(fi)), (NodeKind(tk), int(ti))) for fk, fi, tk, ti in nodes},
         stocked={(int(i), int(s)) for i, s in zip(trace.inventory_skus["inventory_id"], trace.inventory_skus["sku_id"])},
+        roads={}
+        if trace.roads is None
+        else {
+            int(r): Road(int(a), int(b), int(n))
+            for r, a, b, n in zip(
+                trace.roads["road_id"],
+                trace.roads["a_inventory_id"],
+                trace.roads["b_inventory_id"],
+                trace.roads["length"],
+            )
+        },
     )
     end = int(trace.meta["end_sim_time_us"].iloc[0])
     previous_t = 0

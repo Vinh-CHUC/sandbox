@@ -11,14 +11,19 @@ import { units } from "../shared/scale";
  * stacked beside it. Each inventory sits under the column of the stations it supplies. A queue that
  * feeds no station is a store (items sit there ready): it gets a compact spot of its own instead.
  * Places in no site (`NO_SITE`), e.g. one store shared by every site, go to the right of all the
- * sites, vertically centred on them, unfenced.
+ * sites, vertically centred on them, unfenced. Roads (between inventories) get a lane of their own
+ * between the sites and those places, and the sites spread further apart: a road leaves each
+ * inventory from its right end, joins the lane, and runs along it to the other one.
  *
  *   ┌─ Site A ──────────────────────────────────────────────┐
  *   │ [belt q1 ▶]  ▢ s1      [belt q2 ▶]  ▢ s3              │
  *   │              ▢ s2                   ▢ s4              │
  *   │                                     ▢ s5              │
  *   │ [inv 1: ▣ ▣ ▣ ▣ ▣]     [inv 2: ▣ ▣ ▣ ▣ ▣]              │
- *   └───────────────────────────────────────────────────────┘
+ *   └───────────────────────────────────────────────────────┘ ║
+ *                                                              ║ road
+ *   ┌─ Site B ──────────────────────────────────────────────┐ ║
+ *   │ …                  [inv 4: ▣ ▣ ▣ ▣ ▣] ═════════════════╝
  */
 
 export type LayoutConfig = {
@@ -48,6 +53,10 @@ export type LayoutConfig = {
   readonly siteGap: number;
   /** around everything */
   readonly margin: number;
+  /** a road's width: two lanes of a cell each */
+  readonly roadWidth: number;
+  /** between a road and the fences or places beside it; also added between sites */
+  readonly roadClearance: number;
 };
 
 /** Everything in proportion to `UNIT`, the one size knob */
@@ -66,6 +75,8 @@ export const DEFAULT_LAYOUT: LayoutConfig = {
   fenceLabel: units(0.85),
   siteGap: units(1.11),
   margin: units(1.11),
+  roadWidth: 2 * (units(1) + units(0.22)),
+  roadClearance: units(1.11),
 };
 
 export type Placement = {
@@ -77,6 +88,8 @@ export type Placement = {
   readonly stations: ReadonlyMap<number, WorldPos>;
   /** each inventory's first stack top-left; stacks follow along x */
   readonly inventories: ReadonlyMap<number, WorldPos>;
+  /** each road's centreline, from its `a` inventory to its `b` one */
+  readonly roads: ReadonlyMap<number, readonly WorldPos[]>;
   /** each site's fence: top-left and size */
   readonly sites: ReadonlyMap<
     number,
@@ -315,6 +328,9 @@ export const placeTopology = (
   };
   const sites = new Map<number, { pos: WorldPos; extent: Extent }>();
   let right = 0;
+  const hasRoads = top.roads.length > 0;
+  const siteGap =
+    cfg.siteGap + (hasRoads ? cfg.roadWidth + cfg.roadClearance : 0);
   // Sites are rows, top to bottom; each one's content starts inside its fence, under its name
   const sitesTop = margin;
   let fenceTop = sitesTop;
@@ -332,9 +348,29 @@ export const placeTopology = (
     };
     sites.set(site, fence);
     right = Math.max(right, fence.pos.x + fence.extent.w);
-    fenceTop += fence.extent.h + cfg.siteGap;
+    fenceTop += fence.extent.h + siteGap;
   }
-  const sitesBottom = Math.max(sitesTop, fenceTop - cfg.siteGap);
+  const sitesBottom = Math.max(sitesTop, fenceTop - siteGap);
+
+  // Roads: one lane, right of every fence
+  const roads = new Map<number, WorldPos[]>();
+  if (hasRoads) {
+    const laneX = right + cfg.roadClearance + cfg.roadWidth / 2;
+    /** Where a road meets an inventory: just past its last stack, level with its middle */
+    const endOf = (id: number): WorldPos | undefined => {
+      const pos = placed.inventories.get(id);
+      const stacks = top.inventorySkus.get(id)?.length ?? 0;
+      return pos === undefined
+        ? undefined
+        : WorldPos(pos.x + stacks * (box + gap), pos.y + box / 2);
+    };
+    for (const road of top.roads) {
+      const [a, b] = [endOf(road.a), endOf(road.b)];
+      if (a === undefined || b === undefined) continue;
+      roads.set(road.id, [a, WorldPos(laneX, a.y), WorldPos(laneX, b.y), b]);
+    }
+    right = laneX + cfg.roadWidth / 2;
+  }
 
   // Places in no site (e.g. a store shared by every site): to the right of all the sites,
   // vertically centred on them, unfenced
@@ -355,6 +391,7 @@ export const placeTopology = (
     stores: placed.stores,
     stations: placed.stations,
     inventories: placed.inventories,
+    roads,
     sites,
     extent: { w: right + margin, h: bottom + margin },
   };

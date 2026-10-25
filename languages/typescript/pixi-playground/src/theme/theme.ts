@@ -2,9 +2,10 @@ import { Assets, type Texture } from "pixi.js";
 import type { Faces } from "../shared/skin";
 
 /**
- * Sprites for the boxes, like `labels.json` for names: an optional, git-ignored `theme.json` (or
- * `themes/<name>/theme.json`, see `themeUrl`) gives an item type or a SKU textured faces; anything
- * it doesn't mention stays a plain box.
+ * Sprites for the boxes, like `labels.json` for names: an optional, git-ignored
+ * `themes/<name>/theme.json`, picked with `?theme=<name>` (see `themeUrl`), gives an item type or a
+ * SKU textured faces; anything it doesn't mention stays a plain box, and so does everything without
+ * `?theme=`.
  */
 
 /** A box's face images, relative to the theme file: `side` defaults to `top`, `end` to `side` */
@@ -31,15 +32,16 @@ export type Skins = {
 export const NO_SKINS: Skins = { itemTypes: new Map(), skus: new Map() };
 
 /**
- * Where the theme comes from: `?theme=<name>` picks `themes/<name>/theme.json`, else `theme.json`
+ * Where the theme comes from: `?theme=<name>` picks `themes/<name>/theme.json`, no theme (plain
+ * boxes) without one
  *
  *   themeUrl("/", "?theme=rts")  # "/themes/rts/theme.json"
- *   themeUrl("/", "")            # "/theme.json"
+ *   themeUrl("/", "")            # null
  */
-export const themeUrl = (base: string, search: string): string => {
+export const themeUrl = (base: string, search: string): string | null => {
   const name = new URLSearchParams(search).get("theme");
   return name === null || name === ""
-    ? `${base}theme.json`
+    ? null
     : `${base}themes/${encodeURIComponent(name)}/theme.json`;
 };
 

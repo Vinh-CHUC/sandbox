@@ -17,20 +17,27 @@ per item, see `visit_chance`), and end up in the store.
   first, so different types run short of different SKUs.
 - Processing takes ~N(3, 1) minutes, times the stage's `slowdown`.
 - The first queues start backed up (`initially_queued`), then items keep arriving.
+- Optionally (`Config.road`), one stage's inventories at the first two sites are linked by a road:
+  a SKU running low there is shipped over from the other end if it can spare some, instead of
+  reordered from outside. Routine shipments also keep the two ends level, short of parts or not,
+  so there's always some traffic.
 
 It names nothing: display names live in the viewer's `labels.json`, out of the repo.
 
-    $ python -m flowtrace.generate --out ../public/trace --seed 1 --hours 8
+    $ python -m flowtrace.generate --out ../public/traces --seed 1 --hours 8
+
+writes every scenario (`SCENARIOS`) into a directory of its own, listed in `index.json`.
 
 `simulate` is deterministic for a given seed: the same config and seed give the same trace.
 """
 
 import argparse
 import heapq
+import json
 import random
 import sys
 from collections import defaultdict
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import assert_never
 
@@ -61,6 +68,22 @@ class StageConfig:
     # Share of items that need this stage at all (the first stage is always visited); the others
     # skip it, straight to the next stage they need, or to the store
     visit_chance: float = 1.0
+
+
+@dataclass(frozen=True)
+class RoadConfig:
+    """A road between the first two sites' inventories of stage `stage` (an index)"""
+
+    stage: int = 1
+    # In grid cells: 29 is what the viewer draws for the default topology (see the road's tooltip);
+    # shipments go at `speed` cells per minute
+    length: int = 29
+    speed: float = 1.0
+    # How many units a shipment carries; the sending end must keep its own reorder point
+    batch: int = 6
+    # Mean minutes between routine shipments (exponential): some SKU, from the end with more of
+    # it, whether anyone's short or not; 0 for none
+    routine_every_min: float = 15
 
 
 @dataclass(frozen=True)
@@ -106,6 +129,15 @@ class Config:
     bump_every_min: int = 3
     # 1 Jan 2026, for display only
     start_unix_us: int = 1_767_225_600_000_000
+    road: RoadConfig | None = None
+
+
+SCENARIOS: dict[str, Config] = {
+    "one-site": Config(sites=1),
+    "two-sites": Config(sites=2),
+    # The two sites' second stages share stock over a road
+    "road": Config(sites=2, road=RoadConfig()),
+}
 
 
 # ── Topology ──────────────────────────────────────────────────────────────────────────────────
@@ -126,6 +158,24 @@ class Site:
     stages: tuple[Stage, ...]
     # A queue feeding no station, where finished items stay: the same one for every site
     store: int
+
+
+@dataclass(frozen=True)
+class Road:
+    """Between inventories `a` and `b`, two-way"""
+
+    id: int
+    a: int
+    b: int
+    length: int
+
+
+def roads_of(sites: list[Site], cfg: Config) -> list[Road]:
+    """The road `cfg.road` asks for, if there are two sites to link"""
+    if cfg.road is None or len(sites) < 2:
+        return []
+    k = cfg.road.stage
+    return [Road(1, sites[0].stages[k].inventory, sites[1].stages[k].inventory, cfg.road.length)]
 
 
 def layout(cfg: Config) -> tuple[list[Site], list[int]]:
@@ -178,7 +228,28 @@ class Restock:
     count: int
 
 
-type Happening = Arrive | Done | Bump | Restock
+@dataclass(frozen=True)
+class Deliver:
+    """A shipment reaches `inventory` (at `site`), the end of its road; `ordered` when it's what
+    `inventory` reordered (rather than a routine shipment)"""
+
+    site: Site
+    inventory: int
+    sku: int
+    count: int
+    shipment: int
+    ordered: bool
+
+
+@dataclass(frozen=True)
+class Routine:
+    """A routine shipment along `road` is due (`site`: its `a` end's); the next one is scheduled"""
+
+    site: Site
+    road: Road
+
+
+type Happening = Arrive | Done | Bump | Restock | Deliver | Routine
 
 
 # ── Recording ─────────────────────────────────────────────────────────────────────────────────
@@ -188,12 +259,12 @@ type Happening = Arrive | Done | Bump | Restock
 class Recorder:
     """Event rows per table, numbered with one `seq` across all of them"""
 
-    rows: defaultdict[str, list[dict[str, int]]] = field(
-        default_factory=lambda: defaultdict[str, list[dict[str, int]]](list)
+    rows: defaultdict[str, list[dict[str, float]]] = field(
+        default_factory=lambda: defaultdict[str, list[dict[str, float]]](list)
     )
     seq: int = 0
 
-    def emit(self, table: str, t: int, **columns: int) -> None:
+    def emit(self, table: str, t: int, **columns: float) -> None:
         self.rows[table].append({"seq": self.seq, "sim_time_us": t, **columns})
         self.seq += 1
 
@@ -242,6 +313,9 @@ class Sim:
     busy: set[int] = field(default_factory=set[int])
     stock: dict[tuple[int, int], int] = field(default_factory=dict[tuple[int, int], int])
     next_job: int = 1
+    # inventory → its road, and the inventory and site at the road's other end
+    across: dict[int, tuple[Road, int, Site]] = field(default_factory=dict[int, tuple[Road, int, Site]])
+    next_shipment: int = 1
 
     def at(self, t: int, happening: Happening) -> None:
         heapq.heappush(self.pending, (t, self.order, happening))
@@ -371,8 +445,59 @@ class Sim:
         if self.stock[(inventory, sku)] >= self.cfg.reorder_point or (inventory, sku) in self.on_order:
             return
         self.on_order.add((inventory, sku))
+        if self.ship(site, inventory, sku):
+            return
         arrives = self.now + self.minutes(self.cfg.lead_time_min)
         self.at(arrives, Restock(site, inventory, sku, self.cfg.order_size))
+
+    def ship(self, site: Site, inventory: int, sku: int) -> bool:
+        """Send a batch of `sku` over from the road's other end, if it can spare one (it keeps its
+        own reorder point); whether it did"""
+        road_cfg, link = self.cfg.road, self.across.get(inventory)
+        if road_cfg is None or link is None:
+            return False
+        road, source, _ = link
+        if self.stock[(source, sku)] - road_cfg.batch < self.cfg.reorder_point:
+            return False
+        self.send(road, source, site, inventory, sku, road_cfg.batch, ordered=True)
+        return True
+
+    def routine(self, road: Road) -> None:
+        """Even out a random SKU: a batch from the end with more of it (either, if level), as much
+        as it can spare while keeping its reorder point"""
+        road_cfg = self.cfg.road
+        assert road_cfg is not None
+        sku = self.rng.choice(self.skus)
+        ends = [road.a, road.b]
+        self.rng.shuffle(ends)
+        source, to = sorted(ends, key=lambda inv: -self.stock[(inv, sku)])
+        count = min(road_cfg.batch, self.stock[(source, sku)] - self.cfg.reorder_point)
+        if count >= 1:
+            _, _, to_site = self.across[source]
+            self.send(road, source, to_site, to, sku, count, ordered=False)
+
+    def send(
+        self, road: Road, source: int, site: Site, to: int, sku: int, count: int, ordered: bool
+    ) -> None:
+        """`count` × `sku` from `source` along `road`, arriving at `to` (at `site`)"""
+        road_cfg = self.cfg.road
+        assert road_cfg is not None
+        shipment = self.next_shipment
+        self.next_shipment += 1
+        self.rec.emit(
+            "road_enter",
+            self.now,
+            shipment_id=shipment,
+            road_id=road.id,
+            from_inventory_id=source,
+            sku_id=sku,
+            count=count,
+            speed=road_cfg.speed,
+        )
+        self.set_stock(source, sku, self.stock[(source, sku)] - count)
+        # length / speed minutes, rounded down to the µs (as the validator expects)
+        trip = int(road.length / road_cfg.speed * US_PER_MIN)
+        self.at(self.now + trip, Deliver(site, to, sku, count, shipment, ordered))
 
     def in_stock(self, stage: Stage, item: int) -> bool:
         needs = self.needs[(item, stage.queue)]
@@ -436,6 +561,17 @@ class Sim:
                 self.on_order.discard((inventory, sku))
                 self.set_stock(inventory, sku, self.stock[(inventory, sku)] + count)
                 self.reorder(site, inventory, sku)  # still low: order again
+            case Deliver(
+                site=site, inventory=inventory, sku=sku, count=count, shipment=shipment, ordered=ordered
+            ):
+                self.rec.emit("road_leave", self.now, shipment_id=shipment)
+                if ordered:
+                    self.on_order.discard((inventory, sku))
+                self.set_stock(inventory, sku, self.stock[(inventory, sku)] + count)
+                self.reorder(site, inventory, sku)
+            case Routine(site=site, road=road):
+                self.routine(road)
+                self.schedule_routine(site, road)
             case _:
                 assert_never(h)
         self.allocate(h.site)
@@ -453,7 +589,18 @@ class Sim:
             picked.append(left.pop(self.rng.choices(range(len(left)), weights)[0]))
         return {sku: self.rng.randint(*stage_cfg.units_per_sku) for sku in picked}
 
-    def run(self, sites: list[Site], end: int) -> None:
+    def schedule_routine(self, site: Site, road: Road) -> None:
+        every = 0 if self.cfg.road is None else self.cfg.road.routine_every_min
+        if every > 0:
+            gap = self.rng.expovariate(1 / every)
+            self.at(self.now + int(gap * US_PER_MIN) + 1, Routine(site, road))
+
+    def run(self, sites: list[Site], roads: list[Road], end: int) -> None:
+        site_of = {stage.inventory: site for site in sites for stage in site.stages}
+        for road in roads:
+            self.across[road.a] = (road, road.b, site_of[road.b])
+            self.across[road.b] = (road, road.a, site_of[road.a])
+            self.schedule_routine(site_of[road.a], road)
         for site in sites:
             for stage in site.stages:
                 for sku in self.skus:
@@ -483,7 +630,9 @@ def _next_queues(site: Site, k: int, cfg: Config) -> list[int]:
     return [*nxt, site.store]
 
 
-def _static(sites: list[Site], skus: list[int], cfg: Config) -> dict[str, pd.DataFrame]:
+def _static(
+    sites: list[Site], skus: list[int], roads: list[Road], cfg: Config
+) -> dict[str, pd.DataFrame | None]:
     Q, S, I = NodeKind.QUEUE, NodeKind.STATION, NodeKind.INVENTORY
     stages = [stage for site in sites for stage in site.stages]
     edges = [
@@ -524,19 +673,26 @@ def _static(sites: list[Site], skus: list[int], cfg: Config) -> dict[str, pd.Dat
             columns=["inventory_id", "sku_id"],
         ),
         "edges": pd.DataFrame(edges, columns=["from_kind", "from_id", "to_kind", "to_id"]),
+        "roads": pd.DataFrame(
+            [(r.id, r.a, r.b, r.length) for r in roads],
+            columns=["road_id", "a_inventory_id", "b_inventory_id", "length"],
+        )
+        if roads
+        else None,
     }
 
 
 def simulate(cfg: Config, seed: int) -> Trace:
     """Run the toy sim for `cfg.hours` and return its (schema-validated) trace"""
     sites, skus = layout(cfg)
+    roads = roads_of(sites, cfg)
     end = int(cfg.hours * US_PER_HOUR)
     sim = Sim(cfg, random.Random(seed), skus)
-    sim.run(sites, end)
+    sim.run(sites, roads, end)
     rec = sim.rec
     return validated(
         Trace(
-            **_static(sites, skus, cfg),
+            **_static(sites, skus, roads, cfg),  # pyright: ignore[reportArgumentType]  (only roads is None)
             queue_enter=rec.frame("queue_enter", ["item_id", "queue_id", "index"]),
             queue_leave=rec.frame("queue_leave", ["item_id", "queue_id"]),
             queue_move=rec.frame("queue_move", ["item_id", "queue_id", "index"]),
@@ -554,6 +710,13 @@ def simulate(cfg: Config, seed: int) -> Trace:
             items=pd.DataFrame(
                 sorted(sim.item_type.items()), columns=["item_id", "item_type_id"]
             ),
+            road_enter=rec.frame(
+                "road_enter",
+                ["shipment_id", "road_id", "from_inventory_id", "sku_id", "count", "speed"],
+            )
+            if roads
+            else None,
+            road_leave=rec.frame("road_leave", ["shipment_id"]) if roads else None,
             meta=pd.DataFrame(
                 {
                     "format_version": [FORMAT_VERSION],
@@ -566,21 +729,26 @@ def simulate(cfg: Config, seed: int) -> Trace:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Write a toy flow trace (parquet tables).")
-    parser.add_argument("--out", type=Path, required=True)
+    parser = argparse.ArgumentParser(description="Write toy flow traces (parquet tables).")
+    parser.add_argument("--out", type=Path, required=True, help="one directory per scenario in here")
+    parser.add_argument("--scenario", choices=SCENARIOS, help="only this one (default: all)")
     parser.add_argument("--seed", type=int, default=1)
     parser.add_argument("--hours", type=float, default=8)
-    parser.add_argument("--sites", type=int, default=2)
     args = parser.parse_args()
 
-    trace = simulate(Config(hours=args.hours, sites=args.sites), args.seed)
-    # Never write a trace the viewer would choke on
-    if errors := problems(trace):
-        print("\n".join(errors), file=sys.stderr)
-        sys.exit(1)
-    write_trace(trace, args.out)
-    counts = {name: len(df) for name, df in vars(trace).items() if df is not None}
-    print(f"wrote {args.out}: {counts}")
+    names = list(SCENARIOS) if args.scenario is None else [args.scenario]
+    for name in names:
+        trace = simulate(replace(SCENARIOS[name], hours=args.hours), args.seed)
+        # Never write a trace the viewer would choke on
+        if errors := problems(trace):
+            print(f"{name}:", *errors, sep="\n", file=sys.stderr)
+            sys.exit(1)
+        write_trace(trace, args.out / name)
+        counts = {name: len(df) for name, df in vars(trace).items() if df is not None}
+        print(f"wrote {args.out / name}: {counts}")
+    # What the viewer's scenario switch offers: every scenario written so far
+    written = [name for name in SCENARIOS if (args.out / name).is_dir()]
+    (args.out / "index.json").write_text(json.dumps(written) + "\n")
 
 
 if __name__ == "__main__":

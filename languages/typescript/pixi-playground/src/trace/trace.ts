@@ -13,6 +13,14 @@ export const NO_SITE = 0;
 /** A place, belonging to a site (or to none, see `NO_SITE`) */
 export type Place = { readonly id: number; readonly site: number };
 
+/** A two-way road between inventories `a` and `b`, `length` grid cells long */
+export type RoadSpec = {
+  readonly id: number;
+  readonly a: number;
+  readonly b: number;
+  readonly length: number;
+};
+
 /** The static part of a trace: every place things flow between, and how they connect */
 export type Topology = {
   readonly sites: readonly number[];
@@ -27,6 +35,8 @@ export type Topology = {
   /** Each typed item's type; untyped items aren't in here */
   readonly itemType: ReadonlyMap<ItemId, number>;
   readonly edges: readonly Edge[];
+  /** Roads stock is shipped along, if the trace has any */
+  readonly roads: readonly RoadSpec[];
 };
 
 type At = { readonly seq: number; readonly t: SimMs };
@@ -81,6 +91,18 @@ export type TraceEvent =
       readonly missing: number;
     })
   | (At & {
+      readonly kind: "road_enter";
+      readonly shipment: number;
+      readonly road: number;
+      /** the inventory it sets off from, one end of the road, for the other */
+      readonly from: number;
+      readonly sku: SkuId;
+      readonly count: number;
+      /** grid cells per minute (simulated) */
+      readonly speed: number;
+    })
+  | (At & { readonly kind: "road_leave"; readonly shipment: number })
+  | (At & {
       readonly kind: "stock";
       readonly inventory: number;
       readonly sku: SkuId;
@@ -94,7 +116,8 @@ export type LabelTable =
   | "inventories"
   | "skus"
   | "items"
-  | "item_types";
+  | "item_types"
+  | "roads";
 
 export type Trace = {
   readonly topology: Topology;

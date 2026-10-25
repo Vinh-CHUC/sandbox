@@ -73,6 +73,45 @@ describe("toTrace", () => {
     expect([trace.startUnixMs, trace.endMs]).toEqual([1000, 60_000]);
   });
 
+  it("reads roads and their shipments, speeds as floats", () => {
+    const trace = toTrace({
+      ...tables(),
+      roads: {
+        road_id: [1],
+        a_inventory_id: [5],
+        b_inventory_id: [6],
+        length: [30],
+      },
+      road_enter: {
+        seq: [3n],
+        sim_time_us: [6_000_000n],
+        shipment_id: [1],
+        road_id: [1],
+        from_inventory_id: [6],
+        sku_id: [100n],
+        count: [4],
+        speed: [1.5],
+      },
+      road_leave: { seq: [4n], sim_time_us: [9_000_000n], shipment_id: [1] },
+    });
+    expect(trace.topology.roads).toEqual([{ id: 1, a: 5, b: 6, length: 30 }]);
+    expect(trace.events.slice(-2)).toEqual([
+      {
+        kind: "road_enter",
+        seq: 3,
+        t: 6000,
+        shipment: 1,
+        road: 1,
+        from: 6,
+        sku: 100,
+        count: 4,
+        speed: 1.5,
+      },
+      { kind: "road_leave", seq: 4, t: 9000, shipment: 1 },
+    ]);
+    expect(toTrace(tables()).topology.roads).toEqual([]); // optional
+  });
+
   it("fails loudly on a missing static table or a non-integer id", () => {
     expect(() => toTrace({ ...tables(), edges: undefined })).toThrow(
       "missing table edges",

@@ -20,6 +20,7 @@ export type Tile = {
  */
 export const kpiTiles = (k: Kpis, n: Naming): Tile[] => {
   const items = n.kind("item").many;
+  const skus = n.kind("sku").many;
   const tile = (
     id: string,
     value: string,
@@ -49,5 +50,12 @@ export const kpiTiles = (k: Kpis, n: Naming): Tile[] => {
         : `${k.ready} (${Math.round(k.readyShare * 100)}%)`,
       `${items} ready`,
     ),
+    // Only with roads: stock shipped between inventories
+    ...(k.inTransit === null
+      ? []
+      : [
+          tile("in_transit", String(k.inTransit), `${skus} in transit`),
+          tile("transferred", String(k.transferred), `${skus} transferred`),
+        ]),
   ];
 };

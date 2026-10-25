@@ -1,7 +1,7 @@
-# Flow trace pipeline: generate a trace of parquet tables for the viewer (../public/trace)
+# Flow trace pipeline: generate traces of parquet tables for the viewer (../public/traces)
 
-# Where the viewer fetches traces from
-out := "../public/trace"
+# Where the viewer fetches traces from: one directory per scenario, listed in index.json
+out := "../public/traces"
 
 default:
     @just --list
@@ -21,13 +21,13 @@ typecheck:
 # Everything CI would run
 check: typecheck test
 
-# Generate a trace into `out` (needs the generator: `flowtrace.generate`, not written yet)
+# Generate every scenario's trace into `out` (one site, two sites, two sites and a road)
 trace seed="1" hours="8":
     uv run python -m flowtrace.generate --out {{out}} --seed {{seed}} --hours {{hours}}
 
-# Replay-check a trace directory: schemas, references, and every event in `seq` order
+# Replay-check every scenario's trace: schemas, references, and every event in `seq` order
 validate dir=out:
-    uv run python -m flowtrace.validate {{dir}}
+    for d in {{dir}}/*/; do uv run python -m flowtrace.validate "$d" || exit 1; done
 
 # Full pipeline: check, generate, then validate what was generated
 pipeline seed="1" hours="8": check (trace seed hours) validate

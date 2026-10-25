@@ -55,6 +55,7 @@ const trace = (evs: TraceEvent[] = events): Trace => ({
     skus: [P],
     itemTypes: [],
     itemType: new Map(),
+    roads: [],
     inventorySkus: new Map([[5, [P]]]),
     edges: [
       { from: { kind: "queue", id: 1 }, to: { kind: "station", id: 10 } },
@@ -91,6 +92,49 @@ describe("World", () => {
     expect(world.stationItem(10)).toBeNull();
     expect(world.queueItems(2)).toEqual([2]);
     expect(world.throughput(10, min(30))).toBeCloseTo(1 / 30); // 1 in 30 min
+  });
+
+  it("ships stock along a road: the source drops, the stack moves along, the far end gets it", () => {
+    const base = trace();
+    const roadTrace: Trace = {
+      ...base,
+      topology: {
+        ...base.topology,
+        inventories: [...base.topology.inventories, { id: 6, site: 1 }],
+        inventorySkus: new Map([
+          [5, [P]],
+          [6, [P]],
+        ]),
+        roads: [{ id: 1, a: 5, b: 6, length: 20 }],
+      },
+      events: [
+        ...events,
+        {
+          kind: "road_enter",
+          seq: 10,
+          t: min(30),
+          shipment: 1,
+          road: 1,
+          from: 5,
+          sku: P,
+          count: 1,
+          speed: 2,
+        },
+        { kind: "stock", seq: 11, t: min(30), inventory: 5, sku: P, count: 0 },
+        { kind: "road_leave", seq: 12, t: min(40), shipment: 1 },
+        { kind: "stock", seq: 13, t: min(40), inventory: 6, sku: P, count: 1 },
+      ],
+    };
+    const world = new World(roadTrace);
+    world.tick(min(35), WALL);
+    expect(world.stock(5, P)).toBe(0);
+    expect(world.roadShipments(1, min(35))).toEqual([[1, 0.5]]); // 10 of 20 cells, at 2 a minute
+    expect(world.kpis(min(35))).toMatchObject({ inTransit: 1, transferred: 0 });
+    world.tick(min(40), WALL);
+    expect(world.roadShipments(1, min(40))).toEqual([]);
+    expect(world.stock(6, P)).toBe(1);
+    expect(world.kpis(min(40))).toMatchObject({ inTransit: 0, transferred: 1 });
+    expect(new World(trace()).kpis(min(0)).inTransit).toBeNull(); // no roads
   });
 
   it("fails loudly on events the trace can't have", () => {

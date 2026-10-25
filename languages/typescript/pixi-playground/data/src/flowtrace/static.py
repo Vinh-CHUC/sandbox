@@ -92,6 +92,18 @@ class InventorySkus(Table):
         unique = ["inventory_id", "sku_id"]
 
 
+class Roads(Table):
+    """
+    A two-way road between two inventories, `length` grid cells long: stock travels it in
+    shipments (`road_enter` / `road_leave`). Optional table.
+    """
+
+    road_id: Series[pd.UInt32Dtype] = pa.Field(unique=True)
+    a_inventory_id: Series[pd.UInt32Dtype]
+    b_inventory_id: Series[pd.UInt32Dtype]
+    length: Series[pd.UInt32Dtype] = pa.Field(ge=1)
+
+
 class Edges(Table):
     """
     Directed flow between places, see `NodeKind`: items move queue ↔ station (and queue → queue),
@@ -108,7 +120,16 @@ class Edges(Table):
         unique = ["from_kind", "from_id", "to_kind", "to_id"]
 
 
-LABELLED_TABLES = ("sites", "queues", "stations", "inventories", "skus", "items", "item_types")
+LABELLED_TABLES = (
+    "sites",
+    "queues",
+    "stations",
+    "inventories",
+    "skus",
+    "items",
+    "item_types",
+    "roads",
+)
 
 
 class Labels(Table):
@@ -136,6 +157,7 @@ def dangling_references(
     edges: pd.DataFrame,
     item_types: pd.DataFrame | None = None,
     items: pd.DataFrame | None = None,
+    roads: pd.DataFrame | None = None,
 ) -> list[str]:
     """
     Cross-table checks pandera can't express on one frame: every id a table refers to exists.
@@ -165,6 +187,11 @@ def dangling_references(
             set() if item_types is None else {int(t) for t in item_types["item_type_id"]}
         )
         checks.append(("items.item_type_id", items["item_type_id"], known_types, "item_types"))
+    if roads is not None:
+        checks += [
+            (f"roads.{end}_inventory_id", roads[f"{end}_inventory_id"], nodes[NodeKind.INVENTORY], "inventories")
+            for end in ("a", "b")
+        ]
     errors = [
         f"{column} {value} not in {table}"
         for column, values, known, table in checks

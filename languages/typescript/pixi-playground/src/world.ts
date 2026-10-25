@@ -5,6 +5,8 @@ import { InventoryView } from "./inventory/view";
 import { Layout } from "./queue/layout";
 import { Queue } from "./queue/model/queue";
 import { QueueView } from "./queue/view";
+import { Road, type End } from "./road/model/road";
+import { RoadView } from "./road/view";
 import {
   ScreenPos,
   WorldPos,
@@ -42,7 +44,7 @@ import { Replay } from "./trace/replay";
 import { naming, type LabelsFile, type Naming } from "./trace/naming";
 import { plain, skinOf, type Skin } from "./shared/skin";
 import { NO_SKINS, type Skins } from "./theme/theme";
-import type { Trace, TraceEvent } from "./trace/trace";
+import type { RoadSpec, Trace, TraceEvent } from "./trace/trace";
 
 const { box: BOX, gap: GAP, beltLength: BELT_LENGTH } = DEFAULT_LAYOUT;
 /** Where the scene starts on screen: clear of the controls bar at the top */
@@ -81,6 +83,9 @@ export type Kpis = {
   /** items sitting ready in a store, and their share of all the items seen so far */
   readonly ready: number;
   readonly readyShare: number | null;
+  /** units of stock on the roads now, null when there are no roads; and units delivered so far */
+  readonly inTransit: number | null;
+  readonly transferred: number;
 };
 
 /** What happens to the items still in the system: `ItemState` codes in data/ */
@@ -97,6 +102,11 @@ type StationEntry = {
   readonly pos: WorldPos;
   readonly view: StationView;
   readonly throughput: Throughput;
+};
+type RoadEntry = {
+  readonly spec: RoadSpec;
+  readonly road: Road;
+  readonly view: RoadView;
 };
 type InventoryEntry = {
   readonly inventory: Inventory;
@@ -135,6 +145,9 @@ export class World {
   >();
   private readonly stations = new Map<number, StationEntry>();
   private readonly inventories = new Map<number, InventoryEntry>();
+  private readonly roads = new Map<number, RoadEntry>();
+  /** shipment → the road it's on */
+  private readonly shipments = new Map<number, number>();
   /** job → the station running it */
   private readonly jobs = new Map<number, number>();
   /** One `Item` per id seen, so views can key boxes on it */
@@ -210,15 +223,14 @@ export class World {
     const skuColors = new Map(
       top.skus.map((sku, i) => [sku, skuColor(i, top.skus.length)]),
     );
+    const skuSkin = (sku: SkuId) =>
+      skinOf(skins.skus.get(sku), skuColors.get(sku) ?? CHARCOAL);
     const stacks = new Map<number, Map<SkuId, Stack>>();
     for (const { id } of top.inventories) {
       const skus = top.inventorySkus.get(id) ?? [];
       const ownStacks = layoutStacks(
         at(placement.inventories, "inventory", id),
-        skus.map((sku) => ({
-          id: sku,
-          skin: skinOf(skins.skus.get(sku), skuColors.get(sku) ?? CHARCOAL),
-        })),
+        skus.map((sku) => ({ id: sku, skin: skuSkin(sku) })),
         stride,
       );
       stacks.set(id, ownStacks);
@@ -239,6 +251,28 @@ export class World {
           skus.map((sku) => [sku, new Throughput(MAX_THROUGHPUT_WINDOW_MS)]),
         ),
       });
+    }
+
+    // Roads: an end is called by its inventory and that inventory's site
+    const siteOf = new Map(top.inventories.map((i) => [i.id, i.site]));
+    const endName = (inventory: number) =>
+      `${n.name("inventories", inventory)}, ${n.name("sites", siteOf.get(inventory) ?? 0)}`;
+    for (const spec of top.roads) {
+      const road = new Road(spec.length);
+      const view = new RoadView(
+        road,
+        at(placement.roads, "road", spec.id),
+        stride,
+        BOX,
+        skuSkin,
+        {
+          road: n.name("roads", spec.id),
+          sku: (sku) => n.name("skus", sku),
+          ends: { a: endName(spec.a), b: endName(spec.b) },
+        },
+        options.onHover,
+      );
+      this.roads.set(spec.id, { spec, road, view });
     }
 
     const names: Names = {
@@ -313,6 +347,7 @@ export class World {
       // Site floors first, so the grid shows on top of them
       ...this.siteViews.map((v) => v.site_container),
       this.grid.graphic,
+      ...[...this.roads.values()].map((r) => r.view.road_container),
       ...[...this.inventories.values()].map((i) => i.view.inventory_container),
       ...[...this.queues.values()].map((q) => q.view.queue_container),
       ...[...this.stores.values()].map((s) => s.view.store_container),
@@ -337,6 +372,7 @@ export class World {
     this.grid.setProjection(p);
     for (const view of this.siteViews) view.setProjection(p);
     for (const { view } of this.inventories.values()) view.setProjection(p);
+    for (const { view } of this.roads.values()) view.setProjection(p);
     for (const { view } of this.queues.values()) view.setProjection(p);
     for (const { view } of this.stores.values()) view.setProjection(p);
     for (const { view } of this.stations.values()) view.setProjection(p);
@@ -504,6 +540,30 @@ export class World {
         if (e.status === 0) this.states.delete(e.item);
         else this.states.set(e.item, e.status);
         return;
+      case "road_enter": {
+        // The source's stock drops through its own `stock` event: the road only takes it on
+        const { spec, road } = this.roadOf(e.road);
+        road.enter({
+          id: e.shipment,
+          sku: e.sku,
+          count: e.count,
+          from: this.endOf(spec, e.from, e.seq),
+          departed: e.t,
+          speed: e.speed,
+        });
+        this.shipments.set(e.shipment, e.road);
+        return;
+      }
+      case "road_leave": {
+        const id = this.shipments.get(e.shipment);
+        if (id === undefined)
+          throw new Error(
+            `seq ${e.seq}: shipment ${e.shipment} isn't on a road`,
+          );
+        this.roadOf(id).road.leave(e.shipment);
+        this.shipments.delete(e.shipment);
+        return;
+      }
     }
   }
 
@@ -528,6 +588,7 @@ export class World {
       (n, { members }) => n + members.size,
       0,
     );
+    const roads = [...this.roads.values()].map(({ road }) => road);
     return {
       done: this.done,
       donePerMinute: this.doneRate.perMinute(now, window),
@@ -539,6 +600,13 @@ export class World {
       stockOuts,
       ready,
       readyShare: seen === 0 ? null : ready / seen,
+      inTransit:
+        roads.length === 0
+          ? null
+          : roads
+              .flatMap((road) => road.shipments)
+              .reduce((n, s) => n + s.count, 0),
+      transferred: roads.reduce((n, road) => n + road.delivered.units, 0),
     };
   }
 
@@ -583,6 +651,7 @@ export class World {
       view.render(now, wall, () => throughput.perMinute(now, window));
     for (const { view, consumption } of this.inventories.values())
       view.render((sku) => consumption.get(sku)?.perMinute(now, window) ?? 0);
+    for (const { view } of this.roads.values()) view.render(now);
   }
 
   /* ── read-only views of the state, mostly for tests ─────────────────── */
@@ -601,6 +670,12 @@ export class World {
 
   public stock(inventory: number, sku: SkuId): number {
     return this.inventoryOf(inventory).inventory.count(sku);
+  }
+
+  /** Shipments on road `id`, and how far along each is at simulated `now`, in [0, 1] */
+  public roadShipments(id: number, now: SimMs): [number, number][] {
+    const { road } = this.roadOf(id);
+    return road.shipments.map((s) => [s.id, road.progress(s, now)]);
   }
 
   /** Items per minute finished by station `id`, over the current window */
@@ -731,6 +806,21 @@ export class World {
     const entry = this.stations.get(id);
     if (entry === undefined) throw new Error(`trace: unknown station ${id}`);
     return entry;
+  }
+
+  private roadOf(id: number): RoadEntry {
+    const entry = this.roads.get(id);
+    if (entry === undefined) throw new Error(`trace: unknown road ${id}`);
+    return entry;
+  }
+
+  /** Which end of `spec` `inventory` is */
+  private endOf(spec: RoadSpec, inventory: number, seq: number): End {
+    if (inventory === spec.a) return "a";
+    if (inventory === spec.b) return "b";
+    throw new Error(
+      `seq ${seq}: inventory ${inventory} isn't an end of road ${spec.id}`,
+    );
   }
 
   private inventoryOf(id: number): InventoryEntry {

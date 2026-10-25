@@ -1,9 +1,20 @@
 import { asyncBufferFromFile } from "hyparquet";
 import { describe, expect, it } from "vitest";
-import { loadTrace } from "./load";
+import { loadTrace, traceUrl } from "./load";
 
-// A small trace written by `data/` (python -m flowtrace.generate --hours 1 --sites 1 --seed 2)
+// A small trace written by `data/` (python -m flowtrace.generate --scenario one-site --hours 1 --seed 2)
 const fixture = new URL("./fixture", import.meta.url).pathname;
+
+describe("traceUrl", () => {
+  it.each([
+    ["", "/traces/one-site"],
+    ["?scenario=", "/traces/one-site"],
+    ["?theme=rts&scenario=road", "/traces/road"],
+    ["?scenario=a b", "/traces/a%20b"],
+  ])("%j → %s", (search, expected) => {
+    expect(traceUrl("/", search)).toBe(expected);
+  });
+});
 
 describe("loadTrace", () => {
   it("reads a trace written by data/, end to end", async () => {

@@ -56,6 +56,19 @@ const strings = (
     return value;
   });
 
+const floats = (
+  table: string,
+  columns: Columns | undefined,
+  name: string,
+): number[] =>
+  (columns?.[name] ?? []).map((value, row) => {
+    if (typeof value !== "number" || !Number.isFinite(value))
+      throw new TypeError(
+        `${table}.${name}[${row}]: not a number (${String(value)})`,
+      );
+    return value;
+  });
+
 /** Row-wise view of a table: `rows(t, ["a", "b"])` → [[a0, b0], [a1, b1], …] */
 const rows = (
   tables: Tables,
@@ -109,6 +122,8 @@ export const toTrace = (tables: Tables): Trace => {
   }));
 
   const at = ["seq", "sim_time_us"];
+  // Optional, like the road tables: a float, so not read by `rows`
+  const speeds = floats("road_enter", tables["road_enter"], "speed");
   const events: TraceEvent[] = [
     ...rows(tables, "queue_enter", [...at, "item_id", "queue_id", "index"]).map(
       ([seq, t, item, queue, index]): TraceEvent => ({
@@ -201,6 +216,32 @@ export const toTrace = (tables: Tables): Trace => {
       sku: SkuId(sku),
       missing,
     })),
+    ...rows(tables, "road_enter", [
+      ...at,
+      "shipment_id",
+      "road_id",
+      "from_inventory_id",
+      "sku_id",
+      "count",
+    ]).map(([seq, t, shipment, road, from, sku, count], i): TraceEvent => ({
+      kind: "road_enter",
+      seq,
+      t: simMs(t),
+      shipment,
+      road,
+      from,
+      sku: SkuId(sku),
+      count,
+      speed: speeds[i],
+    })),
+    ...rows(tables, "road_leave", [...at, "shipment_id"]).map(
+      ([seq, t, shipment]): TraceEvent => ({
+        kind: "road_leave",
+        seq,
+        t: simMs(t),
+        shipment,
+      }),
+    ),
     ...rows(tables, "stock", [...at, "inventory_id", "sku_id", "count"]).map(
       ([seq, t, inventory, sku, count]): TraceEvent => ({
         kind: "stock",
@@ -244,6 +285,12 @@ export const toTrace = (tables: Tables): Trace => {
           ([item, type]) => [item, type],
         ),
       ),
+      roads: rows(tables, "roads", [
+        "road_id",
+        "a_inventory_id",
+        "b_inventory_id",
+        "length",
+      ]).map(([id, a, b, length]) => ({ id, a, b, length })),
     },
     events,
     labels,

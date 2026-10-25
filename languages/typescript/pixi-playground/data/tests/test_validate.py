@@ -139,6 +139,94 @@ def test_inconsistent_events_are_reported(
     assert expected in problems(broken)
 
 
+def road_trace() -> Trace:
+    """
+    `valid_trace`, plus inventory 6 (also stocking SKU 100) at the end of a 2-cell road from
+    inventory 5: the unit left there ships over, fast (2 / 1e6 min = 120 µs).
+    """
+    t = valid_trace()
+    return validated(
+        replace(
+            t,
+            inventories=pd.DataFrame({"inventory_id": [5, 6], "site_id": [1, 1]}),
+            inventory_skus=pd.DataFrame({"inventory_id": [5, 5, 6], "sku_id": [100, 200, 100]}),
+            roads=pd.DataFrame(
+                {"road_id": [1], "a_inventory_id": [5], "b_inventory_id": [6], "length": [2]}
+            ),
+            road_enter=pd.DataFrame(
+                {
+                    "seq": [11],
+                    "sim_time_us": [2500],
+                    "shipment_id": [1],
+                    "road_id": [1],
+                    "from_inventory_id": [5],
+                    "sku_id": [100],
+                    "count": [1],
+                    "speed": [1e6],
+                }
+            ),
+            road_leave=pd.DataFrame({"seq": [13], "sim_time_us": [2700], "shipment_id": [1]}),
+            stock=pd.concat(
+                [
+                    t.stock,
+                    pd.DataFrame(
+                        {
+                            "seq": [12, 14],
+                            "sim_time_us": [2500, 2700],
+                            "inventory_id": [5, 6],
+                            "sku_id": [100, 100],
+                            "count": [0, 1],
+                        }
+                    ),
+                ]
+            ),
+        )
+    )
+
+
+def test_a_consistent_road_trip_has_no_problems() -> None:
+    assert problems(road_trace()) == []
+
+
+@pytest.mark.parametrize(
+    "table, change, expected",
+    [
+        ("road_leave", {"shipment_id": [2]}, "seq 13: shipment 2 arrives but isn't on the road"),
+        ("road_leave", {"sim_time_us": [2550]}, "seq 13: shipment 1 arrives faster than its speed allows"),
+        ("road_enter", {"road_id": [2]}, "seq 11: shipment 1 takes road 2, which doesn't exist"),
+        (
+            "road_enter",
+            {"from_inventory_id": [7]},
+            "seq 11: shipment 1 sets off from inventory 7, not an end of road 1",
+        ),
+        (
+            "road_enter",
+            {"sku_id": [200]},
+            "seq 11: shipment 1 carries sku 200, which road 1's ends don't both stock",
+        ),
+        (
+            "road_enter",
+            {"count": [2]},
+            "seq 11: shipment 1 takes 2 × sku 100 from inventory 5, which has 1",
+        ),
+    ],
+)
+def test_inconsistent_road_events_are_reported(
+    table: str, change: dict[str, list[float]], expected: str
+) -> None:
+    t = road_trace()
+    broken = replace(t, **{table: getattr(t, table).assign(**change)})
+    assert expected in problems(broken)
+
+
+def test_a_road_between_unknown_inventories_is_reported() -> None:
+    t = road_trace()
+    assert t.roads is not None
+    assert "roads.b_inventory_id 9 not in inventories" in problems(
+        replace(t, roads=t.roads.assign(b_inventory_id=[9]))
+    )
+
+
 def test_status_only_for_queued_items() -> None:
     t = valid_trace()
     # At the end, item 1 is still in queue 1; item 3 never existed

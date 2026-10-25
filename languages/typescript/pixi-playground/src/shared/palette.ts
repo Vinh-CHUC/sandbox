@@ -13,6 +13,8 @@ import { mixColor, type Color } from "./common";
 export const GROUND = 0x5f666d;
 /** Inside a site */
 export const SITE_FLOOR = 0xebe7df;
+/** Tarmac, between sites: darker than the ground around it */
+export const ROAD = 0x33373b;
 /** Belts, plates, fences, arcs and text on the floor */
 export const CHARCOAL = 0x3d4247;
 export const CORAL = 0xe4572e;

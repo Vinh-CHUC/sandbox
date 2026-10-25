@@ -41,6 +41,10 @@ class Trace:
     item_types: pd.DataFrame | None = None
     items: pd.DataFrame | None = None
     labels: pd.DataFrame | None = None
+    # Optional: roads between inventories, and the shipments along them
+    roads: pd.DataFrame | None = None
+    road_enter: pd.DataFrame | None = None
+    road_leave: pd.DataFrame | None = None
 
 
 # One schema per table, keyed by its file name (without `.parquet`)
@@ -65,6 +69,9 @@ SCHEMAS: dict[str, type[pa.DataFrameModel]] = {
     "item_types": st.ItemTypes,
     "items": st.Items,
     "labels": st.Labels,
+    "roads": st.Roads,
+    "road_enter": ev.RoadEnter,
+    "road_leave": ev.RoadLeave,
 }
 
 EVENT_TABLES = (
@@ -77,8 +84,19 @@ EVENT_TABLES = (
     "stock",
     "item_status",
     "item_shortage",
+    "road_enter",
+    "road_leave",
 )
-OPTIONAL_TABLES = ("item_status", "item_shortage", "item_types", "items", "labels")
+OPTIONAL_TABLES = (
+    "item_status",
+    "item_shortage",
+    "item_types",
+    "items",
+    "labels",
+    "roads",
+    "road_enter",
+    "road_leave",
+)
 
 
 def validated(trace: Trace) -> Trace:

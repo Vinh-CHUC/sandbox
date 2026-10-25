@@ -122,6 +122,27 @@ class ItemShortage(Event):
     missing: Series[pd.UInt32Dtype]
 
 
+class RoadEnter(Event):
+    """
+    A shipment of `count` × `sku_id` sets off from `from_inventory_id`, one end of `road_id`, for
+    the other end, at `speed` grid cells per minute. That inventory's `stock` level drops alongside.
+    Optional table, like `RoadLeave`.
+    """
+
+    shipment_id: Series[pd.UInt32Dtype] = pa.Field(unique=True)
+    road_id: Series[pd.UInt32Dtype]
+    from_inventory_id: Series[pd.UInt32Dtype]
+    sku_id: Series[pd.Int64Dtype]
+    count: Series[pd.UInt32Dtype] = pa.Field(ge=1)
+    speed: Series[pd.Float64Dtype] = pa.Field(gt=0)
+
+
+class RoadLeave(Event):
+    """The shipment reaches its road's other end: that inventory's `stock` level rises alongside"""
+
+    shipment_id: Series[pd.UInt32Dtype] = pa.Field(unique=True)
+
+
 class Meta(Table):
     """One row describing the whole trace"""
 
