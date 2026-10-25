@@ -5,7 +5,7 @@ install-tlaplus:
     #!/usr/bin/env bash
     set -euo pipefail
 
-    version="1.8.0"
+    version="1.7.4"
     bin_dir="$HOME/.local/bin"
     tmp_dir="$(mktemp -d)"
     trap 'rm -rf "$tmp_dir"' EXIT
@@ -14,7 +14,7 @@ install-tlaplus:
 
     curl -fLsS "$url" -o "$tmp_dir/tla2tools.jar"
 
-    echo "30db7b1c0ff1fdd34e6d6604e3b75c919b064d16  $tmp_dir/tla2tools.jar" | sha1sum -c -
+    echo "bee4a54f3ee3d4afc347c3240ec2d9e93b075104  $tmp_dir/tla2tools.jar" | sha1sum -c -
 
     mkdir -p "$bin_dir"
     rm -f "$bin_dir/tla2tools.jar"
@@ -26,3 +26,10 @@ install-tlaplus:
     exec java -cp "$HOME/.local/bin/tla2tools.jar" tlc2.TLC "$@"
     EOF
     chmod +x "$bin_dir/tlc"
+
+    # sany
+    cat > "$bin_dir/tla_sany" <<'EOF'
+    #!/usr/bin/env sh
+    exec java -cp "$HOME/.local/bin/tla2tools.jar" tla2sany.SANY "$@"
+    EOF
+    chmod +x "$bin_dir/tla_sany"
