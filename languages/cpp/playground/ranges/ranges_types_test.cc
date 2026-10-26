@@ -23,6 +23,9 @@ TEST(RangesTypesTest, Simple) {
     static_assert(std::is_same_v<decltype(it), const std::string&>);
   }
 
+  // This moves constructs a string (it) from the elements on vec, so it does move
+  // In the further examples above not the case, we're just casting a && to const & or passing the
+  // && along
   for (auto it : vec | std::views::as_rvalue){
     static_assert(std::is_same_v<decltype(it), std::string>);
   }
@@ -48,6 +51,9 @@ TEST(RangesTypesTest, Simple) {
   ASSERT_EQ(vec[0], "apple");
 }
 
+// zipping gives a tuple<T&, U&>
+// So can't move out from the actual fields (unless you explicitly do it but that's a bit
+// confusing)
 TEST(RangesTypesTest, Zipping) {
   std::vector<std::string> vec = {"apple", "banana", "cherry"};
   std::vector<int> vec2 = {1, 2, 3};

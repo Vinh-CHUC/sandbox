@@ -7,6 +7,8 @@ pub mod cartesian_product {
         I: Iterator<Item = &'a T> + Clone,
     {
         (0..arity).fold(vec![vec![]], |acc, _| {
+            // iter() worlds too
+            // acc would get dropped slightly later
             acc.into_iter().flat_map(|comb|
                 // This move is not useful for perf
                 // But is required to compile |comb| goes out of scope by the time the inner
@@ -34,12 +36,13 @@ pub mod cartesian_product {
         for _ in 0..arity {
             let mut new_result = vec![];
 
-            // This works too
-            // for prefix in &result {
-            for prefix in result {
+            // This works too:
+            // - for prefix in &result
+            // The difference is that it'll be dropped slightly later in that case
+            for existing_comb in result {
                 // Here the need for cloning is because we iterate over l multiple times over l
                 for el in l.clone() {
-                    let mut new_comb = prefix.clone();
+                    let mut new_comb = existing_comb.clone();
                     new_comb.push(el);
                     new_result.push(new_comb);
                 }

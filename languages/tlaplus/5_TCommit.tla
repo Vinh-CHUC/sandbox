@@ -6,11 +6,6 @@ CONSTANT RM
 
 VARIABLE rmState
 
-(* 
-Some kind of runtime predicate over values that "type checks"
-The notation [S -> T] is a set of all functions with domain S and values T
-*)
-TCTypeOK == rmState \in [RM -> {"working", "prepared", "committed", "aborted"}]
 
 (* Initially everythign is in the "working" state *)
 TCInit == rmState = [r \in RM |-> "working"]
@@ -34,6 +29,14 @@ Decide(r) == \/ /\ rmState[r] = "prepared"
              \/ /\ rmState[r] \in {"working", "prepared"}
                 /\ notCommitted
                 /\ rmState' = [rmState EXCEPT ![r] = "aborted"]
+
+(**** Constraints ****)
+
+(* 
+Some kind of runtime predicate over values that "type checks"
+The notation [S -> T] is a set of all functions with domain S and values T
+*)
+TCTypeOK == rmState \in [RM -> {"working", "prepared", "committed", "aborted"}]
 
 TCConsistent == \A r1, r2 \in RM : ~ /\ rmState[r1] = "aborted"
                                      /\ rmState[r2] = "committed"
