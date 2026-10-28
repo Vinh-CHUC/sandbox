@@ -15,3 +15,12 @@ cc_test(
         "@googletest//:gtest_main",
     ]
 )
+
+cc_test(
+    name = "ranges_quirks_test",
+    srcs = ["ranges_quirks_test.cc"],
+    deps = [
+        "@googletest//:gtest",
+        "@googletest//:gtest_main",
+    ]
+)
